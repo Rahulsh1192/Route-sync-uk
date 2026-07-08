@@ -1,0 +1,224 @@
+// Prisma is the ORM mapping over the database created by db/schema.sql.
+// db/schema.sql remains the source of truth for DDL (PostGIS types, triggers,
+// partial indexes). Spatial columns are mapped as Unsupported and accessed via
+// raw queries where geometry maths is needed.
+
+generator client {
+  provider = "prisma-client-js"
+  // engineType="client" activates Prisma 6's queryCompiler: a pure JS/WASM query
+  // compiler with NO native query-engine binary — nothing is fetched from
+  // binaries.prisma.sh. Runs on the `pg` driver adapter in plain Node, which is what
+  // we need behind the corporate proxy that blocks the engine download.
+  engineType      = "client"
+  previewFeatures = ["postgresqlExtensions", "driverAdapters", "queryCompiler"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto, postgis, pg_trgm, citext]
+}
+
+// NOTE: @@map points each Prisma enum at the snake_case native enum type created
+// by db/schema.sql (the SQL is the source of truth for DDL).
+enum UserRole {
+  user
+  contributor
+  instructor
+  moderator
+  admin
+
+  @@map("user_role")
+}
+
+enum AuthProvider {
+  email
+  google
+  apple
+
+  @@map("auth_provider")
+}
+
+enum SubscriptionPlan {
+  free
+  premium_monthly
+  premium_yearly
+
+  @@map("subscription_plan")
+}
+
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  expired
+
+  @@map("subscription_status")
+}
+
+enum BillingSource {
+  stripe
+  apple
+  google
+
+  @@map("billing_source")
+}
+
+enum RouteStatus {
+  draft
+  processing
+  flagged
+  in_review
+  published
+  rejected
+  archived
+
+  @@map("route_status")
+}
+
+enum RouteDifficulty {
+  beginner
+  intermediate
+  advanced
+  test_standard
+
+  @@map("route_difficulty")
+}
+
+enum UploadStatus {
+  created
+  uploading
+  queued
+  processing
+  flagged
+  completed
+  failed
+
+  @@map("upload_status")
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String?   @unique
+  emailVerified Boolean   @default(false) @map("email_verified")
+  passwordHash  String?   @map("password_hash")
+  displayName   String    @map("display_name")
+  avatarUrl     String?   @map("avatar_url")
+  role          UserRole  @default(user)
+  locale        String    @default("en-GB")
+  isSuspended   Boolean   @default(false) @map("is_suspended")
+  lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz
+
+  identities     AuthIdentity[]
+  refreshTokens  RefreshToken[]
+  subscriptions  Subscription[]
+  routes         Route[]
+  uploads        Upload[]
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  provider    AuthProvider
+  providerUid String       @map("provider_uid")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUid])
+  @@map("auth_identities")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  userAgent String?   @map("user_agent")
+  ip        String?   @db.Inet
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  plan               SubscriptionPlan   @default(free)
+  status             SubscriptionStatus @default(active)
+  source             BillingSource?
+  externalId         String?            @map("external_id")
+  currentPeriodEnd   DateTime?          @map("current_period_end") @db.Timestamptz
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  priceMinor         Int?               @map("price_minor")
+  currency           String             @default("GBP") @db.Char(3)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime           @default(now()) @map("updated_at") @db.Timestamptz
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Route {
+  id              String      @id @default(uuid()) @db.Uuid
+  contributorId   String      @map("contributor_id") @db.Uuid
+  title           String
+  description     String?
+  status          RouteStatus      @default(draft)
+  difficulty      RouteDifficulty?
+  testCentreId    String?     @map("test_centre_id") @db.Uuid
+  town            String?
+  postcode        String?
+  distanceM       Int?        @map("distance_m")
+  durationS       Int?        @map("duration_s")
+  junctionCount   Int?        @map("junction_count")
+  roundaboutCount Int?        @map("roundabout_count")
+  complexityScore Decimal?    @map("complexity_score") @db.Decimal(5, 2)
+  qualityScore    Int?        @map("quality_score")
+  syncConfidence  Decimal?    @map("sync_confidence") @db.Decimal(5, 2)
+  isSample        Boolean     @default(false) @map("is_sample")
+  isSeed          Boolean     @default(false) @map("is_seed")
+  isInstructor    Boolean     @default(false) @map("is_instructor")
+  hasCaptions     Boolean     @default(false) @map("has_captions")
+  publishedAt     DateTime?   @map("published_at") @db.Timestamptz
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime    @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz
+  contributor     User        @relation(fields: [contributorId], references: [id])
+
+  @@map("routes")
+}
+
+model DataRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  kind        String // 'export' | 'erasure'
+  status      String    @default("pending")
+  resultKey   String?   @map("result_key")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  @@map("data_requests")
+}
+
+model Upload {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  routeId     String?      @map("route_id") @db.Uuid
+  status      UploadStatus @default(created)
+  clockSource String?      @map("clock_source")
+  notes       String?
+  error       String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("uploads")
+}

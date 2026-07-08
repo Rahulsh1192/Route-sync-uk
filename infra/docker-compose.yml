@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: routesync
+      POSTGRES_PASSWORD: routesync
+      POSTGRES_DB: routesync
+    # host 5433 -> container 5432 (5432 is often taken by another local Postgres)
+    ports: ["5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routesync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+
+  # S3-compatible local stand-in for Cloudflare R2 / AWS S3
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: routesync
+      MINIO_ROOT_PASSWORD: routesync123
+      # allow browser presigned PUT uploads from the web app (dev)
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # console
+    volumes:
+      - miniodata:/data
+
+  # creates the default bucket on startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set local http://minio:9000 routesync routesync123) do sleep 1; done;
+      mc mb -p local/routesync-media || true;
+      mc anonymous set none local/routesync-media;
+      exit 0;
+      "
+
+  # Optional self-hosted routing engine for practice-mode instructions.
+  # Enable with:  docker compose --profile maps up valhalla
+  # First run downloads a UK OSM extract and builds tiles (slow, ~minutes).
+  # When unset, the worker uses its geometry-based instruction fallback.
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    profiles: ["maps"]
+    ports:
+      - "8002:8002"
+    environment:
+      tile_urls: https://download.geofabrik.de/europe/great-britain-latest.osm.pbf
+      server_threads: 2
+    volumes:
+      - valhalla_tiles:/custom_files
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  valhalla_tiles:

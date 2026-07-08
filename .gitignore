@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+*.log
+.env
+.env.local
+
+# Prisma
+apps/api/prisma/migrations/dev.db*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins*
+
+# Misc
+.DS_Store
+coverage/
+*.tmp

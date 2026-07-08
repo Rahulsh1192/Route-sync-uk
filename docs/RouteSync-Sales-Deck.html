@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RouteSync — Product Overview &amp; Sales Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:    #2563eb;
+    --blue-lt: #eff6ff;
+    --green:   #16a34a;
+    --green-lt:#f0fdf4;
+    --text:    #111827;
+    --muted:   #6b7280;
+    --border:  #e5e7eb;
+    --surface: #f9fafb;
+    --red:     #dc2626;
+  }
+
+  html { font-size: 14px; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    line-height: 1.7;
+    padding: 48px 64px;
+    max-width: 920px;
+    margin: 0 auto;
+    background: #fff;
+  }
+
+  /* Cover area */
+  body > h1:first-of-type {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+    border: none;
+    padding: 0;
+  }
+
+  /* Headings */
+  h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+  h2 { font-size: 1.4rem; font-weight: 600; color: var(--text); margin: 2rem 0 0.75rem; }
+  h3 { font-size: 1.1rem; font-weight: 600; color: var(--blue); margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 1rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 1.25rem 0 0.4rem; }
+
+  p { margin: 0.6rem 0; color: var(--text); }
+  p:empty { margin: 0.3rem; }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; color: var(--muted); }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #1e293b; color: #e2e8f0; border-radius: 10px; padding: 20px 24px; margin: 1rem 0; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }
+  pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  a, .link { color: var(--blue); text-decoration: none; }
+
+  blockquote {
+    border-left: 4px solid var(--blue);
+    background: var(--blue-lt);
+    padding: 12px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+    font-style: normal;
+    color: var(--text);
+  }
+
+  blockquote p { margin: 0; }
+
+  ul { padding-left: 1.4rem; margin: 0.5rem 0; }
+  ul li { margin: 0.25rem 0; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  thead { background: var(--blue); }
+  thead th { color: #fff; font-weight: 600; text-align: left; padding: 10px 14px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  tbody tr:nth-child(even) { background: var(--surface); }
+  tbody tr:hover { background: var(--blue-lt); }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { font-weight: 500; }
+
+  /* Section number callout */
+  h2[id^="1-"], h2[id^="2-"], h2[id^="3-"], h2[id^="4-"],
+  h2[id^="5-"], h2[id^="6-"], h2[id^="7-"], h2[id^="8-"],
+  h2[id^="9-"], h2[id^="10-"], h2[id^="11-"], h2[id^="12-"] {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* Quick ref table special */
+  table:last-of-type td:first-child { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+  /* Page break hints for PDF */
+  @media print {
+    h1, h2 { page-break-after: avoid; }
+    table   { page-break-inside: avoid; }
+    pre     { page-break-inside: avoid; }
+    hr      { page-break-after: always; border: none; }
+  }
+
+  /* Toc */
+  h2[id="table-of-contents"] + ul {
+    list-style: none;
+    padding: 0;
+    columns: 2;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 0.5rem 0 2rem;
+  }
+  h2[id="table-of-contents"] + ul li { margin: 0.25rem 0; }
+  h2[id="table-of-contents"] + ul li .link { color: var(--blue); font-weight: 500; }
+
+  /* Cover badge */
+  .cover-badge {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 12px;
+    border-radius: 99px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* footer note */
+  body > p:last-child {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<h1 id="routesync-product-overview-sales-guide">RouteSync — Product Overview & Sales Guide</h1>
+
+<blockquote><strong>For Sales Use Only</strong> — Share this document with clients, prospects, and stakeholders.</blockquote>
+
+<hr>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<p>1. <span class="link">What is RouteSync?</span></p>
+<p>2. <span class="link">The Problem We Solve</span></p>
+<p>3. <span class="link">Who Is It For?</span></p>
+<p>4. <span class="link">How It Works — The Simple Story</span></p>
+<p>5. <span class="link">Key Features Explained</span></p>
+<p>6. <span class="link">The Two Products</span></p>
+<p>7. <span class="link">Pricing</span></p>
+<p>8. <span class="link">The Admin Console (For Operators)</span></p>
+<p>9. <span class="link">How to Run a Demo</span></p>
+<p>10. <span class="link">How to Onboard a New User (Step-by-Step)</span></p>
+<p>11. <span class="link">What Makes RouteSync Different</span></p>
+<p>12. <span class="link">Frequently Asked Questions</span></p>
+
+<hr>
+
+<h2 id="1-what-is-routesync-">1. What is RouteSync?</h2>
+
+<p><strong>RouteSync is a UK driving-test learning platform</strong> that helps learner drivers pass their practical driving test faster by letting them:</p>
+
+<ul>
+<li><strong>Watch</strong> the exact roads of their local test centre, filmed from real cars with front and rear cameras</li>
+<li><strong>Practice</strong> those routes as turn-by-turn voice navigation — just like a sat-nav, but for their test route</li>
+<li><strong>Learn</strong> the tricky junctions, roundabouts and manoeuvres before they even sit in a test car</li>
+</ul>
+<p>&nbsp;</p>
+<p>Think of it as <strong>Netflix for driving test routes</strong> — but instead of films, you're watching real drives through the exact roads you'll be tested on.</p>
+
+<hr>
+
+<h2 id="2-the-problem-we-solve">2. The Problem We Solve</h2>
+
+<h3 id="for-learner-drivers">For Learner Drivers</h3>
+<p>Every year, <strong>roughly 1.7 million people take the UK practical driving test</strong>. The pass rate hovers around <strong>46%</strong> — meaning more than half fail, often paying £62+ to rebook.</p>
+
+<p><strong>Why do people fail?</strong></p>
+<ul>
+<li>They don't know the test routes</li>
+<li>They've never driven certain junctions or roundabouts before</li>
+<li>Nerves kick in because everything feels unfamiliar</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>RouteSync fixes this</strong> by making the test route familiar <em>before</em> test day. When learners have already virtually "driven" the route dozens of times, test day becomes familiar territory, not a frightening unknown.</p>
+
+<h3 id="for-driving-instructors-adis-">For Driving Instructors (ADIs)</h3>
+<p>Approved Driving Instructors spend hours showing pupils the same test routes repeatedly. RouteSync lets instructors:</p>
+<ul>
+<li>Upload their own route recordings once</li>
+<li>Have pupils watch and practice independently between lessons</li>
+<li>Earn recognition, credits, and credibility through a verified instructor badge</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h2 id="3-who-is-it-for-">3. Who Is It For?</h2>
+
+<table>
+<thead><tr>
+<th>User Type</th>
+<th>How They Use RouteSync</th>
+<th>What They Get</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Learner Driver</strong></td>
+<td>Watches routes before lessons & test</td>
+<td>Familiarity with roads, higher pass chance</td>
+</tr>
+<tr>
+<td><strong>Driving Instructor (ADI)</strong></td>
+<td>Uploads routes, earns reputation & credits</td>
+<td>Passive income, differentiated service, more pupils</td>
+</tr>
+<tr>
+<td><strong>Driving School</strong></td>
+<td>Multiple instructors upload from one area</td>
+<td>Content library for all pupils</td>
+</tr>
+<tr>
+<td><strong>Test Centre Candidates</strong></td>
+<td>Finds routes for their specific test centre</td>
+<td>Targeted, relevant practice</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="4-how-it-works-the-simple-story">4. How It Works — The Simple Story</h2>
+
+<pre><code>
+Instructor films the route
+         ↓
+Uploads front cam + rear cam + GPS track to RouteSync
+         ↓
+RouteSync's AI processes it automatically
+(syncs video to GPS, checks quality, removes faces &amp; plates)
+         ↓
+Route is published on the platform
+         ↓
+Learner finds the route for their test centre
+         ↓
+Watches the real drive. Practises with voice guidance.
+         ↓
+Goes into the test knowing exactly where to turn.
+</code></pre>
+
+<p>The magic is <strong>automatic GPS synchronisation</strong> — the app knows exactly where the car is at every moment in the video, so it can show you the map view alongside the dashcam footage, and can fire turn instructions at precisely the right moment during voice practice.</p>
+
+<hr>
+
+<h2 id="5-key-features-explained">5. Key Features Explained</h2>
+
+<h3 id="5-1-route-discovery">5.1 — Route Discovery</h3>
+<p><strong>What it does:</strong> A browseable catalogue of driving test routes, searchable by test centre name, town, postcode, or difficulty level.</p>
+
+<p><strong>Why it matters for clients:</strong> Users can instantly find routes relevant to their local test centre (e.g. "Mill Hill", "Hendon", "NW7"). Routes are tagged by difficulty — beginner, intermediate, advanced, and test standard — so learners can progress at their own pace.</p>
+
+<hr>
+
+<h3 id="5-2-multi-view-video-player">5.2 — Multi-View Video Player</h3>
+<p><strong>What it does:</strong> Plays the recorded route video with four viewing modes:</p>
+<ul>
+<li><strong>Front camera</strong> — driver's-eye view of the road ahead</li>
+<li><strong>Rear camera</strong> — view out the back window</li>
+<li><strong>Split view</strong> — both cameras side by side simultaneously</li>
+<li><strong>Live map</strong> — the GPS track drawn on a real map, showing the car's position in real time</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Why it matters for clients:</strong> Learners don't just watch a video — they experience the route from multiple angles simultaneously. The split view is particularly powerful: "watch the rear camera when you reverse — you'll know exactly what to look for."</p>
+
+<hr>
+
+<h3 id="5-3-practice-mode-with-uk-voice-guidance">5.3 — Practice Mode with UK Voice Guidance</h3>
+<p><strong>What it does:</strong> A sat-nav-style practice session where the app reads out turn-by-turn instructions in British English as you mentally drive the route — <em>with no video, just like the real test</em>.</p>
+
+<p>Example voice prompts:</p>
+<blockquote><em>"In 200 metres, turn left"</em></blockquote>
+<blockquote><em>"At the roundabout, take the third exit"</em></blockquote>
+<blockquote><em>"Bear right at the junction"</em></blockquote>
+
+<p><strong>Why it matters for clients:</strong> This is the killer feature. Learners can close their eyes and "mentally drive" the route at home, at 2am, as many times as they like. The muscle memory and route knowledge builds without spending a penny on extra lessons.</p>
+
+<hr>
+
+<h3 id="5-4-gps-synchronised-timeline">5.4 — GPS-Synchronised Timeline</h3>
+<p><strong>What it does:</strong> A scrubber bar at the bottom of the video shows exactly where along the route the car is. Junctions and roundabouts are marked as visual waypoints on the timeline — click one and jump straight to that moment in the video.</p>
+
+<p><strong>Why it matters for clients:</strong> No more scrubbing through 20 minutes of footage looking for "that tricky roundabout". Every junction is bookmarked.</p>
+
+<hr>
+
+<h3 id="5-5-route-upload-contributor-system">5.5 — Route Upload & Contributor System</h3>
+<p><strong>What it does:</strong> Any user (especially instructors) can upload their own route recordings. They provide:</p>
+<ul>
+<li>Front dashcam footage (one or more video clips)</li>
+<li>Rear dashcam footage (optional but recommended)</li>
+<li>A GPX file (GPS track from a phone or dashcam)</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>What happens automatically after upload:</strong></p>
+<p>1. Videos are stitched together if filmed in multiple clips</p>
+<p>2. GPS track is validated for accuracy and signal quality</p>
+<p>3. Video is synced to the GPS data frame by frame</p>
+<p>4. Duplicate routes are detected and flagged</p>
+<p>5. AI privacy protection removes faces and number plates</p>
+<p>6. A quality score (0–100) is calculated</p>
+<p>7. An admin reviews and approves the route</p>
+<p>8. Route goes live for all users to watch and practise</p>
+
+<p><strong>Why it matters for clients:</strong> The platform grows itself. Instructors are incentivised to contribute because they earn credits, reputation points, and badges. More instructors = more routes = more learners = more revenue.</p>
+
+<hr>
+
+<h3 id="5-6-verified-instructor-programme">5.6 — Verified Instructor Programme</h3>
+<p><strong>What it does:</strong> Driving instructors can submit their ADI (Approved Driving Instructor) number and evidence of qualification. Once verified by the RouteSync admin team, they receive:</p>
+<ul>
+<li>✅ A <strong>"Verified Instructor"</strong> badge on their profile</li>
+<li>🔼 A <strong>search ranking boost</strong> (their routes appear higher in results)</li>
+<li>⚡ <strong>Fast-tracked</strong> route approvals</li>
+<li>🏅 <strong>Instructor reputation bonus</strong> in the community leaderboard</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Why it matters for clients:</strong> Learners trust routes from verified instructors more than anonymous uploads. Instructors have a strong incentive to join the platform officially. This creates a quality-controlled, trusted content library.</p>
+
+<hr>
+
+<h3 id="5-7-badges-reputation-system">5.7 — Badges & Reputation System</h3>
+<p><strong>What it does:</strong> Contributors earn badges and build reputation through activity:</p>
+
+<table>
+<thead><tr>
+<th>Badge</th>
+<th>How to Earn It</th>
+</tr></thead><tbody>
+<tr>
+<td>🏅 First Route</td>
+<td>Publish your first route</td>
+</tr>
+<tr>
+<td>🥈 10 Routes</td>
+<td>Publish 10 routes</td>
+</tr>
+<tr>
+<td>🥇 50 Routes</td>
+<td>Publish 50 routes</td>
+</tr>
+<tr>
+<td>⭐ High Quality</td>
+<td>Consistently score above the quality threshold</td>
+</tr>
+<tr>
+<td>🎓 Verified Instructor</td>
+<td>Verified ADI status confirmed by admin</td>
+</tr>
+</tbody></table>
+
+<p>Reputation scores are displayed on contributor profiles and leaderboards.</p>
+
+<p><strong>Why it matters for clients:</strong> Gamification drives engagement. Instructors and contributors stay active because they're building a visible reputation on the platform. Leaderboards create healthy competition.</p>
+
+<hr>
+
+<h3 id="5-8-route-quality-scoring-ai-powered-">5.8 — Route Quality Scoring (AI-Powered)</h3>
+<p><strong>What it does:</strong> Every uploaded route is automatically scored 0–100 based on:</p>
+<ul>
+<li><strong>GPS quality</strong> — signal continuity, accuracy, no teleports or drift</li>
+<li><strong>Video quality</strong> — no black frames, corruption, or freezing</li>
+<li><strong>Sync confidence</strong> — how well the video and GPS align</li>
+<li><strong>Overall composite score</strong></li>
+</ul>
+<p>&nbsp;</p>
+<p>Routes with scores below the threshold are flagged for admin review rather than auto-published.</p>
+
+<p><strong>Why it matters for clients:</strong> Quality is automatic and objective. Users can trust that published routes are genuinely good quality. The platform maintains its reputation without manual review of every frame.</p>
+
+<hr>
+
+<h3 id="5-9-subscription-premium-features">5.9 — Subscription & Premium Features</h3>
+<p><strong>What it does:</strong> RouteSync operates on a freemium model:</p>
+
+<table>
+<thead><tr>
+<th>Feature</th>
+<th>Free</th>
+<th>Premium</th>
+</tr></thead><tbody>
+<tr>
+<td>Browse route catalogue</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Watch 1 sample route</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Unlimited route access</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Practice mode (voice guidance)</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Multi-view playback</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Offline downloads</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Verified instructor routes</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+
+<p><strong>Why it matters for clients:</strong> The free tier lets users discover the product and experience it — a powerful conversion funnel. Premium unlocks the full value. Learners are already spending £30–60/hour on lessons; £4.99/month is an easy upsell.</p>
+
+<hr>
+
+<h3 id="5-10-privacy-protection-ai-blur-">5.10 — Privacy Protection (AI Blur)</h3>
+<p><strong>What it does:</strong> The AI pipeline automatically detects and blurs:</p>
+<ul>
+<li><strong>Faces</strong> of pedestrians, passengers, and other drivers</li>
+<li><strong>Vehicle number plates</strong></li>
+</ul>
+<p>&nbsp;</p>
+<p>This happens automatically during the processing pipeline — no manual editing required.</p>
+
+<p><strong>Why it matters for clients:</strong> GDPR and privacy compliance is non-negotiable. Instructors don't need to manually edit their footage. The platform handles it.</p>
+
+<hr>
+
+<h2 id="6-the-two-products">6. The Two Products</h2>
+
+<p>RouteSync is actually <strong>two products in one:</strong></p>
+
+<h3 id="product-a-the-consumer-app">Product A — The Consumer App</h3>
+<p><strong>Who uses it:</strong> Learner drivers (and curious instructors)</p>
+<p><strong>Available as:</strong></p>
+<ul>
+<li>🌐 <strong>Web app</strong> (works on any browser — laptop, phone, tablet)</li>
+<li>📱 <strong>Mobile app</strong> (iOS and Android — native, smooth, offline support)</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>What they can do:</strong></p>
+<ul>
+<li>Sign up with email, Google, or Apple account</li>
+<li>Browse and search routes by test centre</li>
+<li>Watch dashcam footage in multiple views</li>
+<li>Practise routes with British English voice guidance</li>
+<li>Manage their subscription and account</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="product-b-the-admin-console">Product B — The Admin Console</h3>
+<p><strong>Who uses it:</strong> The RouteSync operations team, moderators</p>
+<p><strong>Available as:</strong></p>
+<ul>
+<li>🖥️ <strong>Web dashboard</strong> (desktop browser only, secure login required)</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>What they can do:</strong></p>
+<ul>
+<li>Review and approve/reject uploaded routes</li>
+<li>Manage users (role changes, suspend accounts)</li>
+<li>Verify instructor applications</li>
+<li>Monitor platform revenue and subscriptions</li>
+<li>Manage the Community Fund</li>
+<li>Review flagged content reports</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h2 id="7-pricing">7. Pricing</h2>
+
+<h3 id="consumer-subscription-tiers">Consumer Subscription Tiers</h3>
+
+<table>
+<thead><tr>
+<th>Plan</th>
+<th>Price</th>
+<th>Best For</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Free</strong></td>
+<td>£0/month</td>
+<td>Browsing, 1 sample route</td>
+</tr>
+<tr>
+<td><strong>Premium Monthly</strong></td>
+<td><strong>£4.99/month</strong></td>
+<td>Learners with a test coming up soon</td>
+</tr>
+<tr>
+<td><strong>Premium Yearly</strong></td>
+<td><strong>£29.99/year</strong></td>
+<td>Long-term learners (save ~50%)</td>
+</tr>
+</tbody></table>
+
+<p><strong>Context:</strong> The average learner takes 45 hours of professional lessons at £30–35/hour = ~<strong>£1,500 in lesson costs</strong>. RouteSync Premium at £4.99/month is less than <strong>0.3% of that spend</strong> — yet could meaningfully increase pass rates.</p>
+
+<h3 id="revenue-streams">Revenue Streams</h3>
+<p>1. <strong>Subscriptions</strong> — recurring monthly/yearly revenue (primary)</p>
+<p>2. <strong>Instructor credits</strong> — future marketplace mechanic for premium content</p>
+<p>3. <strong>Community Fund</strong> — 10% of net profit allocated to instructor rewards (see below)</p>
+
+<hr>
+
+<h2 id="8-the-admin-console-for-operators-">8. The Admin Console (For Operators)</h2>
+
+<p>The Admin Console is RouteSync's operations headquarters. Here's a tour of each section:</p>
+
+<h3 id="review-queue">Review Queue</h3>
+<p>All uploaded routes land here before going live. Admins see:</p>
+<ul>
+<li>Route title and who uploaded it</li>
+<li>Quality score (0–100) — colour-coded green/amber/red</li>
+<li>Sync confidence percentage</li>
+<li>Whether it's from a verified instructor (fast-tracked)</li>
+<li>Date submitted</li>
+</ul>
+<p>&nbsp;</p>
+<p>Clicking <strong>Review</strong> opens a detailed panel showing:</p>
+<ul>
+<li>Route thumbnail</li>
+<li>Full quality metrics (GPS score, sync confidence)</li>
+<li>Every processing stage and its status</li>
+<li>All video renditions available</li>
+<li><strong>Approve & Publish</strong> or <strong>Reject</strong> buttons</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="users">Users</h3>
+<p>Full user management panel:</p>
+<ul>
+<li>Search any user by name or email</li>
+<li>Change their role (user / contributor / instructor / moderator / admin)</li>
+<li>Suspend or reinstate accounts</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="instructors">Instructors</h3>
+<p>Pending instructor verification applications:</p>
+<ul>
+<li>Applicant name and email</li>
+<li>Their ADI number</li>
+<li>Evidence document link</li>
+<li>One-click <strong>Verify</strong> or <strong>Reject</strong></li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="revenue">Revenue</h3>
+<p>Real-time revenue dashboard:</p>
+<ul>
+<li>Estimated Monthly Recurring Revenue (MRR)</li>
+<li>Active monthly subscriber count (£4.99 plan)</li>
+<li>Active yearly subscriber count (£29.99 plan)</li>
+<li>Full breakdown by plan and status</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="community-fund">Community Fund</h3>
+<p>RouteSync's transparency feature — 10% of net profit goes to the Instructor Community Fund:</p>
+<ul>
+<li>Total contributed to date</li>
+<li>Total paid out</li>
+<li>Current balance</li>
+<li>Manage beneficiaries (instructors/schools receiving payouts)</li>
+<li>Record payouts manually</li>
+<li>Full transaction ledger (publicly visible at <code>/api/fund/summary</code>)</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="reports">Reports</h3>
+<p>Flagged content submitted by users — reviewed and actioned here.</p>
+
+<hr>
+
+<h2 id="9-how-to-run-a-demo">9. How to Run a Demo</h2>
+
+<h3 id="option-a-no-setup-required-instant-demo-">Option A — No Setup Required (Instant Demo)</h3>
+<p>1. Open a browser and go to the web app URL</p>
+<p>2. On the login page, click <strong>"✨ Explore the demo (no account)"</strong></p>
+<p>3. This opens the full app with pre-loaded sample routes — no backend, no account needed</p>
+<p>4. Show the client: Discover page → Route Detail → Watch page → Practice mode</p>
+
+<p>This is the <strong>fastest and most impressive demo path.</strong> The video player and voice guidance work fully in demo mode.</p>
+
+<h3 id="option-b-full-account-demo-shows-the-complete-journey-">Option B — Full Account Demo (Shows the Complete Journey)</h3>
+<p>1. Go to the web app and click <strong>"New here? Create an account"</strong></p>
+<p>2. Enter a name, email, and password — takes 10 seconds</p>
+<p>3. You're now logged in and on the Discover page</p>
+<p>4. Browse routes, open one, click "Watch route"</p>
+<p>5. Show the multi-view player (front/rear/split/map)</p>
+<p>6. Go back, click "Practice route" → shows the paywall (upgrade prompt)</p>
+<p>7. Navigate to <strong>Account</strong> to show the upgrade options</p>
+<p>8. Navigate to <strong>Contribute</strong> to show the contributor tools</p>
+
+<h3 id="demo-flow-script">Demo Flow Script</h3>
+
+<table>
+<thead><tr>
+<th>Step</th>
+<th>What to Say</th>
+<th>What to Click</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>"This is what a learner sees when they open RouteSync"</td>
+<td>Open web app, click Demo</td>
+</tr>
+<tr>
+<td>2</td>
+<td>"They can instantly browse all routes for their test centre"</td>
+<td>Show Discover page</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"Let me show you a route — this is the actual road, filmed from a real car"</td>
+<td>Open a route, click Watch</td>
+</tr>
+<tr>
+<td>4</td>
+<td>"They can switch between front camera, rear camera, or see both at once"</td>
+<td>Toggle view modes</td>
+</tr>
+<tr>
+<td>5</td>
+<td>"This map view shows exactly where the car is in real time"</td>
+<td>Switch to Map view</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"Now watch this — Practice mode. No video, just voice guidance, like the real test"</td>
+<td>Go to Practice mode</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"The app reads out every instruction in British English as you mentally drive the route"</td>
+<td>Press Start</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"This is what Premium unlocks — unlimited routes, practice mode, offline access"</td>
+<td>Show paywall / pricing</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="10-how-to-onboard-a-new-user-step-by-step-">10. How to Onboard a New User (Step-by-Step)</h2>
+
+<h3 id="for-a-learner-driver">For a Learner Driver</h3>
+
+<p><strong>Step 1 — Create an Account</strong></p>
+<ul>
+<li>Visit the RouteSync web app or download the mobile app</li>
+<li>Click "Create an account"</li>
+<li>Enter: Display name, Email address, Password</li>
+<li>Click "Create account" — you're in immediately, no email verification needed to get started</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 2 — Browse Routes</strong></p>
+<ul>
+<li>You land on the <strong>Discover</strong> page — a grid of published routes</li>
+<li>Each card shows the route title, test centre location, difficulty, and a thumbnail</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 3 — Find Your Test Centre</strong></p>
+<ul>
+<li>Click <strong>Search</strong> in the navigation</li>
+<li>Type your test centre name, town, or postcode (e.g. "Hendon" or "NW4")</li>
+<li>Filter by difficulty if needed</li>
+<li>Browse the results</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 4 — Watch a Route</strong></p>
+<ul>
+<li>Click any route card to open the Route Detail page</li>
+<li>Click <strong>"▶ Watch route"</strong></li>
+<li>The video player opens — use the view buttons at the top to switch between Front / Rear / Split / Map</li>
+<li>Use the scrubber bar at the bottom to jump to specific points</li>
+<li>Junction and roundabout markers are shown above the scrubber — click them to jump</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 5 — Practice the Route</strong></p>
+<ul>
+<li>Go back to Route Detail, click <strong>"🧭 Practice route"</strong></li>
+<li>If you're on a free account, you'll see the upgrade prompt</li>
+<li>After upgrading to Premium, press <strong>Start</strong> and listen to the voice instructions</li>
+<li>Press <strong>Stop</strong> at any time, then <strong>Restart</strong> to go again</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 6 — Upgrade to Premium (Optional)</strong></p>
+<ul>
+<li>Go to <strong>Account</strong> in the navigation</li>
+<li>Click <strong>"Upgrade"</strong></li>
+<li>Choose Monthly (£4.99) or Yearly (£29.99)</li>
+<li>You're taken to Stripe's secure checkout — enter card details</li>
+<li>Return to the app — Premium is active immediately</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="for-a-driving-instructor-wanting-to-upload-routes">For a Driving Instructor Wanting to Upload Routes</h3>
+
+<p><strong>Step 1 — Create a regular account</strong> (same as above)</p>
+
+<p><strong>Step 2 — Go to Contribute</strong></p>
+<ul>
+<li>Click your Account page</li>
+<li>Click <strong>"Open contributor tools"</strong></li>
+<li>Or navigate directly to the Contribute section</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 3 — Read and accept the footage licensing agreement</strong></p>
+<ul>
+<li>RouteSync requires instructors to confirm they have rights to publish the footage</li>
+<li>This is a one-time click</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 4 — Upload your first route</strong></p>
+<ul>
+<li>Click <strong>"⬆️ Upload a new route"</strong></li>
+<li>Fill in: Route title, Description (optional)</li>
+<li>Select your <strong>front camera video file(s)</strong> — multiple clips are OK, they'll be stitched</li>
+<li>Select your <strong>rear camera video file(s)</strong> — optional but recommended</li>
+<li>Select your <strong>GPX file</strong> — the GPS track from your dashcam or phone</li>
+<li>Tick the licensing agreement checkbox</li>
+<li>Click <strong>Upload</strong></li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 5 — Watch the processing</strong></p>
+<ul>
+<li>You're taken to a status page showing each pipeline stage in real time:</li>
+<li>  - Ingest → Sort clips → Gap detection → Merge → GPS validation → Quality score → Sync → Privacy blur → Duplicate check → Ready for review</li>
+<li>This typically takes a few minutes</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 6 — Await admin approval</strong></p>
+<ul>
+<li>Once processing completes, the route enters the <strong>Review Queue</strong> in the admin console</li>
+<li>A RouteSync moderator reviews and approves it</li>
+<li>You'll see the route go live in the catalogue</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Step 7 — Become a Verified Instructor</strong></p>
+<ul>
+<li>In the Contribute section, click <strong>"🎓 Become a verified instructor"</strong></li>
+<li>Enter your ADI number and upload your evidence document</li>
+<li>Submit — a RouteSync admin reviews and approves it</li>
+<li>Your profile gets the ✅ Verified Instructor badge</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h2 id="11-what-makes-routesync-different">11. What Makes RouteSync Different</h2>
+
+<h3 id="vs-youtube-generic-video">vs. YouTube / Generic Video</h3>
+<table>
+<thead><tr>
+<th>YouTube</th>
+<th>RouteSync</th>
+</tr></thead><tbody>
+<tr>
+<td>Test route specific</td>
+<td>❌ Hit and miss</td>
+<td>✅ Always test route specific</td>
+</tr>
+<tr>
+<td>GPS synchronised</td>
+<td>❌ No</td>
+<td>✅ Frame-perfect GPS sync</td>
+</tr>
+<tr>
+<td>Voice practice mode</td>
+<td>❌ No</td>
+<td>✅ British English sat-nav style</td>
+</tr>
+<tr>
+<td>Privacy (faces/plates blurred)</td>
+<td>❌ Manual</td>
+<td>✅ Automatic AI</td>
+</tr>
+<tr>
+<td>Quality verified</td>
+<td>❌ No</td>
+<td>✅ AI quality score + human review</td>
+</tr>
+<tr>
+<td>Instructor verified</td>
+<td>❌ No</td>
+<td>✅ ADI verified badge system</td>
+</tr>
+<tr>
+<td>Mobile app</td>
+<td>Partial</td>
+<td>✅ Native iOS & Android</td>
+</tr>
+</tbody></table>
+
+<h3 id="vs-traditional-theory-hazard-perception-apps">vs. Traditional Theory/Hazard Perception Apps</h3>
+<p>RouteSync is <strong>not</strong> a theory test app. It is specifically focused on the <strong>practical driving test routes</strong> — the actual roads, junctions, and manoeuvres you will be tested on. No other major platform does this with GPS-synced video and voice practice.</p>
+
+<h3 id="the-unfair-advantage">The Unfair Advantage</h3>
+<p>The <strong>supply-side flywheel</strong>: Every new instructor who joins the platform as a contributor creates content that attracts new learners. More learners → more revenue → more incentive for instructors → more routes → more learners. The platform grows itself.</p>
+
+<hr>
+
+<h2 id="12-frequently-asked-questions">12. Frequently Asked Questions</h2>
+
+<p><strong>Q: Does it work offline?</strong></p>
+<blockquote>Yes — Premium subscribers can download routes for offline use in the mobile app. Great for areas with poor signal or for practising in the car without using data.</blockquote>
+
+<p><strong>Q: Is the footage GDPR compliant?</strong></p>
+<blockquote>Yes — all uploaded footage is automatically processed by our AI to blur faces and vehicle number plates before publishing. Uploaders confirm they have rights to the footage.</blockquote>
+
+<p><strong>Q: What cameras do instructors need?</strong></p>
+<blockquote>Any dashcam that records video and a GPX track (or a phone with a GPS tracking app running). Front camera is required, rear is recommended. Multiple clips from a single journey are automatically stitched together.</blockquote>
+
+<p><strong>Q: How long does route processing take?</strong></p>
+<blockquote>Typically 2–5 minutes for a standard 20-minute route, depending on server load. The status page updates in real time.</blockquote>
+
+<p><strong>Q: Can a driving school manage multiple instructors?</strong></p>
+<blockquote>Yes — instructors can each have their own contributor profile. School-level accounts and team management are on the product roadmap.</blockquote>
+
+<p><strong>Q: What happens if a route is rejected?</strong></p>
+<blockquote>The admin provides a reason. The instructor can re-upload with improved footage. Common rejection reasons: GPS signal too poor, video quality too low, content policy issue.</blockquote>
+
+<p><strong>Q: Is there a web version as well as the app?</strong></p>
+<blockquote>Yes — the full product is available as a responsive web app that works on any browser (desktop, tablet, or mobile). The native iOS/Android app adds offline support and smoother video performance.</blockquote>
+
+<p><strong>Q: How does the £4.99/month compare to lessons?</strong></p>
+<blockquote>The average UK driving lesson costs £30–35/hour. A learner who avoids even half a lesson by being better prepared on test day saves 6× the monthly subscription cost in one go.</blockquote>
+
+<p><strong>Q: Can learners use it on their phone during a lesson?</strong></p>
+<blockquote>Not during the driving lesson for safety reasons, but between lessons — at home, on public transport, the night before the test — absolutely.</blockquote>
+
+<p><strong>Q: What is the Community Fund?</strong></p>
+<blockquote>10% of RouteSync's net profit is allocated to the Instructor Community Fund. This pot is distributed to verified instructor contributors as a reward for building the platform's content library. All transactions are publicly visible — full transparency.</blockquote>
+
+<hr>
+
+<h2 id="quick-reference-card">Quick Reference Card</h2>
+
+<table>
+<thead><tr>
+<th>Item</th>
+<th>Detail</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Product name</strong></td>
+<td>RouteSync</td>
+</tr>
+<tr>
+<td><strong>What it is</strong></td>
+<td>UK driving test route learning platform</td>
+</tr>
+<tr>
+<td><strong>Consumer platforms</strong></td>
+<td>Web (any browser) + iOS + Android</td>
+</tr>
+<tr>
+<td><strong>Admin platform</strong></td>
+<td>Web dashboard</td>
+</tr>
+<tr>
+<td><strong>Free plan</strong></td>
+<td>Browse + 1 sample route</td>
+</tr>
+<tr>
+<td><strong>Premium Monthly</strong></td>
+<td>£4.99/month</td>
+</tr>
+<tr>
+<td><strong>Premium Yearly</strong></td>
+<td>£29.99/year (save ~50%)</td>
+</tr>
+<tr>
+<td><strong>Demo mode</strong></td>
+<td>Click "Explore the demo" — no account needed</td>
+</tr>
+<tr>
+<td><strong>Target user</strong></td>
+<td>UK learner drivers + driving instructors (ADIs)</td>
+</tr>
+<tr>
+<td><strong>Key differentiator</strong></td>
+<td>GPS-synced video + voice practice for actual test routes</td>
+</tr>
+<tr>
+<td><strong>Content model</strong></td>
+<td>Crowd-sourced from instructors, quality-controlled by AI + admin</td>
+</tr>
+<tr>
+<td><strong>Privacy</strong></td>
+<td>Automatic AI face and plate blurring</td>
+</tr>
+<tr>
+<td><strong>Payments</strong></td>
+<td>Stripe (web) + Apple/Google IAP (mobile)</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<p><em>RouteSync — Helping every UK learner pass first time.</em></p>
+
+<p><em>Document prepared: July 2026</em></p>
+
+</body>
+</html>

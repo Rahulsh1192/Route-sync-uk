@@ -1,0 +1,17 @@
+# Core
+redis==5.0.7
+psycopg[binary]==3.2.1
+boto3==1.34.140          # S3/R2 client
+python-dotenv==1.0.1
+httpx==0.27.0            # callback to API
+pydantic==2.8.2
+
+# Media / GPS
+gpxpy==1.6.2
+numpy==1.26.4
+# ffmpeg/ffprobe are system binaries (invoked via subprocess), not pip packages
+
+# AI (heavy — install in the worker image, optional for local dev)
+# opencv-python-headless==4.10.0.84
+# ultralytics==8.2.0      # YOLO face/plate detection
+# openai-whisper==20231117

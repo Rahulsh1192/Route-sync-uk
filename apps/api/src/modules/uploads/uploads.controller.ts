@@ -1,0 +1,34 @@
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { UploadsService } from './uploads.service';
+import { InitUploadDto } from './dto/uploads.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
+
+@ApiTags('uploads')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('uploads')
+export class UploadsController {
+  constructor(private readonly uploads: UploadsService) {}
+
+  // Only contributors/instructors/admins may upload routes.
+  @Post()
+  @Roles('contributor', 'instructor', 'admin')
+  init(@CurrentUser() user: AuthUser, @Body() dto: InitUploadDto) {
+    return this.uploads.init(user.id, dto);
+  }
+
+  @Post(':id/complete')
+  @Roles('contributor', 'instructor', 'admin')
+  complete(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.uploads.complete(user.id, id);
+  }
+
+  @Get(':id')
+  status(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.uploads.status(user.id, id);
+  }
+}
