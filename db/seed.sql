@@ -94,8 +94,8 @@ ON CONFLICT DO NOTHING;
 -- password hashed with bcrypt via pgcrypto (compatible with Node bcrypt.compare)
 INSERT INTO users (id, email, email_verified, password_hash, display_name, role)
 VALUES ('11111111-1111-1111-1111-111111111111', 'demo@routesync.uk', TRUE,
-        crypt('Password123!', gen_salt('bf', 10)), 'Demo Driver', 'contributor')
-ON CONFLICT (id) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+        crypt('Password123!', gen_salt('bf', 10)), 'Demo Driver', 'admin')
+ON CONFLICT (id) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin';
 
 INSERT INTO auth_identities (id, user_id, provider, provider_uid)
 VALUES (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'email', 'demo@routesync.uk')

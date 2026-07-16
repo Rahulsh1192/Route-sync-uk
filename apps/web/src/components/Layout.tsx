@@ -2,11 +2,21 @@ import { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
-const tabs = [
-  { to: '/discover', label: 'Discover', ico: '🧭' },
-  { to: '/search', label: 'Search', ico: '🔍' },
-  { to: '/contribute', label: 'Contribute', ico: '⬆️' },
-  { to: '/account', label: 'Account', ico: '👤' },
+const bottomTabs = [
+  { to: '/discover',    label: 'Discover',     ico: '🧭' },
+  { to: '/search',      label: 'Search',        ico: '🔍' },
+  { to: '/instructors', label: 'Instructors',   ico: '🎓' },
+  { to: '/contribute',  label: 'Contribute',    ico: '⬆️' },
+  { to: '/account',     label: 'Account',       ico: '👤' },
+];
+
+const desktopNav = [
+  { to: '/discover',    label: 'Discover' },
+  { to: '/search',      label: 'Search' },
+  { to: '/instructors', label: 'Instructors' },
+  { to: '/bookings',    label: 'My Bookings' },
+  { to: '/contribute',  label: 'Contribute' },
+  { to: '/account',     label: 'Account' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -17,21 +27,33 @@ export function Layout({ children }: { children: ReactNode }) {
         <NavLink to="/discover" className="brand">
           Route<span>Sync</span>
         </NavLink>
-        {demoMode && <span className="pill amber" title="Sample data — backend not connected">DEMO</span>}
         <nav className="nav-desktop">
-          {tabs.map((t) => (
-            <NavLink key={t.to} to={t.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+          {desktopNav.map((t) => (
+            <NavLink
+              key={t.to}
+              to={t.to}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
               {t.label}
             </NavLink>
           ))}
         </nav>
+        {demoMode && (
+          <span className="pill amber" title="Sample data — backend not connected">
+            DEMO
+          </span>
+        )}
       </header>
 
       <main className="content">{children}</main>
 
       <nav className="nav-bottom">
-        {tabs.map((t) => (
-          <NavLink key={t.to} to={t.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+        {bottomTabs.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            className={({ isActive }) => (isActive ? 'active' : '')}
+          >
             <span className="ico">{t.ico}</span>
             {t.label}
           </NavLink>

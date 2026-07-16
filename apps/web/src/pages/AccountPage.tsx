@@ -8,16 +8,33 @@ export function AccountPage() {
   const { logout } = useAuth();
   const nav = useNavigate();
   const [ent, setEnt] = useState<Entitlements | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     api.me().then(setEnt).catch(() => {});
+    // Show install button if the browser already has the prompt ready
+    setCanInstall(!!(window as any).__pwaInstall);
+    const handler = () => setCanInstall(true);
+    window.addEventListener('pwa-installable', handler);
+    return () => window.removeEventListener('pwa-installable', handler);
   }, []);
+
+  async function installApp() {
+    const prompt = (window as any).__pwaInstall;
+    if (!prompt) return;
+    setInstalling(true);
+    await prompt();
+    setInstalling(false);
+    setCanInstall(false);
+  }
 
   const premium = ent?.entitlements.multiView ?? false;
 
   return (
     <>
       <h1 className="page">Account</h1>
+
       <div className="card">
         <div className="row">
           <span style={{ fontSize: 22 }}>{premium ? '⭐' : '👤'}</span>
@@ -38,7 +55,7 @@ export function AccountPage() {
         </div>
       </div>
 
-      <div className="card" style={{ background: 'var(--surface-2, #f5f5f5)' }}>
+      <div className="card">
         <div className="row">
           <span style={{ fontSize: 18 }}>🏫</span>
           <div>
@@ -55,6 +72,22 @@ export function AccountPage() {
       </div>
 
       <div className="card">
+        <div className="row">
+          <span style={{ fontSize: 18 }}>📊</span>
+          <div>
+            <strong>My Progress</strong>
+            <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+              Track routes watched, practice runs, and your learning streak.
+            </p>
+          </div>
+          <div className="spacer" />
+          <button className="btn secondary auto" onClick={() => nav('/account/progress')}>
+            View progress
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
         <strong>Contribute a route</strong>
         <p className="muted" style={{ fontSize: 14 }}>
           Recording front + rear dashcam clips and a GPX track? Upload them, track processing,
@@ -65,7 +98,25 @@ export function AccountPage() {
         </button>
       </div>
 
-      <button className="btn secondary" onClick={logout}>
+      {canInstall && (
+        <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
+          <div className="row">
+            <span style={{ fontSize: 22 }}>📲</span>
+            <div>
+              <strong>Install RouteSync</strong>
+              <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+                Add to your home screen for offline access and a faster experience.
+              </p>
+            </div>
+            <div className="spacer" />
+            <button className="btn auto" disabled={installing} onClick={installApp}>
+              {installing ? 'Installing…' : 'Install'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button className="btn secondary" onClick={logout} style={{ marginTop: 8 }}>
         Sign out
       </button>
     </>

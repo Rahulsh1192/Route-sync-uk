@@ -5,8 +5,8 @@ services:
       POSTGRES_USER: routesync
       POSTGRES_PASSWORD: routesync
       POSTGRES_DB: routesync
-    # host 5433 -> container 5432 (5432 is often taken by another local Postgres)
-    ports: ["5433:5432"]
+    # host 5434 -> container 5432 (5432/5433 may be taken by other local services)
+    ports: ["5434:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

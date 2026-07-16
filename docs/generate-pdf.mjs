@@ -336,3 +336,28 @@ try {
   console.error('❌ PDF generation failed:', e.message);
   console.log('   HTML is still available at:', htmlPath);
 }
+
+// ── Also generate PLATFORM_GUIDE.pdf ─────────────────────────────────────────
+const guideMdPath   = resolve(__dir, 'PLATFORM_GUIDE.md');
+const guideHtmlPath = resolve(__dir, 'PLATFORM_GUIDE.html');
+const guidePdfPath  = resolve(__dir, 'PLATFORM_GUIDE.pdf');
+
+const guideMd   = readFileSync(guideMdPath, 'utf8');
+const guideBody = mdToHtml(guideMd);
+
+const guideHtml = html
+  .replace('<title>RouteSync — Product Overview &amp; Sales Guide</title>',
+           '<title>RouteSync — Complete Platform Guide</title>')
+  .replace(guideBody, '') // prevent double-body if somehow reused
+  .replace(body, guideBody); // swap the body content
+
+writeFileSync(guideHtmlPath, guideHtml, 'utf8');
+console.log('✅ Guide HTML written:', guideHtmlPath);
+
+const guideCmd = `"${browser}" --headless=new --disable-gpu --no-sandbox --print-to-pdf="${guidePdfPath}" --print-to-pdf-no-header "file:///${guideHtmlPath.replace(/\\/g, '/')}"`;
+try {
+  execSync(guideCmd, { stdio: 'pipe', timeout: 60000 });
+  console.log('✅ Guide PDF written:', guidePdfPath);
+} catch (e) {
+  console.error('❌ Guide PDF failed:', e.message);
+}

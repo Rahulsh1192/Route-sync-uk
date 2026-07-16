@@ -94,4 +94,35 @@ INSERT INTO route_quality_scores (route_id, gps_quality, video_quality, complete
   ('99999999-9999-9999-9999-999999999999', 45, 60, 70, 38, 50, 41, '{"flags":["low_gps_quality","low_sync_confidence"]}')
 ON CONFLICT (route_id) DO NOTHING;
 
+-- --- pending instructor verifications (for admin Instructors panel) ----------
+INSERT INTO users (id, email, email_verified, password_hash, display_name, role) VALUES
+  ('55555551-0000-0000-0000-000000000001','james.carter@example.com',  TRUE, crypt('Password123!',gen_salt('bf',10)), 'James Carter', 'contributor'),
+  ('55555552-0000-0000-0000-000000000002','priya.sharma@example.com',  TRUE, crypt('Password123!',gen_salt('bf',10)), 'Priya Sharma', 'contributor'),
+  ('55555553-0000-0000-0000-000000000003','tom.briggs@example.com',    TRUE, crypt('Password123!',gen_salt('bf',10)), 'Tom Briggs',   'contributor')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO auth_identities (id, user_id, provider, provider_uid) VALUES
+  (gen_random_uuid(),'55555551-0000-0000-0000-000000000001','email','james.carter@example.com'),
+  (gen_random_uuid(),'55555552-0000-0000-0000-000000000002','email','priya.sharma@example.com'),
+  (gen_random_uuid(),'55555553-0000-0000-0000-000000000003','email','tom.briggs@example.com')
+ON CONFLICT (provider, provider_uid) DO NOTHING;
+
+INSERT INTO subscriptions (id, user_id, plan, status) VALUES
+  (gen_random_uuid(),'55555551-0000-0000-0000-000000000001','free','active'),
+  (gen_random_uuid(),'55555552-0000-0000-0000-000000000002','free','active'),
+  (gen_random_uuid(),'55555553-0000-0000-0000-000000000003','free','active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO contributors (user_id, credits, reputation, routes_published, instructor_status) VALUES
+  ('55555551-0000-0000-0000-000000000001', 0,  0, 0, 'pending'),
+  ('55555552-0000-0000-0000-000000000002', 5, 10, 1, 'pending'),
+  ('55555553-0000-0000-0000-000000000003', 0,  0, 0, 'pending')
+ON CONFLICT (user_id) DO UPDATE SET instructor_status = 'pending';
+
+INSERT INTO instructor_verifications (id, user_id, adi_number, evidence_url, status) VALUES
+  ('66666661-0000-0000-0000-000000000001','55555551-0000-0000-0000-000000000001','ADI78341','https://example.com/adi-cert-james.pdf','pending'),
+  ('66666662-0000-0000-0000-000000000002','55555552-0000-0000-0000-000000000002','ADI22198','https://example.com/adi-cert-priya.pdf','pending'),
+  ('66666663-0000-0000-0000-000000000003','55555553-0000-0000-0000-000000000003','ADI56712', NULL,                                   'pending')
+ON CONFLICT (id) DO NOTHING;
+
 COMMIT;

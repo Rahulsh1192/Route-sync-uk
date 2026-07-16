@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RouteSync — Complete Platform Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:    #2563eb;
+    --blue-lt: #eff6ff;
+    --green:   #16a34a;
+    --green-lt:#f0fdf4;
+    --text:    #111827;
+    --muted:   #6b7280;
+    --border:  #e5e7eb;
+    --surface: #f9fafb;
+    --red:     #dc2626;
+  }
+
+  html { font-size: 14px; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    line-height: 1.7;
+    padding: 48px 64px;
+    max-width: 920px;
+    margin: 0 auto;
+    background: #fff;
+  }
+
+  /* Cover area */
+  body > h1:first-of-type {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+    border: none;
+    padding: 0;
+  }
+
+  /* Headings */
+  h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+  h2 { font-size: 1.4rem; font-weight: 600; color: var(--text); margin: 2rem 0 0.75rem; }
+  h3 { font-size: 1.1rem; font-weight: 600; color: var(--blue); margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 1rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 1.25rem 0 0.4rem; }
+
+  p { margin: 0.6rem 0; color: var(--text); }
+  p:empty { margin: 0.3rem; }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; color: var(--muted); }
+  code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  pre { background: #1e293b; color: #e2e8f0; border-radius: 10px; padding: 20px 24px; margin: 1rem 0; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }
+  pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  a, .link { color: var(--blue); text-decoration: none; }
+
+  blockquote {
+    border-left: 4px solid var(--blue);
+    background: var(--blue-lt);
+    padding: 12px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+    font-style: normal;
+    color: var(--text);
+  }
+
+  blockquote p { margin: 0; }
+
+  ul { padding-left: 1.4rem; margin: 0.5rem 0; }
+  ul li { margin: 0.25rem 0; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  thead { background: var(--blue); }
+  thead th { color: #fff; font-weight: 600; text-align: left; padding: 10px 14px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  tbody tr:nth-child(even) { background: var(--surface); }
+  tbody tr:hover { background: var(--blue-lt); }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { font-weight: 500; }
+
+  /* Section number callout */
+  h2[id^="1-"], h2[id^="2-"], h2[id^="3-"], h2[id^="4-"],
+  h2[id^="5-"], h2[id^="6-"], h2[id^="7-"], h2[id^="8-"],
+  h2[id^="9-"], h2[id^="10-"], h2[id^="11-"], h2[id^="12-"] {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* Quick ref table special */
+  table:last-of-type td:first-child { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+  /* Page break hints for PDF */
+  @media print {
+    h1, h2 { page-break-after: avoid; }
+    table   { page-break-inside: avoid; }
+    pre     { page-break-inside: avoid; }
+    hr      { page-break-after: always; border: none; }
+  }
+
+  /* Toc */
+  h2[id="table-of-contents"] + ul {
+    list-style: none;
+    padding: 0;
+    columns: 2;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 0.5rem 0 2rem;
+  }
+  h2[id="table-of-contents"] + ul li { margin: 0.25rem 0; }
+  h2[id="table-of-contents"] + ul li .link { color: var(--blue); font-weight: 500; }
+
+  /* Cover badge */
+  .cover-badge {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 12px;
+    border-radius: 99px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* footer note */
+  body > p:last-child {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<h1 id="routesync-complete-platform-guide">RouteSync — Complete Platform Guide</h1>
+
+<blockquote><strong>Version:</strong> 2026 · <strong>Audience:</strong> Sales demos, client onboarding, internal training</blockquote>
+
+<hr>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<p>1. <span class="link">Platform Overview</span></p>
+<p>2. <span class="link">The Three Roles</span></p>
+<p>3. <span class="link">Learner Journey — Full Cycle</span></p>
+<p>4. <span class="link">Instructor (ADI) Journey — Full Cycle</span></p>
+<p>5. <span class="link">Admin Journey — Full Cycle</span></p>
+<p>6. <span class="link">Feature Reference by Role</span></p>
+<p>7. <span class="link">Subscription & Pricing</span></p>
+<p>8. <span class="link">Demo Walkthrough Scripts</span></p>
+<p>9. <span class="link">Test Accounts</span></p>
+
+<hr>
+
+<h2 id="1-platform-overview">1. Platform Overview</h2>
+
+<p><strong>RouteSync</strong> is a UK driving-test learning platform that connects learner drivers with real, GPS-synchronised dashcam footage of local test routes — and lets them practise those routes as turn-by-turn British English voice navigation, exactly like a sat-nav but for their actual driving test.</p>
+
+<p>It also connects learners directly with verified <strong>Approved Driving Instructors (ADIs)</strong> for lesson bookings, and gives instructors a professional tool to upload routes, earn reputation, and grow their driving business.</p>
+
+<h3 id="the-core-loop">The core loop</h3>
+
+<pre><code>
+ADI records a test route while driving  →  uploads it to RouteSync
+      ↓
+Platform AI processes it automatically
+(GPS validation · privacy blur · quality score · voice instructions)
+      ↓
+Admin reviews and publishes the route
+      ↓
+Learner finds the route for their test centre
+      ↓
+Learner watches the real drive · practises with voice guidance
+      ↓
+Learner books the ADI for a real lesson · passes their test
+</code></pre>
+
+<h3 id="what-makes-it-unique">What makes it unique</h3>
+
+<table>
+<thead><tr>
+<th>Feature</th>
+<th>RouteSync</th>
+<th>YouTube</th>
+<th>Theory apps</th>
+</tr></thead><tbody>
+<tr>
+<td>Real test-route footage</td>
+<td>✅ Test-centre specific</td>
+<td>❌ Hit and miss</td>
+<td>❌ Not applicable</td>
+</tr>
+<tr>
+<td>GPS-synchronised video</td>
+<td>✅ Frame-perfect</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>British English voice practice</td>
+<td>✅ Like the real test</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Verified ADI instructor booking</td>
+<td>✅ Built-in</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>AI learning summaries</td>
+<td>✅ Post-session</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Offline access</td>
+<td>✅ Encrypted</td>
+<td>❌</td>
+<td>Partial</td>
+</tr>
+<tr>
+<td>GDPR-compliant privacy blur</td>
+<td>✅ Automatic AI</td>
+<td>Manual</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="2-the-three-roles">2. The Three Roles</h2>
+
+<h3 id="-learner-driver">👤 Learner Driver</h3>
+<p>A person learning to drive in the UK who wants to familiarise themselves with their test routes before test day.</p>
+
+<ul>
+<li><strong>Accesses via:</strong> Web app (any browser) or mobile app (iOS/Android)</li>
+<li><strong>Free plan:</strong> Browse routes, watch 1 sample route</li>
+<li><strong>Premium plan:</strong> Unlimited routes, practice mode, AI summaries, offline access</li>
+<li><strong>No Premium needed to:</strong> Book an instructor</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="-instructor-adi-">🎓 Instructor (ADI)</h3>
+<p>An Approved Driving Instructor (DVSA-registered) who uploads routes and optionally accepts lesson bookings through the platform.</p>
+
+<ul>
+<li><strong>Accesses via:</strong> Web app or mobile app</li>
+<li><strong>Core tools:</strong> Route upload, availability management, booking management</li>
+<li><strong>Optional:</strong> Subscribe to the Premium Route Library (same as learners) for lesson planning</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="-admin-moderator">🛡️ Admin / Moderator</h3>
+<p>RouteSync internal staff who review uploaded routes, verify instructor credentials, manage users, and oversee platform revenue.</p>
+
+<ul>
+<li><strong>Accesses via:</strong> Admin Console (web, desktop only)</li>
+<li><strong>Requires:</strong> <code>admin</code> or <code>moderator</code> role</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h2 id="3-learner-journey-full-cycle">3. Learner Journey — Full Cycle</h2>
+
+<h3 id="step-1-create-an-account">Step 1 — Create an Account</h3>
+
+<p>Open <strong>http://localhost:5174</strong> (or the production URL).</p>
+
+<p><strong>Option A — Register</strong></p>
+<p>1. Click <strong>"New here? Create an account"</strong></p>
+<p>2. Enter: Display name · Email · Password</p>
+<p>3. Click <strong>Create account</strong> — you're logged in immediately</p>
+
+<p><strong>Option B — Demo (no account)</strong></p>
+<p>1. Click <strong>"✨ Explore the demo (no account)"</strong></p>
+<p>2. The full app loads with sample routes — no backend required</p>
+<p>3. Video player and voice practice work fully in demo mode</p>
+
+<hr>
+
+<h3 id="step-2-discover-routes">Step 2 — Discover Routes</h3>
+
+<p>After login you land on the <strong>Discover</strong> page.</p>
+
+<ul>
+<li>A grid of published routes appears, sorted by quality score</li>
+<li>Each card shows: <strong>Route name · Test centre town · Difficulty · Distance · Duration · Roundabout count</strong></li>
+<li>Colour-coded quality badges: green (70+) · amber (50–69)</li>
+<li>Routes tagged <strong>Instructor</strong> are from verified ADIs</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="step-3-search-for-your-test-centre">Step 3 — Search for Your Test Centre</h3>
+
+<p>Click <strong>Search</strong> in the navigation bar.</p>
+
+<p>1. Type your test centre name, town, or postcode (e.g. "Mill Hill" or "NW7")</p>
+<p>2. Filter by difficulty: Beginner · Intermediate · Advanced · <strong>Test standard</strong></p>
+<p>3. Click <strong>Search</strong></p>
+<p>4. Results show all matching routes</p>
+
+<hr>
+
+<h3 id="step-4-watch-a-route">Step 4 — Watch a Route</h3>
+
+<p>Click any route card → Route Detail page.</p>
+
+<p>Click <strong>▶ Watch route</strong>.</p>
+
+<p>The <strong>video player</strong> opens with four viewing modes:</p>
+
+<table>
+<thead><tr>
+<th>Mode</th>
+<th>What you see</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Front</strong></td>
+<td>Driver's-eye view, road ahead</td>
+</tr>
+<tr>
+<td><strong>Rear</strong></td>
+<td>Rear window view</td>
+</tr>
+<tr>
+<td><strong>Split</strong></td>
+<td>Both cameras side by side</td>
+</tr>
+<tr>
+<td><strong>Map</strong></td>
+<td>GPS track on a live map, car position updating in real time</td>
+</tr>
+</tbody></table>
+
+<p><strong>Timeline controls:</strong></p>
+<ul>
+<li>Scrubber bar at the bottom — drag to any point</li>
+<li>Junction and roundabout markers above the scrubber — click to jump directly to that moment</li>
+<li>Play/Pause · 0.5× slow motion</li>
+<li>HUD shows current time · active junction label · total duration</li>
+</ul>
+<p>&nbsp;</p>
+<blockquote><strong>Free plan note:</strong> Only the 1 sample route is watchable without Premium. All others redirect to the upgrade screen.</blockquote>
+
+<hr>
+
+<h3 id="step-5-practise-a-route-premium-">Step 5 — Practise a Route (Premium)</h3>
+
+<p>Go back to the Route Detail page.</p>
+
+<p>Click <strong>🧭 Practice route</strong>.</p>
+
+<p>The <strong>Practice mode</strong> opens — <em>no video, just like the real test</em>.</p>
+
+<table>
+<thead><tr>
+<th>Control</th>
+<th>Action</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Start</strong></td>
+<td>Begins the session; clock starts counting</td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Pauses the session</td>
+</tr>
+<tr>
+<td><strong>Restart</strong></td>
+<td>Returns to the beginning</td>
+</tr>
+</tbody></table>
+
+<p>As time progresses, the app reads turn instructions aloud in <strong>British English</strong>:</p>
+
+<blockquote><em>"In 200 metres, turn left"</em></blockquote>
+<blockquote><em>"At the roundabout, take the third exit"</em></blockquote>
+<blockquote><em>"Bear right at the junction"</em></blockquote>
+<blockquote><em>"You have reached your destination"</em></blockquote>
+
+<p>Run the route 5–10 times and the instructions become automatic.</p>
+
+<hr>
+
+<h3 id="step-6-ai-learning-summary-premium-">Step 6 — AI Learning Summary (Premium)</h3>
+
+<p>After completing a watch or practice session, the app generates a personalised summary:</p>
+
+<ul>
+<li><strong>Key junctions to remember</strong> on that specific route</li>
+<li><strong>One focus area</strong> (e.g. "Watch your mirror signal manoeuvre sequence at the roundabout")</li>
+<li><strong>Encouragement</strong> based on your session count</li>
+</ul>
+<p>&nbsp;</p>
+<p>The summary appears as a card after the session ends.</p>
+
+<hr>
+
+<h3 id="step-7-track-progress">Step 7 — Track Progress</h3>
+
+<p>Navigate to <strong>Account → View progress</strong> (or <code>/account/progress</code>).</p>
+
+<p>The Progress page shows:</p>
+
+<table>
+<thead><tr>
+<th>Stat</th>
+<th>What it measures</th>
+</tr></thead><tbody>
+<tr>
+<td>Routes watched</td>
+<td>Total unique routes you've viewed</td>
+</tr>
+<tr>
+<td>Practice runs</td>
+<td>Total voice practice sessions completed</td>
+</tr>
+<tr>
+<td>Watch time</td>
+<td>Total time spent watching routes</td>
+</tr>
+<tr>
+<td>Current streak</td>
+<td>Consecutive days you've practised</td>
+</tr>
+<tr>
+<td>Best streak</td>
+<td>Your longest consecutive practice run</td>
+</tr>
+</tbody></table>
+
+<p>Below the stats: a full <strong>Route History</strong> list with completion percentage bars for each route.</p>
+
+<hr>
+
+<h3 id="step-8-book-an-instructor">Step 8 — Book an Instructor</h3>
+
+<p>Navigate to <strong>Instructors</strong> in the navigation bar (or <strong>Account → Find instructors</strong>).</p>
+
+<p><strong>Finding an instructor:</strong></p>
+<p>1. Enter a postcode or area (optional) and maximum price (optional)</p>
+<p>2. Click <strong>Search</strong></p>
+<p>3. Browse instructor cards — each shows: name, ADI verification badge, reputation score, routes contributed, lesson price, years of experience</p>
+
+<p><strong>Booking a lesson:</strong></p>
+<p>1. Click any instructor card → their <strong>Profile page</strong></p>
+<p>2. Read their bio and see their available time slots</p>
+<p>3. Click a slot to select it (highlighted)</p>
+<p>4. Add an optional message (e.g. "Preparing for Mill Hill test — need roundabout practice")</p>
+<p>5. Click <strong>Request lesson — £XX.XX</strong></p>
+<p>6. A booking request is created — the instructor confirms it</p>
+
+<p><strong>Managing bookings:</strong></p>
+<ul>
+<li>Navigate to <strong>My Bookings</strong> (via nav or <code>/bookings</code>)</li>
+<li>See all upcoming and past bookings with status: Pending · Confirmed · Completed · Cancelled</li>
+<li>Cancel any pending or confirmed booking from this screen</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="step-9-upgrade-to-premium">Step 9 — Upgrade to Premium</h3>
+
+<p>Navigate to <strong>Account → Upgrade</strong> or go to <code>/paywall</code>.</p>
+
+<table>
+<thead><tr>
+<th>Plan</th>
+<th>Price</th>
+<th>Best for</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Free</strong></td>
+<td>£0</td>
+<td>Browsing, 1 sample route</td>
+</tr>
+<tr>
+<td><strong>Premium Monthly</strong></td>
+<td>£4.99/month</td>
+<td>Test coming up soon</td>
+</tr>
+<tr>
+<td><strong>Premium Yearly</strong></td>
+<td>£39.99/year</td>
+<td>Long-term learners (save 33%)</td>
+</tr>
+</tbody></table>
+
+<blockquote><strong>Booking an instructor does NOT require Premium.</strong> Anyone can book a lesson.</blockquote>
+
+<p>Premium includes:</p>
+<ul>
+<li>✅ Unlimited routes for your test centre</li>
+<li>✅ Practice mode with UK voice guidance</li>
+<li>✅ Multi-view playback (front · rear · split · map)</li>
+<li>✅ AI-generated learning summaries</li>
+<li>✅ Offline route access (mobile app)</li>
+<li>✅ Verified instructor routes</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="step-10-install-as-a-pwa-add-to-home-screen-">Step 10 — Install as a PWA (Add to Home Screen)</h3>
+
+<p>On the <strong>Account</strong> page, if your browser supports installation:</p>
+
+<p>1. An <strong>"📲 Install RouteSync"</strong> card appears</p>
+<p>2. Click <strong>Install</strong> → browser's native install dialog appears</p>
+<p>3. The app installs to your home screen and runs fullscreen like a native app</p>
+
+<p>On <strong>iPhone/iPad:</strong></p>
+<p>1. Open in Safari → Share icon → <strong>"Add to Home Screen"</strong> → <strong>Add</strong></p>
+
+<p>The installed app works <strong>offline</strong> for cached routes and practice mode.</p>
+
+<hr>
+
+<h2 id="4-instructor-adi-journey-full-cycle">4. Instructor (ADI) Journey — Full Cycle</h2>
+
+<h3 id="step-1-register-an-account">Step 1 — Register an Account</h3>
+
+<p>Same as the learner registration. URL: <strong>http://localhost:5174</strong></p>
+
+<p>Register with your professional email. Your account starts as a standard user.</p>
+
+<hr>
+
+<h3 id="step-2-accept-the-footage-agreement">Step 2 — Accept the Footage Agreement</h3>
+
+<p>Before uploading any routes, you must accept the <strong>Footage Licensing Agreement</strong> — confirming you have the right to publish the dashcam footage.</p>
+
+<p>1. Navigate to <strong>Contribute</strong> (via Account page or nav)</p>
+<p>2. The agreement is presented on first visit</p>
+<p>3. Click <strong>Accept</strong> — one-time action, never asked again</p>
+
+<hr>
+
+<h3 id="step-3-submit-your-adi-verification">Step 3 — Submit Your ADI Verification</h3>
+
+<p>1. In the <strong>Contribute</strong> section, click <strong>"🎓 Become a verified instructor"</strong></p>
+<p>2. Enter your <strong>DVSA ADI licence number</strong> (e.g. ADI78341)</p>
+<p>3. Upload your <strong>ADI certificate</strong> or provide a link to evidence</p>
+<p>4. Click <strong>Submit</strong></p>
+
+<p>A RouteSync admin will review your application (typically within 24 hours).</p>
+
+<p><strong>After verification you receive:</strong></p>
+<ul>
+<li>✅ A <strong>Verified Instructor</strong> badge visible to all learners</li>
+<li>🔼 Your routes appear <strong>higher in search results</strong></li>
+<li>⚡ <strong>Fast-tracked</strong> route approvals (admin prioritises your uploads)</li>
+<li>🏅 An <strong>instructor reputation bonus</strong></li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="step-4-set-up-your-instructor-profile">Step 4 — Set Up Your Instructor Profile</h3>
+
+<p>After verification, complete your professional profile:</p>
+
+<ul>
+<li>Bio — describe your experience and specialisms</li>
+<li>Years of experience</li>
+<li>Lesson price (£/hour) — default is £35</li>
+<li>Service area — the postcodes and areas you cover</li>
+<li>Toggle <strong>"Accepting bookings"</strong> on or off at any time</li>
+</ul>
+<p>&nbsp;</p>
+<p>This is what learners see when they search for instructors.</p>
+
+<hr>
+
+<h3 id="step-5-upload-a-route-with-video-">Step 5 — Upload a Route (with Video)</h3>
+
+<p>1. In <strong>Contribute</strong>, click <strong>"⬆️ Upload a new route"</strong></p>
+
+<p>2. Fill in the details:</p>
+<p>   - Route title (e.g. "Mill Hill Test Centre — Roundabout Route")</p>
+<p>   - Description (optional but helps learners)</p>
+<p>   - Target test centre</p>
+<p>   - Difficulty level</p>
+
+<p>3. Attach your files:</p>
+<p>   - <strong>Front camera video</strong> — one or more MP4 clips (multiple clips stitched automatically)</p>
+<p>   - <strong>Rear camera video</strong> — optional but strongly recommended</p>
+<p>   - <strong>GPX file</strong> — GPS track from your dashcam or a phone GPS app</p>
+
+<p>4. Tick the licensing agreement checkbox</p>
+
+<p>5. Click <strong>Upload</strong> — you're taken to the live status page</p>
+
+<p><strong>Pipeline stages (all automatic):</strong></p>
+
+<table>
+<thead><tr>
+<th>Stage</th>
+<th>What the platform does</th>
+</tr></thead><tbody>
+<tr>
+<td>Ingest</td>
+<td>Receives and stores your files securely</td>
+</tr>
+<tr>
+<td>Clip sort</td>
+<td>Orders multiple clips by recording timestamp</td>
+</tr>
+<tr>
+<td>Gap detection</td>
+<td>Finds any gaps or overlaps between clips</td>
+</tr>
+<tr>
+<td>Merge</td>
+<td>Stitches all clips into one continuous video</td>
+</tr>
+<tr>
+<td>GPS validation</td>
+<td>Checks GPS track for accuracy, drift, speed anomalies</td>
+</tr>
+<tr>
+<td>Sync engine</td>
+<td>Aligns video frame-by-frame to GPS coordinates</td>
+</tr>
+<tr>
+<td>Privacy blur</td>
+<td>AI detects and blurs all faces and number plates</td>
+</tr>
+<tr>
+<td>Quality score</td>
+<td>Calculates overall score 0–100 (GPS + video + sync)</td>
+</tr>
+<tr>
+<td>Navigation</td>
+<td>Generates British English turn-by-turn instructions</td>
+</tr>
+<tr>
+<td>Ready for review</td>
+<td>Admin is notified to approve and publish</td>
+</tr>
+</tbody></table>
+
+<p>Typical processing time: <strong>2–5 minutes</strong> for a 20-minute route.</p>
+
+<hr>
+
+<h3 id="step-6-upload-a-gps-only-route-no-video-yet-">Step 6 — Upload a GPS-Only Route (No Video Yet)</h3>
+
+<p>If you've driven a route but don't have video footage yet:</p>
+
+<p>1. Upload the <strong>GPX file only</strong> — no video required</p>
+<p>2. Route is processed as a <strong>"Map only"</strong> route</p>
+<p>3. Learners can immediately use it in <strong>map practice mode</strong></p>
+<p>4. Any verified ADI can attach video later (including you or a colleague)</p>
+
+<p><strong>To attach video to an existing map-only route:</strong></p>
+<p>1. Find the route in the catalogue — it shows a "Map only" badge</p>
+<p>2. Click <strong>"Contribute video to this route"</strong></p>
+<p>3. Upload front/rear video clips</p>
+<p>4. System merges them with the GPS and upgrades to full video automatically</p>
+
+<hr>
+
+<h3 id="step-7-set-availability-slots">Step 7 — Set Availability Slots</h3>
+
+<p>Let learners know when you're available for lessons:</p>
+
+<p>1. Go to your instructor settings</p>
+<p>2. Add slots: select date · start time · end time</p>
+<p>3. Repeat for each available day</p>
+<p>4. Learners see only <strong>available (unbooked) slots</strong> on your profile</p>
+
+<p>You can remove any slot that hasn't been booked. Booked slots require a cancellation.</p>
+
+<hr>
+
+<h3 id="step-8-manage-lesson-bookings">Step 8 — Manage Lesson Bookings</h3>
+
+<p>When a learner requests a lesson, you receive an in-app notification.</p>
+
+<p>Navigate to <strong>My Bookings</strong>:</p>
+
+<table>
+<thead><tr>
+<th>Action</th>
+<th>When to use</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Confirm</strong></td>
+<td>Accept the learner's request — lesson is now booked</td>
+</tr>
+<tr>
+<td><strong>Decline</strong></td>
+<td>Turn down the request (add a reason)</td>
+</tr>
+<tr>
+<td><strong>Mark completed</strong></td>
+<td>After the lesson takes place</td>
+</tr>
+<tr>
+<td><strong>Mark no show</strong></td>
+<td>If the learner doesn't attend</td>
+</tr>
+<tr>
+<td><strong>Cancel</strong></td>
+<td>If you need to cancel — slot becomes available again</td>
+</tr>
+</tbody></table>
+
+<p>Booking statuses: <strong>Pending → Confirmed → Completed / Cancelled / No show</strong></p>
+
+<hr>
+
+<h3 id="step-9-adi-account-security">Step 9 — ADI Account Security</h3>
+
+<p>RouteSync enforces <strong>one active session per ADI</strong> at all times:</p>
+
+<ul>
+<li>Logging in on a new device <strong>immediately signs out all other devices</strong></li>
+<li>Prevents licence sharing and protects your uploaded content</li>
+<li>If you're signed out unexpectedly, the login screen shows:</li>
+<li>  <em>"You were signed out because your account was used on another device"</em></li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="step-10-earn-credits-reputation-badges">Step 10 — Earn Credits, Reputation & Badges</h3>
+
+<p>Every published route earns:</p>
+<ul>
+<li><strong>Credits</strong> — platform currency (future marketplace use)</li>
+<li><strong>Reputation points</strong> — based on publish volume, quality scores, and instructor status</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Badges:</strong></p>
+
+<table>
+<thead><tr>
+<th>Badge</th>
+<th>How to earn</th>
+</tr></thead><tbody>
+<tr>
+<td>🏅 First Route</td>
+<td>Publish your first route</td>
+</tr>
+<tr>
+<td>🥈 10 Routes</td>
+<td>Publish 10 routes</td>
+</tr>
+<tr>
+<td>🥇 50 Routes</td>
+<td>Publish 50 routes</td>
+</tr>
+<tr>
+<td>⭐ High Quality</td>
+<td>Consistently score above the quality threshold</td>
+</tr>
+<tr>
+<td>🎓 Verified Instructor</td>
+<td>DVSA ADI status confirmed by admin</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="5-admin-journey-full-cycle">5. Admin Journey — Full Cycle</h2>
+
+<p>Admin console: <strong>http://localhost:5180</strong></p>
+<p>Login: <code>demo@routesync.uk</code> / <code>Password123!</code></p>
+
+<hr>
+
+<h3 id="dashboard-header">Dashboard Header</h3>
+
+<p>The top bar always shows live platform stats:</p>
+<ul>
+<li><strong>Users</strong> — total registered accounts</li>
+<li><strong>Published</strong> — total live routes</li>
+<li><strong>Premium</strong> — active premium subscribers</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="-review-queue-approving-routes">⏳ Review Queue — Approving Routes</h3>
+
+<p>The most important daily task. Every upload appears here before going live.</p>
+
+<p><strong>Per route row:</strong></p>
+<ul>
+<li>Title and contributor</li>
+<li>Quality score (colour-coded: green ≥70, amber 50–69, red <50)</li>
+<li>Sync confidence %</li>
+<li><strong>Instructor</strong> badge — fast-tracked routes from verified ADIs</li>
+<li><strong>Map only</strong> badge — GPS-only routes (no video)</li>
+<li>Submission date</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>To review:</strong></p>
+<p>1. Click <strong>Review →</strong></p>
+<p>2. A side panel opens:</p>
+<p>   - <strong>Thumbnail</strong> of the route</p>
+<p>   - <strong>Quality metrics:</strong> GPS score · Sync confidence · Overall score</p>
+<p>   - <strong>Pipeline stages</strong> — every stage with its status (done/skipped/flagged/failed)</p>
+<p>   - <strong>Video renditions</strong> — view · resolution · duration for each file</p>
+<p>3. <strong>Approve & publish</strong> — route goes live immediately for all users</p>
+<p>4. <strong>Reject</strong> — enter a reason; the contributor sees this in their upload status</p>
+
+<hr>
+
+<h3 id="-users-account-management">👥 Users — Account Management</h3>
+
+<p>Search any user by name or email.</p>
+
+<p><strong>Change role:</strong></p>
+
+<table>
+<thead><tr>
+<th>Role</th>
+<th>Permissions</th>
+</tr></thead><tbody>
+<tr>
+<td><code>user</code></td>
+<td>Browse, subscribe, book lessons</td>
+</tr>
+<tr>
+<td><code>contributor</code></td>
+<td>+ Upload routes</td>
+</tr>
+<tr>
+<td><code>instructor</code></td>
+<td>+ Receive lesson bookings (verified ADI only)</td>
+</tr>
+<tr>
+<td><code>moderator</code></td>
+<td>+ Review routes, handle reports</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>Full platform access</td>
+</tr>
+</tbody></table>
+
+<p><strong>Suspend / Reinstate:</strong></p>
+<ul>
+<li>Click <strong>Suspend</strong> — account locked, user sees "Account suspended" on login</li>
+<li>Click <strong>Reinstate</strong> — access fully restored immediately</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h3 id="-instructors-adi-verification">🎓 Instructors — ADI Verification</h3>
+
+<p>All pending ADI applications.</p>
+
+<p><strong>Each application shows:</strong></p>
+<ul>
+<li>Applicant name and email</li>
+<li>ADI number submitted (e.g. ADI78341)</li>
+<li>Evidence link (click <strong>View ↗</strong> to open the certificate document)</li>
+<li>Date submitted</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Actions:</strong></p>
+<ul>
+<li><strong>Verify</strong> → Role upgraded to <code>instructor</code>, badge awarded, search boost applied</li>
+<li><strong>Reject</strong> → Enter optional notes; applicant is notified and can reapply</li>
+</ul>
+<p>&nbsp;</p>
+<blockquote>Note: Tom Briggs in the test data has no evidence document — this demonstrates the "no evidence" state in the UI.</blockquote>
+
+<hr>
+
+<h3 id="-bookings-platform-overview">📅 Bookings — Platform Overview</h3>
+
+<p>Full table of all lesson bookings across the platform.</p>
+
+<table>
+<thead><tr>
+<th>Column</th>
+<th>What it shows</th>
+</tr></thead><tbody>
+<tr>
+<td>Date</td>
+<td>Lesson date and start time</td>
+</tr>
+<tr>
+<td>Learner</td>
+<td>Who booked the lesson</td>
+</tr>
+<tr>
+<td>Instructor</td>
+<td>The ADI delivering the lesson</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Pending · Confirmed · Cancelled · Completed · No show</td>
+</tr>
+<tr>
+<td>Amount</td>
+<td>Total charged to the learner</td>
+</tr>
+<tr>
+<td>Platform fee</td>
+<td>RouteSync's revenue from this booking (10% of lesson fee)</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h3 id="-revenue-financial-dashboard">💰 Revenue — Financial Dashboard</h3>
+
+<p><strong>Top stat cards:</strong></p>
+<ul>
+<li><strong>Estimated MRR</strong> — total monthly recurring revenue from all active subscriptions</li>
+<li><strong>Monthly subscribers</strong> — count on the £4.99/month plan</li>
+<li><strong>Yearly subscribers</strong> — count on the £39.99/year plan</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Breakdown table:</strong></p>
+<p>Every unique combination of plan + status with subscriber count. Shows the full health of subscription distribution.</p>
+
+<hr>
+
+<h3 id="-community-fund">🏦 Community Fund</h3>
+
+<p>RouteSync contributes 10% of net profit to the Instructor Community Fund monthly.</p>
+
+<p><strong>Balance overview:</strong> Contributed · Paid out · Current balance</p>
+
+<p><strong>Monthly contribution:</strong></p>
+<ul>
+<li>Runs automatically on the 1st of each month</li>
+<li><strong>Run now</strong> — records the current month's contribution immediately (idempotent)</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Beneficiaries:</strong></p>
+<p>1. Add a beneficiary (e.g. "North London ADI Network", "Individual Instructor — Sarah Johnson")</p>
+<p>2. Select them when recording payouts</p>
+
+<p><strong>Recording a payout:</strong></p>
+<p>1. Select beneficiary from dropdown</p>
+<p>2. Enter amount in pounds</p>
+<p>3. Click <strong>Pay out</strong></p>
+
+<p>All transactions are publicly visible at <code>/api/fund/summary</code> — full transparency.</p>
+
+<hr>
+
+<h3 id="-reports-flagged-content">🚩 Reports — Flagged Content</h3>
+
+<p>User-submitted content reports.</p>
+
+<table>
+<thead><tr>
+<th>Column</th>
+<th>What it shows</th>
+</tr></thead><tbody>
+<tr>
+<td>Target</td>
+<td>Route/user/comment that was reported + truncated ID</td>
+</tr>
+<tr>
+<td>Reason</td>
+<td>Why the user reported it</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Starts as <code>open</code></td>
+</tr>
+<tr>
+<td>Date</td>
+<td>When it was reported</td>
+</tr>
+</tbody></table>
+
+<p>Admins take action in the <strong>Users</strong> or <strong>Review Queue</strong> panels, then the report is considered resolved.</p>
+
+<hr>
+
+<h2 id="6-feature-reference-by-role">6. Feature Reference by Role</h2>
+
+<table>
+<thead><tr>
+<th>Feature</th>
+<th>Free Learner</th>
+<th>Premium Learner</th>
+<th>Instructor</th>
+<th>Admin</th>
+</tr></thead><tbody>
+<tr>
+<td>Browse route catalogue</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Watch 1 sample route</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Watch unlimited routes</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Practice mode (voice)</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Multi-view playback</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AI learning summaries</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Offline route access</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Progress tracking</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Book an instructor</td>
+<td>✅</td>
+<td>✅</td>
+<td>N/A</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Upload routes</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>GPS-only route upload</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Deferred video attach</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Set availability slots</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Receive lesson bookings</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅ verified only</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Earn credits & badges</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Review uploaded routes</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Verify instructors</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Manage users</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>View revenue data</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Community Fund admin</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>View all bookings</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="7-subscription-pricing">7. Subscription & Pricing</h2>
+
+<h3 id="consumer-plans">Consumer Plans</h3>
+
+<table>
+<thead><tr>
+<th>Plan</th>
+<th>Price</th>
+<th>Included</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Free</strong></td>
+<td>£0</td>
+<td>Browse + 1 sample route</td>
+</tr>
+<tr>
+<td><strong>Premium Monthly</strong></td>
+<td>£4.99 / month</td>
+<td>Everything</td>
+</tr>
+<tr>
+<td><strong>Premium Yearly</strong></td>
+<td>£39.99 / year</td>
+<td>Everything + 33% saving vs monthly</td>
+</tr>
+</tbody></table>
+
+<h3 id="instructor-lesson-bookings">Instructor Lesson Bookings</h3>
+
+<ul>
+<li>Each ADI sets their own <strong>lesson price</strong> (default £35/hour)</li>
+<li>RouteSync charges a <strong>10% platform service fee</strong> added to the lesson price</li>
+<li>Example: £35 lesson → learner pays £38.50 → instructor receives £35 → RouteSync keeps £3.50</li>
+<li>The platform fee % is configurable by admin without a code deploy</li>
+</ul>
+<p>&nbsp;</p>
+<h3 id="community-fund">Community Fund</h3>
+
+<ul>
+<li><strong>10% of RouteSync's net profit</strong> is contributed to the Instructor Community Fund every month</li>
+<li>Distributed to verified ADI contributors as a reward for building the content library</li>
+<li>Full public ledger at <code>/api/fund/summary</code> — complete transparency</li>
+</ul>
+<p>&nbsp;</p>
+<hr>
+
+<h2 id="8-demo-walkthrough-scripts">8. Demo Walkthrough Scripts</h2>
+
+<h3 id="script-a-learner-demo-5-minutes-">Script A — Learner Demo (5 minutes)</h3>
+
+<p><em>"Let me show you what a learner driver experiences."</em></p>
+
+<table>
+<thead><tr>
+<th>Step</th>
+<th>What to say</th>
+<th>What to do</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>"No account needed — let's use the demo mode"</td>
+<td>Open http://localhost:5174, click <strong>✨ Explore the demo</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>"Here are all the routes for different test centres across the UK"</td>
+<td>Show Discover page grid</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"Each card shows the route, distance, roundabout count, quality score"</td>
+<td>Point to a card</td>
+</tr>
+<tr>
+<td>4</td>
+<td>"Let me open one"</td>
+<td>Click any route → Route Detail</td>
+</tr>
+<tr>
+<td>5</td>
+<td>"This is actual dashcam footage from a real car driving the test route"</td>
+<td>Click <strong>▶ Watch route</strong></td>
+</tr>
+<tr>
+<td>6</td>
+<td>"Front and rear cameras simultaneously"</td>
+<td>Click <strong>Split</strong> view</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"Live GPS map — the car's position updates in real time"</td>
+<td>Click <strong>Map</strong> view</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"Click any marker to jump straight to that junction"</td>
+<td>Click a scrubber marker</td>
+</tr>
+<tr>
+<td>9</td>
+<td>"Now watch this — Practice mode. No video. Just voice, like the real test."</td>
+<td>Go back → click <strong>🧭 Practice route</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>"British English — exactly what they'll hear in their head on test day"</td>
+<td>Click <strong>Start</strong>, let 2 instructions play</td>
+</tr>
+<tr>
+<td>11</td>
+<td>"Do this 10 times at home and test day feels familiar, not frightening"</td>
+<td>Pause</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h3 id="script-b-instructor-demo-5-minutes-">Script B — Instructor Demo (5 minutes)</h3>
+
+<p><em>"Now let me show you what an ADI gets from RouteSync."</em></p>
+
+<table>
+<thead><tr>
+<th>Step</th>
+<th>What to say</th>
+<th>What to do</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>"Sign in as our demo instructor"</td>
+<td>Login as <code>instructor@routesync.uk</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>"This is the contributor dashboard — reputation, credits, badges"</td>
+<td>Show Contribute page</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"Upload is simple — front cam, rear cam, GPS file. Multiple clips are fine."</td>
+<td>Show Upload page briefly</td>
+</tr>
+<tr>
+<td>4</td>
+<td>"The platform handles everything — blurs faces and plates automatically"</td>
+<td>Describe pipeline</td>
+</tr>
+<tr>
+<td>5</td>
+<td>"Learners find you here"</td>
+<td>Navigate to /instructors</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"They see your price, bio, and available slots"</td>
+<td>Click Sarah Johnson's profile</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"They pick a slot and request a lesson — you confirm or decline"</td>
+<td>Show available slots</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"All your bookings in one place"</td>
+<td>Show My Bookings</td>
+</tr>
+<tr>
+<td>9</td>
+<td>"Payment is handled by the platform. You receive the lesson fee directly."</td>
+<td>Mention Stripe Connect</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h3 id="script-c-admin-demo-5-minutes-">Script C — Admin Demo (5 minutes)</h3>
+
+<p><em>"Here's the operations side — what the RouteSync team sees."</em></p>
+
+<table>
+<thead><tr>
+<th>Step</th>
+<th>What to say</th>
+<th>What to do</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>"Admin console — login"</td>
+<td>Open http://localhost:5180, login as demo@routesync.uk</td>
+</tr>
+<tr>
+<td>2</td>
+<td>"Live platform stats at the top — users, published routes, premium subs"</td>
+<td>Point to header</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"Review Queue — every uploaded route lands here first"</td>
+<td>Click Review Queue</td>
+</tr>
+<tr>
+<td>4</td>
+<td>"Quality score, sync confidence, GPS — all automatic"</td>
+<td>Point to scores</td>
+</tr>
+<tr>
+<td>5</td>
+<td>"Let me open one and show you what we check"</td>
+<td>Click Review → on any route</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"Every pipeline stage, quality breakdown, full video details"</td>
+<td>Walk through drawer</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"One click to publish — learners see it immediately"</td>
+<td>Click Approve</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"Instructor verifications — three pending today"</td>
+<td>Click Instructors</td>
+</tr>
+<tr>
+<td>9</td>
+<td>"ADI number, evidence certificate, verify or reject"</td>
+<td>Show James Carter row</td>
+</tr>
+<tr>
+<td>10</td>
+<td>"Bookings — full picture of every lesson on the platform"</td>
+<td>Click Bookings</td>
+</tr>
+<tr>
+<td>11</td>
+<td>"Revenue — MRR, subscriber breakdown"</td>
+<td>Click Revenue</td>
+</tr>
+<tr>
+<td>12</td>
+<td>"Community Fund — 10% of profit back to instructors, fully transparent"</td>
+<td>Click Community Fund</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<h2 id="9-test-accounts">9. Test Accounts</h2>
+
+<h3 id="login-credentials">Login Credentials</h3>
+
+<table>
+<thead><tr>
+<th>Role</th>
+<th>Email</th>
+<th>Password</th>
+<th>Notes</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Admin</strong></td>
+<td><code>demo@routesync.uk</code></td>
+<td><code>Password123!</code></td>
+<td>Full admin console access + web app</td>
+</tr>
+<tr>
+<td><strong>Instructor</strong> (verified ADI)</td>
+<td><code>instructor@routesync.uk</code></td>
+<td><code>Password123!</code></td>
+<td>Has profile, slots, and 1 confirmed booking</td>
+</tr>
+<tr>
+<td><strong>Learner</strong></td>
+<td><code>learner@routesync.uk</code></td>
+<td><code>Password123!</code></td>
+<td>Has 1 confirmed booking with Sarah Johnson</td>
+</tr>
+<tr>
+<td>Pending ADI 1</td>
+<td><code>james.carter@example.com</code></td>
+<td><code>Password123!</code></td>
+<td>Shows pending verification in admin panel</td>
+</tr>
+<tr>
+<td>Pending ADI 2</td>
+<td><code>priya.sharma@example.com</code></td>
+<td><code>Password123!</code></td>
+<td>Shows pending verification in admin panel</td>
+</tr>
+<tr>
+<td>Pending ADI 3</td>
+<td><code>tom.briggs@example.com</code></td>
+<td><code>Password123!</code></td>
+<td>No evidence document — demonstrates that state</td>
+</tr>
+</tbody></table>
+
+<h3 id="quick-start-urls">Quick-Start URLs</h3>
+
+<table>
+<thead><tr>
+<th>URL</th>
+<th>What opens</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>http://localhost:5174</strong></td>
+<td>Consumer web app (learner / instructor)</td>
+</tr>
+<tr>
+<td>http://localhost:5174/discover</td>
+<td>Route catalogue</td>
+</tr>
+<tr>
+<td>http://localhost:5174/search</td>
+<td>Search routes by test centre</td>
+</tr>
+<tr>
+<td>http://localhost:5174/instructors</td>
+<td>Browse and book instructors</td>
+</tr>
+<tr>
+<td>http://localhost:5174/bookings</td>
+<td>My lesson bookings</td>
+</tr>
+<tr>
+<td>http://localhost:5174/account</td>
+<td>Account settings</td>
+</tr>
+<tr>
+<td>http://localhost:5174/account/progress</td>
+<td>Learning progress dashboard</td>
+</tr>
+<tr>
+<td>http://localhost:5174/paywall</td>
+<td>Subscription upgrade page</td>
+</tr>
+<tr>
+<td><strong>http://localhost:5180</strong></td>
+<td>Admin console</td>
+</tr>
+<tr>
+<td>http://localhost:3000/docs</td>
+<td>Full API documentation (Swagger)</td>
+</tr>
+<tr>
+<td>http://localhost:9001</td>
+<td>MinIO storage console (dev only)</td>
+</tr>
+</tbody></table>
+
+<hr>
+
+<p><em>RouteSync — Helping every UK learner pass first time.</em></p>
+<p><em>Guide prepared: July 2026</em></p>
+
+</body>
+</html>

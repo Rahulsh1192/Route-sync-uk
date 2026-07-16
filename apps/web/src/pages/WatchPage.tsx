@@ -95,9 +95,13 @@ export function WatchPage() {
         </div>
       </div>
 
-      <div className="seg" style={{ marginTop: 14 }}>
+      <div className="view-btns">
         {(['front', 'rear', 'split', 'map'] as ViewMode[]).map((m) => (
-          <button key={m} className={mode === m ? 'active' : ''} onClick={() => setMode(m)}>
+          <button
+            key={m}
+            className={mode === m ? 'btn auto' : 'btn ghost auto'}
+            onClick={() => setMode(m)}
+          >
             {m[0].toUpperCase() + m.slice(1)}
           </button>
         ))}
