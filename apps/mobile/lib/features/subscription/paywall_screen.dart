@@ -8,12 +8,16 @@ class PaywallScreen extends StatelessWidget {
   const PaywallScreen({super.key});
 
   static const _features = [
-    'Unlimited routes',
+    'Unlimited routes for your test centre',
     'Practice mode with UK voice guidance',
     'Multi-view playback (front, rear, split, map)',
+    'AI-generated learning summaries',
     'Offline downloads',
     'Verified instructor routes',
   ];
+
+  static const _bookingNote =
+      'Booking an instructor does not require Premium — anyone can book a lesson.';
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +27,9 @@ class PaywallScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           Text('Unlock everything', style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 8),
+          Text(_bookingNote,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
           const SizedBox(height: 16),
           ..._features.map((f) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -42,8 +49,8 @@ class PaywallScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _PlanCard(
             title: 'Yearly',
-            price: '£29.99',
-            period: 'per year — best value',
+            price: '£39.99',
+            period: 'per year — save 33%',
             highlight: true,
             onTap: () => _purchase(context, 'premium_yearly'),
           ),

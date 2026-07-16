@@ -31,4 +31,15 @@ export class UploadsController {
   status(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.uploads.status(user.id, id);
   }
+
+  /** Phase 14: Any verified ADI can attach video to an existing map_only route. */
+  @Post('routes/:routeId/attach-video')
+  @Roles('instructor', 'admin')
+  attachVideo(
+    @CurrentUser() user: AuthUser,
+    @Param('routeId') routeId: string,
+    @Body('files') files: Array<{ kind: string; originalName: string; contentType: string; bytes: number }>,
+  ) {
+    return this.uploads.attachVideo(user.id, routeId, files);
+  }
 }

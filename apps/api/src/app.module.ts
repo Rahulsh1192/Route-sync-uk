@@ -18,6 +18,10 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CommunityModule } from './modules/community/community.module';
 import { FundModule } from './modules/fund/fund.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { ProgressModule } from './modules/progress/progress.module';
+import { OfflineModule } from './modules/offline/offline.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -43,6 +47,10 @@ import { HealthController } from './health.controller';
     AdminModule,
     CommunityModule,
     FundModule,
+    BookingsModule,
+    ProgressModule,
+    OfflineModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

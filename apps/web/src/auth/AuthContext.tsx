@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { api, tokens, ApiError } from '../api/client';
 import { demo } from '../api/demo';
 
 interface AuthState {
   authed: boolean;
   demoMode: boolean;
+  sessionInvalidated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   startDemo: () => void;
@@ -22,6 +23,17 @@ const AuthCtx = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authed, setAuthed] = useState<boolean>(tokens.hasSession);
   const [demoMode, setDemoMode] = useState<boolean>(demo.on);
+  const [sessionInvalidated, setSessionInvalidated] = useState(false);
+
+  // Phase 17: Listen for session-invalidated event fired by api client
+  useEffect(() => {
+    const handler = () => {
+      setAuthed(false);
+      setSessionInvalidated(true);
+    };
+    window.addEventListener('session-invalidated', handler);
+    return () => window.removeEventListener('session-invalidated', handler);
+  }, []);
 
   const startDemo = useCallback(() => {
     demo.enable();
@@ -63,10 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokens.clear();
     setDemoMode(false);
     setAuthed(false);
+    setSessionInvalidated(false);
   }, []);
 
   return (
-    <AuthCtx.Provider value={{ authed, demoMode, login, register, startDemo, logout }}>
+    <AuthCtx.Provider value={{ authed, demoMode, sessionInvalidated, login, register, startDemo, logout }}>
       {children}
     </AuthCtx.Provider>
   );

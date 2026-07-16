@@ -171,4 +171,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({}),
     }),
+
+  adminBookings: (page = 0) =>
+    request<any[]>(`/admin/bookings?page=${page}`),
 };

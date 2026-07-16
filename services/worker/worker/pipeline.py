@@ -60,21 +60,33 @@ def process_route(upload_id: str):
         front = [f for f in files if f["kind"] == "front"]
         rear = [f for f in files if f["kind"] == "rear"]
         gpx = next((f for f in files if f["kind"] == "gpx"), None)
+        # Phase 14: GPX-only upload (map_only route) — skip all video stages
+        is_map_only = len(front) == 0
         db.upsert_stage(conn, upload_id, "ingest", "done", 100,
-                        {"front": len(front), "rear": len(rear), "gpx": bool(gpx)})
+                        {"front": len(front), "rear": len(rear), "gpx": bool(gpx),
+                         "map_only": is_map_only})
 
-        # --- continuity / gap / overlap detection ---
-        front_clips = [gap_detection.Clip(f["id"], _epoch(f["started_at"]), f["duration_s"] or 0)
-                       for f in front]
-        rear_clips = [gap_detection.Clip(f["id"], _epoch(f["started_at"]), f["duration_s"] or 0)
-                      for f in rear]
-        front_cont = gap_detection.analyse_continuity(front_clips) if front_clips else {}
-        rear_cont = gap_detection.analyse_continuity(rear_clips) if rear_clips else {}
-        db.upsert_stage(conn, upload_id, "clip_sort", "done", 100, front_cont)
-        db.upsert_stage(conn, upload_id, "gap_detect", "done", 100,
-                        {"front": front_cont.get("gaps"), "rear": rear_cont.get("gaps")})
-        db.upsert_stage(conn, upload_id, "overlap_detect", "done", 100,
-                        {"front": front_cont.get("overlaps"), "rear": rear_cont.get("overlaps")})
+        if is_map_only:
+            log.info("upload %s is map_only — skipping all video stages", upload_id)
+            # Skip video stages gracefully
+            for stage in ["clip_sort", "gap_detect", "overlap_detect", "merge", "reencode",
+                          "front_rear_reconcile", "sync_engine", "video_validate",
+                          "ai_privacy_blur", "transcode"]:
+                db.upsert_stage(conn, upload_id, stage, "skipped", 100,
+                                {"reason": "map_only_route"})
+        else:
+            # --- continuity / gap / overlap detection ---
+            front_clips = [gap_detection.Clip(f["id"], _epoch(f["started_at"]), f["duration_s"] or 0)
+                           for f in front]
+            rear_clips = [gap_detection.Clip(f["id"], _epoch(f["started_at"]), f["duration_s"] or 0)
+                          for f in rear]
+            front_cont = gap_detection.analyse_continuity(front_clips) if front_clips else {}
+            rear_cont = gap_detection.analyse_continuity(rear_clips) if rear_clips else {}
+            db.upsert_stage(conn, upload_id, "clip_sort", "done", 100, front_cont)
+            db.upsert_stage(conn, upload_id, "gap_detect", "done", 100,
+                            {"front": front_cont.get("gaps"), "rear": rear_cont.get("gaps")})
+            db.upsert_stage(conn, upload_id, "overlap_detect", "done", 100,
+                            {"front": front_cont.get("overlaps"), "rear": rear_cont.get("overlaps")})
 
         # --- merge + reencode + transcode (real media path) ---
         merged_duration = None
@@ -187,7 +199,16 @@ def process_route(upload_id: str):
                 quality_score=qs["overall"],
                 sync_confidence=sync["sync_confidence"],
             )
-            db.set_route_status(conn, route_id, "in_review")
+            # Phase 14: map_only routes get a different status for admin review
+            final_status = "map_only" if is_map_only else "in_review"
+            db.set_route_status(conn, route_id, final_status)
+            if is_map_only:
+                # Mark has_video = FALSE on the route row
+                conn.execute(
+                    "UPDATE routes SET has_video = FALSE WHERE id = %s",
+                    (route_id,)
+                )
+                conn.commit()
 
         db.upsert_stage(conn, upload_id, "ready", "done", 100, {
             "instructions": len(nav["instructions"]),

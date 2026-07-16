@@ -43,6 +43,7 @@ export class SubscriptionsService {
         multiView: PREMIUM_PLANS.includes(sub?.plan ?? SubscriptionPlan.free),
         offline: PREMIUM_PLANS.includes(sub?.plan ?? SubscriptionPlan.free),
         instructorRoutes: PREMIUM_PLANS.includes(sub?.plan ?? SubscriptionPlan.free),
+        aiInsights: PREMIUM_PLANS.includes(sub?.plan ?? SubscriptionPlan.free),
       },
     };
   }
@@ -56,15 +57,15 @@ export class SubscriptionsService {
         priceMinor: 499,
         currency: 'GBP',
         interval: 'month',
-        features: ['Unlimited routes', 'Practice mode', 'Multi-view', 'Offline', 'Instructor routes'],
+        features: ['Unlimited routes', 'Practice mode', 'Multi-view', 'Offline', 'Instructor routes', 'AI learning insights'],
       },
       {
         id: 'premium_yearly',
         name: 'Premium Yearly',
-        priceMinor: 2999,
+        priceMinor: 3999,
         currency: 'GBP',
         interval: 'year',
-        features: ['Everything in monthly', 'Best value'],
+        features: ['Everything in monthly', 'Best value — save 33%'],
       },
     ];
   }

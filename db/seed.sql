@@ -20,19 +20,75 @@ BEGIN;
 -- fixed IDs so the seed is idempotent and cross-referenceable
 -- user   11111111-… | route 22222222-… | test centre 33333333-…
 
--- --- test centres (approx coordinates) --------------------------------------
+-- --- test centres (approx coordinates) — Phase 5 UK DVSA seed data -----------
+-- London
 INSERT INTO test_centres (id, name, town, postcode, region, location) VALUES
-  ('33333333-3333-3333-3333-333333333333', 'Mill Hill', 'Mill Hill', 'NW7 1RB', 'London',
-     ST_GeogFromText('SRID=4326;POINT(-0.2470 51.6023)')),
-  (gen_random_uuid(), 'Isleworth', 'Isleworth', 'TW7 4AG', 'London',
-     ST_GeogFromText('SRID=4326;POINT(-0.3390 51.4746)')),
-  (gen_random_uuid(), 'Hayes (Yeading)', 'Hayes', 'UB4 0LT', 'London',
-     ST_GeogFromText('SRID=4326;POINT(-0.4030 51.5230)')),
-  (gen_random_uuid(), 'Wood Green', 'Wood Green', 'N22 6SA', 'London',
-     ST_GeogFromText('SRID=4326;POINT(-0.1100 51.5970)')),
-  (gen_random_uuid(), 'Wanstead', 'Wanstead', 'E11 2JT', 'London',
-     ST_GeogFromText('SRID=4326;POINT(0.0290 51.5780)'))
+  ('33333333-3333-3333-3333-333333333333', 'Mill Hill',         'Mill Hill',       'NW7 1RB', 'London', ST_GeogFromText('SRID=4326;POINT(-0.2470 51.6023)')),
+  (gen_random_uuid(), 'Isleworth',                              'Isleworth',        'TW7 4AG', 'London', ST_GeogFromText('SRID=4326;POINT(-0.3390 51.4746)')),
+  (gen_random_uuid(), 'Hayes (Yeading)',                        'Hayes',            'UB4 0LT', 'London', ST_GeogFromText('SRID=4326;POINT(-0.4030 51.5230)')),
+  (gen_random_uuid(), 'Wood Green',                             'Wood Green',       'N22 6SA', 'London', ST_GeogFromText('SRID=4326;POINT(-0.1100 51.5970)')),
+  (gen_random_uuid(), 'Wanstead',                               'Wanstead',         'E11 2JT', 'London', ST_GeogFromText('SRID=4326;POINT(0.0290 51.5780)')),
+  (gen_random_uuid(), 'Barking',                                'Barking',          'IG11 8AX', 'London', ST_GeogFromText('SRID=4326;POINT(0.0805 51.5362)')),
+  (gen_random_uuid(), 'Belvedere',                              'Belvedere',        'DA17 5QZ', 'London', ST_GeogFromText('SRID=4326;POINT(0.1550 51.4940)')),
+  (gen_random_uuid(), 'Chessington',                            'Chessington',      'KT9 2NY', 'London', ST_GeogFromText('SRID=4326;POINT(-0.3000 51.3600)')),
+  (gen_random_uuid(), 'Croydon',                                'Croydon',          'CR0 2RS', 'London', ST_GeogFromText('SRID=4326;POINT(-0.1000 51.3700)')),
+  (gen_random_uuid(), 'Enfield',                                'Enfield',          'EN3 5JH', 'London', ST_GeogFromText('SRID=4326;POINT(-0.0350 51.6500)')),
+  (gen_random_uuid(), 'Hornchurch',                             'Hornchurch',       'RM11 1NA', 'London', ST_GeogFromText('SRID=4326;POINT(0.2110 51.5590)')),
+  (gen_random_uuid(), 'Norbury',                                'Norbury',          'SW16 4SH', 'London', ST_GeogFromText('SRID=4326;POINT(-0.1200 51.4100)')),
+  (gen_random_uuid(), 'Tolworth',                               'Tolworth',         'KT6 7EL', 'London', ST_GeogFromText('SRID=4326;POINT(-0.2800 51.3800)')),
+  (gen_random_uuid(), 'Twickenham',                             'Twickenham',       'TW2 6LZ', 'London', ST_GeogFromText('SRID=4326;POINT(-0.3390 51.4500)'))
 ON CONFLICT (id) DO NOTHING;
+
+-- South East England
+INSERT INTO test_centres (name, town, postcode, region, location) VALUES
+  ('Brighton (Hove)',     'Hove',          'BN3 6PF', 'South East', ST_GeogFromText('SRID=4326;POINT(-0.1660 50.8340)')),
+  ('Canterbury',          'Canterbury',    'CT1 3AU', 'South East', ST_GeogFromText('SRID=4326;POINT(1.0800 51.2800)')),
+  ('Guildford',           'Guildford',     'GU1 1BX', 'South East', ST_GeogFromText('SRID=4326;POINT(-0.5720 51.2360)')),
+  ('Maidstone',           'Maidstone',     'ME15 6YE', 'South East', ST_GeogFromText('SRID=4326;POINT(0.5230 51.2700)')),
+  ('Oxford',              'Oxford',        'OX4 2JY', 'South East', ST_GeogFromText('SRID=4326;POINT(-1.2580 51.7480)')),
+  ('Portsmouth (Cosham)', 'Portsmouth',    'PO6 3RL', 'South East', ST_GeogFromText('SRID=4326;POINT(-1.0680 50.8520)')),
+  ('Reading',             'Reading',       'RG1 8EP', 'South East', ST_GeogFromText('SRID=4326;POINT(-0.9780 51.4500)')),
+  ('Southampton (Shirley)','Southampton',  'SO15 3AF', 'South East', ST_GeogFromText('SRID=4326;POINT(-1.4300 50.9200)')),
+  ('Slough',              'Slough',        'SL1 4RB', 'South East', ST_GeogFromText('SRID=4326;POINT(-0.5960 51.5100)'))
+ON CONFLICT DO NOTHING;
+
+-- Midlands
+INSERT INTO test_centres (name, town, postcode, region, location) VALUES
+  ('Birmingham (Great Barr)',  'Birmingham',  'B43 7EZ', 'West Midlands', ST_GeogFromText('SRID=4326;POINT(-1.9250 52.5450)')),
+  ('Birmingham (Kings Heath)', 'Birmingham',  'B14 7NT', 'West Midlands', ST_GeogFromText('SRID=4326;POINT(-1.8750 52.4250)')),
+  ('Coventry',                 'Coventry',    'CV5 6BW', 'West Midlands', ST_GeogFromText('SRID=4326;POINT(-1.5450 52.4050)')),
+  ('Derby',                    'Derby',       'DE23 8AJ', 'East Midlands', ST_GeogFromText('SRID=4326;POINT(-1.4780 52.9050)')),
+  ('Leicester',                'Leicester',   'LE5 5DP',  'East Midlands', ST_GeogFromText('SRID=4326;POINT(-1.1000 52.6280)')),
+  ('Nottingham (Chalfont)',     'Nottingham',  'NG8 6PW',  'East Midlands', ST_GeogFromText('SRID=4326;POINT(-1.2100 52.9400)')),
+  ('Wolverhampton',            'Wolverhampton','WV10 0NH','West Midlands', ST_GeogFromText('SRID=4326;POINT(-2.1280 52.5950)'))
+ON CONFLICT DO NOTHING;
+
+-- North of England
+INSERT INTO test_centres (name, town, postcode, region, location) VALUES
+  ('Leeds (Moortown)',       'Leeds',       'LS17 6NL', 'Yorkshire', ST_GeogFromText('SRID=4326;POINT(-1.5400 53.8480)')),
+  ('Manchester (Didsbury)',  'Manchester',  'M20 2HX',  'North West', ST_GeogFromText('SRID=4326;POINT(-2.2270 53.4100)')),
+  ('Manchester (Stretford)', 'Manchester',  'M32 8QA',  'North West', ST_GeogFromText('SRID=4326;POINT(-2.2900 53.4600)')),
+  ('Liverpool (Norris Green)','Liverpool',  'L11 5AF',  'North West', ST_GeogFromText('SRID=4326;POINT(-2.9240 53.4370)')),
+  ('Sheffield (Middlewood)', 'Sheffield',   'S6 1NE',   'Yorkshire', ST_GeogFromText('SRID=4326;POINT(-1.5100 53.4060)')),
+  ('Newcastle (Gosforth)',   'Newcastle',   'NE3 3XT',  'North East', ST_GeogFromText('SRID=4326;POINT(-1.6050 55.0000)')),
+  ('Bradford',               'Bradford',   'BD7 2EN',   'Yorkshire', ST_GeogFromText('SRID=4326;POINT(-1.7660 53.7950)'))
+ON CONFLICT DO NOTHING;
+
+-- South West England
+INSERT INTO test_centres (name, town, postcode, region, location) VALUES
+  ('Bristol (Brislington)', 'Bristol',   'BS4 3RB', 'South West', ST_GeogFromText('SRID=4326;POINT(-2.5450 51.4340)')),
+  ('Exeter',                'Exeter',    'EX2 7JG', 'South West', ST_GeogFromText('SRID=4326;POINT(-3.5250 50.7200)')),
+  ('Plymouth',              'Plymouth',  'PL4 9HU', 'South West', ST_GeogFromText('SRID=4326;POINT(-4.1400 50.3780)')),
+  ('Swindon',               'Swindon',   'SN3 4TU', 'South West', ST_GeogFromText('SRID=4326;POINT(-1.7600 51.5600)'))
+ON CONFLICT DO NOTHING;
+
+-- East of England
+INSERT INTO test_centres (name, town, postcode, region, location) VALUES
+  ('Cambridge',             'Cambridge', 'CB1 8DX', 'East of England', ST_GeogFromText('SRID=4326;POINT(0.1580 52.2000)')),
+  ('Ipswich',               'Ipswich',   'IP3 8SP', 'East of England', ST_GeogFromText('SRID=4326;POINT(1.1800 52.0430)')),
+  ('Norwich',               'Norwich',   'NR6 5QQ', 'East of England', ST_GeogFromText('SRID=4326;POINT(1.2950 52.6560)')),
+  ('Stevenage',             'Stevenage', 'SG1 3RB', 'East of England', ST_GeogFromText('SRID=4326;POINT(-0.2000 51.9050)'))
+ON CONFLICT DO NOTHING;
 
 -- --- demo contributor account ------------------------------------------------
 -- password hashed with bcrypt via pgcrypto (compatible with Node bcrypt.compare)

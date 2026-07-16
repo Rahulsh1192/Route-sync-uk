@@ -575,4 +575,173 @@ BEGIN
   END LOOP;
 END $$;
 
+-- =============================================================================
+-- PHASE 14 — VIDEO-LESS ROUTES (map_only state + deferred video attach)
+-- =============================================================================
+
+-- Extend route_status enum to support GPS-only published routes
+ALTER TYPE route_status ADD VALUE IF NOT EXISTS 'map_only';
+
+-- Track whether a route has video and who contributed the video (may differ
+-- from the original GPS contributor — any verified ADI can attach video).
+ALTER TABLE routes
+  ADD COLUMN IF NOT EXISTS has_video         BOOLEAN NOT NULL DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS video_contributor_id UUID REFERENCES users(id);
+
+-- Unique ADI licence: one ADI number can only be verified to one account.
+-- Phase 17 — prevents account sharing between instructors.
+ALTER TABLE instructor_verifications
+  ADD CONSTRAINT uq_adi_number_verified UNIQUE (adi_number, status);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_adi_number_active
+  ON instructor_verifications(adi_number)
+  WHERE status = 'verified';
+
+-- =============================================================================
+-- PHASE 15 — LEARNER PROGRESS TRACKING & AI LEARNING SUMMARIES
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS user_route_history (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  route_id          UUID NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
+  watch_count       INTEGER NOT NULL DEFAULT 0,
+  practice_count    INTEGER NOT NULL DEFAULT 0,
+  watch_pct_max     NUMERIC(5,2) NOT NULL DEFAULT 0,  -- 0..100, furthest % reached
+  last_watched_at   TIMESTAMPTZ,
+  last_practised_at TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, route_id)
+);
+CREATE INDEX idx_urh_user ON user_route_history(user_id, last_watched_at DESC);
+CREATE INDEX idx_urh_route ON user_route_history(route_id);
+
+CREATE TABLE IF NOT EXISTS user_progress (
+  user_id              UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  total_routes_watched INTEGER NOT NULL DEFAULT 0,
+  total_practice_runs  INTEGER NOT NULL DEFAULT 0,
+  total_watch_time_s   BIGINT  NOT NULL DEFAULT 0,
+  current_streak_days  INTEGER NOT NULL DEFAULT 0,
+  longest_streak_days  INTEGER NOT NULL DEFAULT 0,
+  last_active_at       TIMESTAMPTZ,
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TYPE ai_session_type AS ENUM ('watch', 'practice');
+
+CREATE TABLE IF NOT EXISTS ai_summaries (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  route_id     UUID NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
+  session_type ai_session_type NOT NULL,
+  summary_text TEXT NOT NULL,
+  focus_areas  JSONB,           -- [{area: "roundabout exit 2", tip: "..."}, ...]
+  model        TEXT,            -- 'gpt-4o', 'gemini-1.5-pro', etc.
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, route_id, session_type)
+);
+CREATE INDEX idx_ai_summaries_user ON ai_summaries(user_id, generated_at DESC);
+
+-- =============================================================================
+-- PHASE 16 — OFFLINE ROUTE PACKAGES (extend existing table)
+-- =============================================================================
+
+ALTER TABLE offline_packages
+  ADD COLUMN IF NOT EXISTS device_id  TEXT,       -- bound device identifier
+  ADD COLUMN IF NOT EXISTS checksum   TEXT;       -- SHA-256 of encrypted package
+
+-- =============================================================================
+-- PHASE 13 — ADI BOOKING SYSTEM
+-- =============================================================================
+
+CREATE TYPE booking_status AS ENUM ('pending','confirmed','cancelled','completed','no_show');
+
+-- Rich instructor profile (supplements the core contributors table)
+CREATE TABLE IF NOT EXISTS instructor_profiles (
+  user_id             UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  bio                 TEXT,
+  years_experience    INTEGER,
+  lesson_price_minor  INTEGER NOT NULL DEFAULT 3500,  -- pence (default £35)
+  currency            CHAR(3) NOT NULL DEFAULT 'GBP',
+  service_area_geom   GEOGRAPHY(Polygon,4326),        -- rough service area polygon
+  service_area_km     NUMERIC(6,1),                   -- radius if using circle
+  stripe_account_id   TEXT,                           -- Stripe Connect Express account
+  stripe_onboarded    BOOLEAN NOT NULL DEFAULT FALSE,
+  is_accepting_bookings BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_instructor_profiles_geo ON instructor_profiles USING GIST (service_area_geom);
+
+-- Weekly availability template (Mon=1…Sun=7) — repeated slots
+CREATE TABLE IF NOT EXISTS availability_templates (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  instructor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day_of_week  SMALLINT NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+  start_time   TIME NOT NULL,
+  end_time     TIME NOT NULL,
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_avail_template_instructor ON availability_templates(instructor_id);
+
+-- Concrete available slots (generated from template or manually added)
+CREATE TABLE IF NOT EXISTS availability_slots (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  instructor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  slot_date     DATE NOT NULL,
+  start_time    TIME NOT NULL,
+  end_time      TIME NOT NULL,
+  is_booked     BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (instructor_id, slot_date, start_time)
+);
+CREATE INDEX idx_avail_slots_instructor ON availability_slots(instructor_id, slot_date);
+CREATE INDEX idx_avail_slots_open ON availability_slots(slot_date, is_booked) WHERE NOT is_booked;
+
+-- Bookings
+CREATE TABLE IF NOT EXISTS bookings (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  learner_id     UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  instructor_id  UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  slot_id        UUID NOT NULL REFERENCES availability_slots(id) ON DELETE RESTRICT,
+  status         booking_status NOT NULL DEFAULT 'pending',
+  lesson_notes   TEXT,                            -- learner's note to instructor
+  cancel_reason  TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_bookings_learner ON bookings(learner_id, created_at DESC);
+CREATE INDEX idx_bookings_instructor ON bookings(instructor_id, created_at DESC);
+CREATE INDEX idx_bookings_status ON bookings(status);
+
+-- Payment records for each booking (lesson fee + platform service fee)
+CREATE TABLE IF NOT EXISTS booking_payments (
+  id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id             UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  amount_minor           INTEGER NOT NULL,            -- total charged to learner (pence)
+  lesson_fee_minor       INTEGER NOT NULL,            -- goes to instructor via Connect
+  platform_fee_minor     INTEGER NOT NULL,            -- kept by RouteSync
+  currency               CHAR(3) NOT NULL DEFAULT 'GBP',
+  stripe_payment_intent  TEXT,
+  stripe_transfer_id     TEXT,                        -- transfer to instructor account
+  status                 TEXT NOT NULL DEFAULT 'pending',  -- pending/succeeded/failed/refunded
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_booking_payments_booking ON booking_payments(booking_id);
+
+-- Platform configuration (service fee %, etc.) — admin-editable without redeploy
+CREATE TABLE IF NOT EXISTS platform_config (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_by UUID REFERENCES users(id)
+);
+-- Default platform booking fee: 10%
+INSERT INTO platform_config (key, value) VALUES ('booking_fee_pct', '10')
+  ON CONFLICT (key) DO NOTHING;
+
+-- =============================================================================
+-- PHASE 5 — UK DVSA TEST CENTRE SEED (via seed.sql) — schema complete above
+-- =============================================================================
+
 COMMIT;

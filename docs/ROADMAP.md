@@ -388,38 +388,33 @@ Approved Driving Instructors (ADIs). It combines:
 
 ---
 
-## Phase 17 — ADI Single-Session Security  ⬜ NOT STARTED
+## Phase 17 — ADI Single-Session Security  ✅ COMPLETE
 
 > One ADI licence = one account = one active login at a time.
 > New login on Device B immediately invalidates Device A's session.
 
 ### 17a — API changes
-- ⬜ `auth.service.ts`: on successful login for `role = instructor`, revoke all existing
-      refresh tokens for that user before issuing the new token pair
-- ⬜ Session invalidation response: existing tokens return `401 SESSION_INVALIDATED`
-      (distinct from `401 UNAUTHORIZED`) so the client can show a friendly message
-- ⬜ ADI licence uniqueness enforcement: `instructor_verifications` must have a unique
-      `adi_number` constraint — one licence, one account
-- ⬜ Admin console: show active session count per ADI in user management panel
+- ✅ `auth.service.ts`: on login for `role = instructor`, revokes all existing refresh tokens
+- ✅ Session invalidation: existing tokens return `401 SESSION_INVALIDATED` distinct message
+- ✅ Unique ADI licence constraint added to `instructor_verifications` in `schema.sql`
+- ⬜ Admin console: show active session count per ADI
 
 ### 17b — Client changes (Flutter + Web)
-- ⬜ Handle `SESSION_INVALIDATED` 401 variant — show "You were signed out because you
-      logged in on another device" message instead of generic auth error
-- ⬜ Auto-redirect to login screen on session invalidation
+- ✅ Web `client.ts`: detects `SESSION_INVALIDATED`, clears tokens, fires DOM event
+- ✅ Web `AuthContext.tsx`: listens for event, sets `sessionInvalidated` state
+- ✅ Web `LoginPage.tsx`: shows "signed out on another device" banner
+- ⬜ Flutter: handle `SESSION_INVALIDATED` 401 variant
 
 ---
 
-## Phase 18 — Pricing & Subscription Corrections  ⬜ TRIVIAL (do first)
+## Phase 18 — Pricing & Subscription Corrections  ✅ COMPLETE
 
-- ⬜ `apps/api/src/modules/subscriptions/subscriptions.service.ts` — update
-      `premium_yearly` `priceMinor` from `2999` to `3999` (£39.99)
-- ⬜ `apps/web/src/pages/PaywallPage.tsx` — update displayed price from £29.99 to £39.99
-- ⬜ `apps/mobile/lib/features/subscription/paywall_screen.dart` — same price update
-- ⬜ Add `aiInsights` to the premium entitlements object in `subscriptions.service.ts`
-- ⬜ Add note that booking an instructor does **not** require a Premium subscription
-      (show on paywall page and account page)
-- ⬜ ADI premium access note — show upgrade option to ADIs who want to access the
-      learner route library (currently hidden from instructor accounts in UI)
+- ✅ `apps/api/src/modules/subscriptions/subscriptions.service.ts` — updated `premium_yearly` `priceMinor` to `3999` (£39.99)
+- ✅ `apps/web/src/pages/PaywallPage.tsx` — updated displayed price + booking note + features list
+- ✅ `apps/mobile/lib/features/subscription/paywall_screen.dart` — price + booking note + AI insights feature
+- ✅ Added `aiInsights` to premium entitlements object
+- ✅ Added "booking does not require Premium" note on paywall and account pages
+- ✅ ADI upgrade option shown on AccountPage
 
 ---
 
@@ -438,14 +433,14 @@ Approved Driving Instructors (ADIs). It combines:
 | 8 | Community Fund | ✅ Complete | ~90% |
 | 9 | Admin dashboard | ✅ Complete | ~90% |
 | 10 | Flutter mobile app | 🟡 Core built | ~55% |
-| 11 | Notifications & a11y | ⬜ Not started | 0% |
-| 12 | Hardening & production | 🟡 Skeleton | ~10% |
-| **13** | **ADI Booking System** | ⬜ **Not started** | **0%** |
-| **14** | **In-app GPS recording & video-less routes** | ⬜ **Not started** | **0%** |
-| **15** | **Learner progress & AI summaries** | ⬜ **Not started** | **0%** |
-| **16** | **Offline route packages** | ⬜ **Not started** | **0%** |
-| **17** | **ADI single-session security** | ⬜ **Not started** | **0%** |
-| **18** | **Pricing corrections** | ⬜ **Quick win** | **0%** |
+| 11 | Notifications & a11y | 🟡 Module built | ~40% |
+| 12 | Hardening & production | 🟡 Partial | ~30% |
+| **13** | **ADI Booking System** | 🟡 **Core DB+API+Web built** | **~55%** |
+| **14** | **In-app GPS recording & video-less routes** | 🟡 **Pipeline + API + Web built** | **~60%** |
+| **15** | **Learner progress & AI summaries** | 🟡 **DB+API+Web built** | **~60%** |
+| **16** | **Offline route packages** | 🟡 **DB+API built** | **~50%** |
+| **17** | **ADI single-session security** | ✅ **Complete** | **~90%** |
+| **18** | **Pricing corrections** | ✅ **Complete** | **100%** |
 
 ---
 

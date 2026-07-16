@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 const features = [
-  'Unlimited routes',
+  'Unlimited routes for your test centre',
   'Practice mode with UK voice guidance',
   'Multi-view playback (front, rear, split, map)',
-  'Offline downloads',
+  'AI-generated learning summaries',
+  'Offline downloads (mobile app)',
   'Verified instructor routes',
 ];
+
+const bookingNote = 'Booking an instructor does not require Premium — anyone can book a lesson.';
 
 export function PaywallPage() {
   const nav = useNavigate();
@@ -34,6 +37,7 @@ export function PaywallPage() {
         ← Back
       </button>
       <h1 className="page">RouteSync Premium</h1>
+      <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{bookingNote}</p>
       <div className="card">
         {features.map((f) => (
           <div key={f} className="row" style={{ padding: '6px 0' }}>
@@ -68,7 +72,7 @@ export function PaywallPage() {
             <div style={{ fontWeight: 700, fontSize: 18 }}>
               Yearly <span className="pill accent">Best value</span>
             </div>
-            <div className="muted">£29.99 / year</div>
+            <div className="muted">£39.99 / year — save 33%</div>
           </div>
           <div className="spacer" />
           <button

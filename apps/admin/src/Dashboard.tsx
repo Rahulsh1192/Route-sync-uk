@@ -6,13 +6,15 @@ import { Instructors } from './panels/Instructors';
 import { Revenue } from './panels/Revenue';
 import { Fund } from './panels/Fund';
 import { Reports } from './panels/Reports';
+import { Bookings } from './panels/Bookings';
 
-type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'reports';
+type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'reports' | 'bookings';
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'queue',       label: 'Review Queue',     icon: '⏳' },
   { id: 'users',       label: 'Users',             icon: '👥' },
   { id: 'instructors', label: 'Instructors',       icon: '🎓' },
+  { id: 'bookings',    label: 'Bookings',          icon: '📅' },
   { id: 'revenue',     label: 'Revenue',           icon: '💰' },
   { id: 'fund',        label: 'Community Fund',    icon: '🏦' },
   { id: 'reports',     label: 'Reports',           icon: '🚩' },
@@ -115,6 +117,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           {view === 'queue' && <ReviewQueue />}
           {view === 'users' && <Users />}
           {view === 'instructors' && <Instructors />}
+          {view === 'bookings' && <Bookings />}
           {view === 'revenue' && <Revenue />}
           {view === 'fund' && <Fund />}
           {view === 'reports' && <Reports />}

@@ -57,6 +57,17 @@ export class AuthService {
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+    // Phase 17: ADIs are limited to one active session at a time.
+    // Revoke ALL prior refresh tokens so any other device is immediately invalidated.
+    if (user.role === 'instructor') {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      this.logger.log(`Single-session: revoked all prior sessions for instructor ${user.id}`);
+    }
+
     return this.issueTokens(user.id, user.role, user.email ?? undefined);
   }
 
@@ -122,6 +133,14 @@ export class AuthService {
       where: { userId: payload.sub, tokenHash: hash, revokedAt: null },
     });
     if (!stored || stored.expiresAt < new Date()) {
+      // Phase 17: distinguish session-invalidated (another device logged in)
+      // from a genuinely expired token so clients can show a helpful message.
+      const exists = await this.prisma.refreshToken.findFirst({
+        where: { userId: payload.sub, tokenHash: hash },
+      });
+      if (exists?.revokedAt) {
+        throw new UnauthorizedException('SESSION_INVALIDATED');
+      }
       throw new UnauthorizedException('Refresh token expired or revoked');
     }
 

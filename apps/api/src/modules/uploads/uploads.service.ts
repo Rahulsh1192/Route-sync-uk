@@ -45,6 +45,10 @@ export class UploadsService {
     const hasGpx = dto.files.some((f) => f.kind === UploadFileKind.gpx);
     if (!hasGpx) throw new BadRequestException('A GPX file is required');
 
+    const hasFront = dto.files.some((f) => f.kind === UploadFileKind.front);
+    // Phase 14: video is optional — GPX-only uploads create a map_only route.
+    const isMapOnly = !hasFront;
+
     for (const f of dto.files) {
       if (f.bytes > MAX_FILE_BYTES) throw new BadRequestException(`${f.originalName} too large`);
       if (f.kind !== UploadFileKind.gpx && !ALLOWED_VIDEO.includes(f.contentType)) {
@@ -61,7 +65,9 @@ export class UploadsService {
         description: dto.description,
         testCentreId: dto.testCentreId,
         status: RouteStatus.draft,
-      },
+        // Phase 14: track whether this upload includes video
+        hasVideo: !isMapOnly,
+      } as any,
     });
 
     const upload = await this.prisma.upload.create({
@@ -125,6 +131,49 @@ export class UploadsService {
       ORDER BY started_at NULLS LAST
     `;
     return { upload, stages };
+  }
+
+  /** Phase 14: Attach video files to an existing map_only route.
+   *  Any verified ADI can contribute video — contributor_id stays as original. */
+  async attachVideo(
+    userId: string,
+    routeId: string,
+    files: Array<{ kind: string; originalName: string; contentType: string; bytes: number }>,
+  ) {
+    const route = await this.prisma.$queryRaw<any[]>`
+      SELECT id, status FROM routes WHERE id = ${routeId}::uuid
+    `;
+    if (!route.length) throw new NotFoundException('Route not found');
+    if (route[0].status !== 'map_only') {
+      throw new BadRequestException('Route already has video or is not in map_only state');
+    }
+
+    if (!(await this.community.hasAcceptedAgreement(userId))) {
+      throw new ForbiddenException('You must accept the footage agreement before uploading');
+    }
+
+    const upload = await this.prisma.upload.create({
+      data: { userId, routeId, status: UploadStatus.created, clockSource: 'file_mtime' },
+    });
+
+    const targets = await Promise.all(
+      files.map(async (f, i) => {
+        const key = `uploads/${upload.id}/${f.kind}/${i}-${sanitise(f.originalName)}`;
+        await this.prisma.$executeRaw`
+          INSERT INTO upload_files (id, upload_id, kind, storage_key, original_name, bytes)
+          VALUES (gen_random_uuid(), ${upload.id}::uuid, ${f.kind}, ${key}, ${f.originalName}, ${f.bytes})
+        `;
+        const url = await this.storage.presignUpload(key, f.contentType);
+        return { kind: f.kind, key, uploadUrl: url };
+      }),
+    );
+
+    // Record video contributor
+    await this.prisma.$executeRaw`
+      UPDATE routes SET video_contributor_id = ${userId}::uuid WHERE id = ${routeId}::uuid
+    `;
+
+    return { uploadId: upload.id, routeId, targets };
   }
 
   private async getOwned(userId: string, uploadId: string) {

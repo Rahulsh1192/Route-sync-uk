@@ -26,7 +26,7 @@ export function AccountPage() {
               {ent == null ? 'Loading…' : premium ? `Premium (${ent.plan})` : 'Free plan'}
             </div>
             <div className="muted" style={{ fontSize: 13 }}>
-              {premium ? 'All features unlocked' : '1 sample route'}
+              {premium ? 'All features unlocked' : '1 sample route — upgrade for unlimited access'}
             </div>
           </div>
           <div className="spacer" />
@@ -35,6 +35,22 @@ export function AccountPage() {
               Upgrade
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ background: 'var(--surface-2, #f5f5f5)' }}>
+        <div className="row">
+          <span style={{ fontSize: 18 }}>🏫</span>
+          <div>
+            <strong>Book a driving instructor</strong>
+            <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+              Find and book a verified ADI near you. No Premium subscription required.
+            </p>
+          </div>
+          <div className="spacer" />
+          <button className="btn secondary auto" onClick={() => nav('/instructors')}>
+            Find instructors
+          </button>
         </div>
       </div>
 

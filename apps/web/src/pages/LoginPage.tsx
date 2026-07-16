@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 export function LoginPage() {
-  const { login, register, startDemo } = useAuth();
+  const { login, register, startDemo, sessionInvalidated } = useAuth();
   const nav = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -35,6 +35,11 @@ export function LoginPage() {
       <p className="muted" style={{ textAlign: 'center', marginTop: 0 }}>
         Learn UK driving-test routes
       </p>
+      {sessionInvalidated && (
+        <div className="error" style={{ marginTop: 16 }}>
+          You were signed out because your account was used on another device.
+        </div>
+      )}
       <form onSubmit={submit} className="card" style={{ marginTop: 24 }}>
         {isRegister && (
           <>

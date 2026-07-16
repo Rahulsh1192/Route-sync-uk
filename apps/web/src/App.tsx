@@ -12,6 +12,10 @@ import { ContributePage } from './pages/contribute/ContributePage';
 import { UploadPage } from './pages/contribute/UploadPage';
 import { UploadStatusPage } from './pages/contribute/UploadStatusPage';
 import { InstructorVerifyPage } from './pages/contribute/InstructorVerifyPage';
+import { InstructorsPage } from './pages/InstructorsPage';
+import { InstructorProfilePage } from './pages/InstructorProfilePage';
+import { BookingsPage } from './pages/BookingsPage';
+import { ProgressPage } from './pages/ProgressPage';
 
 // Code-split the heavy media pages (hls.js + leaflet) out of the initial bundle
 // so first paint on mobile stays light.
@@ -48,6 +52,10 @@ export function App() {
       <Route path="/contribute/uploads/:id" element={<Protected><UploadStatusPage /></Protected>} />
       <Route path="/contribute/instructor" element={<Protected><InstructorVerifyPage /></Protected>} />
       <Route path="/route/:id" element={<Protected><RouteDetailPage /></Protected>} />
+      <Route path="/instructors" element={<Protected><InstructorsPage /></Protected>} />
+      <Route path="/instructors/:id" element={<Protected><InstructorProfilePage /></Protected>} />
+      <Route path="/bookings" element={<Protected><BookingsPage /></Protected>} />
+      <Route path="/account/progress" element={<Protected><ProgressPage /></Protected>} />
 
       {/* full-screen experiences — lazy-loaded (heavy media libs) */}
       <Route

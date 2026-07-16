@@ -88,6 +88,7 @@ export function ReviewQueue() {
                   </td>
                   <td>
                     {r.isInstructor && <span className="pill instructor">Instructor</span>}
+                    {(r as any).status === 'map_only' && <span className="pill warn" style={{ marginLeft: 4 }}>Map only</span>}
                   </td>
                   <td className="meta">{new Date(r.createdAt).toLocaleDateString('en-GB')}</td>
                   <td>

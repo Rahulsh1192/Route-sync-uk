@@ -119,6 +119,14 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   }
 
   if (res.status === 401 && retry && !path.startsWith('/auth/')) {
+    const body401 = await res.clone().json().catch(() => ({}));
+    // Phase 17: SESSION_INVALIDATED means another device logged in (ADI single-session).
+    // Dispatch a custom event so AuthContext can show a meaningful message.
+    if (body401.message === 'SESSION_INVALIDATED') {
+      tokens.clear();
+      window.dispatchEvent(new CustomEvent('session-invalidated'));
+      throw new ApiError(401, 'SESSION_INVALIDATED');
+    }
     if (await tryRefresh()) return request<T>(path, init, false);
   }
   if (!res.ok) {
@@ -129,6 +137,9 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 }
 
 export const api = {
+  // expose raw request for new feature pages
+  request: <T>(path: string, init?: RequestInit) => request<T>(path, init),
+
   // auth
   login: (email: string, password: string) =>
     request<{ accessToken: string; refreshToken: string }>('/auth/login', {
