@@ -1,0 +1,25 @@
+overview
+
+
+The core loop
+ADI records a test route while driving → uploads it to RouteSync, it can record and upload gps (gpx) file  and video separately 
+
+2. The Three Roles
+Premium plan:
+Unlimited test routes of the selected test center, practice mode, AI summaries, offline access
+No Premium needed to: book an instructor
+
+
+🎓 Instructor (ADI)
+Subscribe to the Premium Route Library (same as learners) for practicing test centers  
+
+
+3. Learner Journey — Full Cycle
+Create account
+— you're logged in immediately
+Option B — Demo (still need registration ) and can view or practice one route of the selected test center but need to share the test details like the test center and the date before using test routes for premium or demo user
+
+
+8. Demo Walkthrough Scripts
+1
+"registration account needed — let's use the demo mode"
