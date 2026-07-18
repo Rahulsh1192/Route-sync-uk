@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { api, tokens, ApiError } from '../api/client';
+import { api, tokens } from '../api/client';
 import { demo } from '../api/demo';
 
 interface AuthState {
@@ -8,14 +8,7 @@ interface AuthState {
   sessionInvalidated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  startDemo: () => void;
   logout: () => void;
-}
-
-/** Backend unreachable (not running / network / bad gateway) → fall back to demo. */
-function backendUnavailable(err: unknown): boolean {
-  if (!(err instanceof ApiError)) return true;
-  return [0, 404, 502, 503, 504].includes(err.status);
 }
 
 const AuthCtx = createContext<AuthState | null>(null);
@@ -35,40 +28,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('session-invalidated', handler);
   }, []);
 
-  const startDemo = useCallback(() => {
-    demo.enable();
-    tokens.save('demo', 'demo'); // satisfies the auth gate; API calls are mocked
-    setDemoMode(true);
+  // Registration is required for all access (Phase 19a): there is no anonymous
+  // demo entry, and an unreachable backend surfaces a real error rather than
+  // silently dropping into demo mode.
+  const login = useCallback(async (email: string, password: string) => {
+    const r = await api.login(email, password);
+    tokens.save(r.accessToken, r.refreshToken);
     setAuthed(true);
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      try {
-        const r = await api.login(email, password);
-        tokens.save(r.accessToken, r.refreshToken);
-        setAuthed(true);
-      } catch (err) {
-        if (backendUnavailable(err)) return startDemo(); // no backend → demo
-        throw err; // real auth error (e.g. wrong password) bubbles up
-      }
-    },
-    [startDemo],
-  );
-
-  const register = useCallback(
-    async (email: string, password: string, name: string) => {
-      try {
-        const r = await api.register(email, password, name);
-        tokens.save(r.accessToken, r.refreshToken);
-        setAuthed(true);
-      } catch (err) {
-        if (backendUnavailable(err)) return startDemo();
-        throw err;
-      }
-    },
-    [startDemo],
-  );
+  const register = useCallback(async (email: string, password: string, name: string) => {
+    const r = await api.register(email, password, name);
+    tokens.save(r.accessToken, r.refreshToken);
+    setAuthed(true);
+  }, []);
 
   const logout = useCallback(() => {
     demo.disable();
@@ -79,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthCtx.Provider value={{ authed, demoMode, sessionInvalidated, login, register, startDemo, logout }}>
+    <AuthCtx.Provider value={{ authed, demoMode, sessionInvalidated, login, register, logout }}>
       {children}
     </AuthCtx.Provider>
   );

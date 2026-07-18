@@ -190,17 +190,19 @@ Routes with scores below the threshold are flagged for admin review rather than 
 ### 5.9 — Subscription & Premium Features
 **What it does:** RouteSync operates on a freemium model:
 
-| Feature | Free | Premium |
+| Feature | Demo (Free) | Premium |
 |---|---|---|
 | Browse route catalogue | ✅ | ✅ |
-| Watch 1 sample route | ✅ | ✅ |
-| Unlimited route access | ❌ | ✅ |
+| View/practise 1 route total (account-wide) | ✅ | ✅ |
+| Unlimited route access (per purchased test centre) | ❌ | ✅ |
 | Practice mode (voice guidance) | ❌ | ✅ |
 | Multi-view playback | ❌ | ✅ |
 | Offline downloads | ❌ | ✅ |
 | Verified instructor routes | ❌ | ✅ |
 
-**Why it matters for clients:** The free tier lets users discover the product and experience it — a powerful conversion funnel. Premium unlocks the full value. Learners are already spending £30–60/hour on lessons; £4.99/month is an easy upsell.
+> **Access rules:** Registration is required for all access, including the demo — there is no anonymous entry. Before using any route (demo or Premium), the user provides their **test centre** and **test date**. **Premium is purchased per test centre and is not switchable** — each subscription unlocks one specific centre.
+
+**Why it matters for clients:** The demo tier lets registered users discover the product and experience it — a powerful conversion funnel. Premium unlocks the full value for their chosen test centre. Learners are already spending £30–60/hour on lessons; £4.99/month is an easy upsell.
 
 ---
 
@@ -253,9 +255,11 @@ RouteSync is actually **two products in one:**
 
 | Plan | Price | Best For |
 |---|---|---|
-| **Free** | £0/month | Browsing, 1 sample route |
-| **Premium Monthly** | **£4.99/month** | Learners with a test coming up soon |
-| **Premium Yearly** | **£29.99/year** | Long-term learners (save ~50%) |
+| **Demo (Free)** | £0/month | Browsing; one route total (account-wide) |
+| **Premium Monthly** | **£4.99/month** · per test centre | Learners with a test coming up soon |
+| **Premium Yearly** | **£39.99/year** · per test centre | Long-term learners (save ~33%) |
+
+> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; a learner preparing at multiple centres holds one subscription per centre. Registration is required for all access (including the demo), and every user provides their test centre and test date before using routes.
 
 **Context:** The average learner takes 45 hours of professional lessons at £30–35/hour = ~**£1,500 in lesson costs**. RouteSync Premium at £4.99/month is less than **0.3% of that spend** — yet could meaningfully increase pass rates.
 
@@ -302,7 +306,7 @@ Pending instructor verification applications:
 Real-time revenue dashboard:
 - Estimated Monthly Recurring Revenue (MRR)
 - Active monthly subscriber count (£4.99 plan)
-- Active yearly subscriber count (£29.99 plan)
+- Active yearly subscriber count (£39.99 plan)
 - Full breakdown by plan and status
 
 ### Community Fund
@@ -321,13 +325,13 @@ Flagged content submitted by users — reviewed and actioned here.
 
 ## 9. How to Run a Demo
 
-### Option A — No Setup Required (Instant Demo)
+### Option A — Quick Demo (registration required)
 1. Open a browser and go to the web app URL
-2. On the login page, click **"✨ Explore the demo (no account)"**
-3. This opens the full app with pre-loaded sample routes — no backend, no account needed
+2. Register an account — **there is no anonymous access**; the demo needs a registered account
+3. Choose **demo mode**, then provide the **test centre** and **test date** to unlock your one demo route
 4. Show the client: Discover page → Route Detail → Watch page → Practice mode
 
-This is the **fastest and most impressive demo path.** The video player and voice guidance work fully in demo mode.
+This is the **fastest demo path.** The video player and voice guidance work fully on the one demo route (demo is limited to one route total across the account).
 
 ### Option B — Full Account Demo (Shows the Complete Journey)
 1. Go to the web app and click **"New here? Create an account"**
@@ -343,14 +347,14 @@ This is the **fastest and most impressive demo path.** The video player and voic
 
 | Step | What to Say | What to Click |
 |---|---|---|
-| 1 | "This is what a learner sees when they open RouteSync" | Open web app, click Demo |
+| 1 | "This is what a learner sees when they open RouteSync" | Open web app, register, then choose demo mode |
 | 2 | "They can instantly browse all routes for their test centre" | Show Discover page |
 | 3 | "Let me show you a route — this is the actual road, filmed from a real car" | Open a route, click Watch |
 | 4 | "They can switch between front camera, rear camera, or see both at once" | Toggle view modes |
 | 5 | "This map view shows exactly where the car is in real time" | Switch to Map view |
 | 6 | "Now watch this — Practice mode. No video, just voice guidance, like the real test" | Go to Practice mode |
 | 7 | "The app reads out every instruction in British English as you mentally drive the route" | Press Start |
-| 8 | "This is what Premium unlocks — unlimited routes, practice mode, offline access" | Show paywall / pricing |
+| 8 | "This is what Premium unlocks for their chosen test centre — unlimited routes, practice mode, offline access" | Show paywall / pricing |
 
 ---
 
@@ -390,9 +394,9 @@ This is the **fastest and most impressive demo path.** The video player and voic
 **Step 6 — Upgrade to Premium (Optional)**
 - Go to **Account** in the navigation
 - Click **"Upgrade"**
-- Choose Monthly (£4.99) or Yearly (£29.99)
+- Choose Monthly (£4.99) or Yearly (£39.99) — the subscription is for **one specific test centre** and is not switchable
 - You're taken to Stripe's secure checkout — enter card details
-- Return to the app — Premium is active immediately
+- Return to the app — Premium is active immediately for that test centre
 
 ---
 
@@ -499,10 +503,10 @@ The **supply-side flywheel**: Every new instructor who joins the platform as a c
 | **What it is** | UK driving test route learning platform |
 | **Consumer platforms** | Web (any browser) + iOS + Android |
 | **Admin platform** | Web dashboard |
-| **Free plan** | Browse + 1 sample route |
-| **Premium Monthly** | £4.99/month |
-| **Premium Yearly** | £29.99/year (save ~50%) |
-| **Demo mode** | Click "Explore the demo" — no account needed |
+| **Demo (Free) plan** | Browse + one route total (account-wide) |
+| **Premium Monthly** | £4.99/month · per test centre |
+| **Premium Yearly** | £39.99/year · per test centre (save ~33%) |
+| **Demo mode** | Register, then choose demo mode — registration required |
 | **Target user** | UK learner drivers + driving instructors (ADIs) |
 | **Key differentiator** | GPS-synced video + voice practice for actual test routes |
 | **Content model** | Crowd-sourced from instructors, quality-controlled by AI + admin |

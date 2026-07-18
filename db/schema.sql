@@ -91,6 +91,12 @@ CREATE TABLE subscriptions (
   status             subscription_status NOT NULL DEFAULT 'active',
   source             billing_source,
   external_id        TEXT,                             -- stripe sub id / store transaction
+  -- Premium is purchased PER TEST CENTRE and is not switchable: one active
+  -- subscription unlocks unlimited routes for exactly this centre. A user
+  -- preparing at multiple centres holds one active subscription per centre.
+  -- NULL = a legacy/universal subscription (grandfathered to cover all centres).
+  -- FK to test_centres added after that table is defined (see below).
+  test_centre_id     UUID,
   current_period_end TIMESTAMPTZ,
   cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
   price_minor        INTEGER,                          -- pence
@@ -98,7 +104,10 @@ CREATE TABLE subscriptions (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX idx_sub_active_per_user ON subscriptions(user_id)
+-- One active subscription per (user, test centre). NULLs are distinct in a
+-- unique index, so legacy universal rows (test_centre_id IS NULL) never collide.
+CREATE UNIQUE INDEX idx_sub_active_per_user_centre
+  ON subscriptions(user_id, test_centre_id)
   WHERE status IN ('active','trialing','past_due');
 
 CREATE TABLE subscription_events (              -- audit of every webhook (dunning, refund…)
@@ -126,6 +135,28 @@ CREATE TABLE test_centres (
 CREATE INDEX idx_test_centres_geo ON test_centres USING GIST (location);
 CREATE INDEX idx_test_centres_postcode ON test_centres (postcode);
 CREATE INDEX idx_test_centres_town_trgm ON test_centres USING GIN (town gin_trgm_ops);
+
+-- Per-centre Premium: link a subscription to the test centre it unlocks.
+ALTER TABLE subscriptions
+  ADD CONSTRAINT fk_subscriptions_test_centre
+  FOREIGN KEY (test_centre_id) REFERENCES test_centres(id);
+CREATE INDEX idx_subscriptions_test_centre ON subscriptions(test_centre_id);
+
+-- -----------------------------------------------------------------------------
+-- USER TEST DETAILS  (Phase 19b)
+-- Every user must share their test centre + test date before using test routes.
+-- Stored as history: each submission is a new row; the "current" details are the
+-- most recent row per user. Keeps a trail as learners rebook / change centres.
+-- -----------------------------------------------------------------------------
+CREATE TABLE user_test_details (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  test_centre_id UUID NOT NULL REFERENCES test_centres(id),
+  test_date      DATE NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Latest-first lookup per user powers both the gate check and "current details".
+CREATE INDEX idx_user_test_details_user ON user_test_details(user_id, created_at DESC);
 
 -- -----------------------------------------------------------------------------
 -- CONTRIBUTORS / INSTRUCTORS / COMMUNITY
@@ -229,6 +260,18 @@ CREATE INDEX idx_routes_geo ON routes USING GIST (track_geom);
 CREATE INDEX idx_routes_quality ON routes(quality_score DESC) WHERE status='published';
 CREATE INDEX idx_routes_search ON routes USING GIN (
   to_tsvector('english', coalesce(title,'') || ' ' || coalesce(town,'') || ' ' || coalesce(postcode,'')));
+
+-- -----------------------------------------------------------------------------
+-- DEMO ROUTE CLAIMS  (Phase 19c)
+-- A non-Premium (demo) user gets ONE route total across the whole account, and
+-- that route must belong to their declared test centre. The first route they
+-- open is claimed here; PK on user_id enforces exactly one per account.
+-- -----------------------------------------------------------------------------
+CREATE TABLE demo_route_claims (
+  user_id     UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  route_id    UUID NOT NULL REFERENCES routes(id),
+  claimed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- merged/processed videos and renditions
 CREATE TABLE route_videos (

@@ -3,7 +3,10 @@
 A UK driving-route learning platform: watch real, GPS-synchronised driving routes
 (front + rear dashcam) and practise them later as turn-by-turn voice navigation.
 
+- **New to full-stack? Start here:** [`docs/APP_OVERVIEW_FOR_FRONTEND_DEV.md`](docs/APP_OVERVIEW_FOR_FRONTEND_DEV.md) — every part of the app explained at an abstract level.
+- **Run it locally (testing):** [`docs/RUNNING_LOCALLY.md`](docs/RUNNING_LOCALLY.md) — verified copy-paste launch guide.
 - **Architecture & all design deliverables:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- **Build roadmap & progress:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - **Database schema:** [`db/schema.sql`](db/schema.sql)
 
 ## Monorepo layout

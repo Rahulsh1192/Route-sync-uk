@@ -59,6 +59,10 @@ export interface Entitlements {
   plan: string;
   status: string;
   currentPeriodEnd?: string | null;
+  // Test centres the user has active Premium for. `null` in the list means a
+  // legacy/universal subscription (covers every centre). Undefined on older
+  // API responses / demo mode — callers fall back to the flags below.
+  premiumTestCentreIds?: Array<string | null>;
   entitlements: {
     unlimitedRoutes: boolean;
     practiceMode: boolean;
@@ -66,6 +70,64 @@ export interface Entitlements {
     offline: boolean;
     instructorRoutes: boolean;
   };
+}
+
+export interface RouteDetail {
+  id: string;
+  title: string;
+  town?: string | null;
+  postcode?: string | null;
+  difficulty?: string | null;
+  testCentreId?: string | null;
+  isSample?: boolean;
+  isInstructor?: boolean;
+  distanceM?: number | null;
+  durationS?: number | null;
+  junctionCount?: number | null;
+  roundaboutCount?: number | null;
+  qualityScore?: number | null;
+}
+
+/**
+ * True if the user has Premium access for the given test centre. A `null` entry
+ * in `premiumTestCentreIds` is a universal grant. When the field is absent
+ * (older API / demo), fall back to the account-wide multiView flag.
+ */
+export function hasCentreAccess(
+  ent: Entitlements | null,
+  testCentreId: string | null | undefined,
+): boolean {
+  if (!ent) return false;
+  const centres = ent.premiumTestCentreIds;
+  if (centres === undefined) return ent.entitlements.multiView;
+  if (centres.includes(null)) return true; // universal / legacy grant
+  return testCentreId != null && centres.includes(testCentreId);
+}
+
+export interface RouteAccess {
+  allowed: boolean;
+  reason: 'ok' | 'TEST_DETAILS_REQUIRED' | 'PAYWALL';
+  testCentreId: string | null;
+  centreLabel: string;
+}
+
+export interface TestCentre {
+  id: string;
+  name: string;
+  town?: string | null;
+  postcode?: string | null;
+}
+
+export interface TestDetailRecord {
+  id: string;
+  testCentreId: string;
+  testDate: string; // ISO date
+  createdAt: string;
+}
+
+export interface TestDetails {
+  current: TestDetailRecord | null;
+  history: TestDetailRecord[];
 }
 
 export interface Badge {

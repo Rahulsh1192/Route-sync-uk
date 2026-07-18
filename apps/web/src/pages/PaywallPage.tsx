@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 const features = [
-  'Unlimited routes for your test centre',
+  'Unlimited routes for the chosen test centre',
   'Practice mode with UK voice guidance',
   'Multi-view playback (front, rear, split, map)',
   'AI-generated learning summaries',
@@ -13,8 +13,16 @@ const features = [
 
 const bookingNote = 'Booking an instructor does not require Premium — anyone can book a lesson.';
 
+interface PaywallState {
+  testCentreId?: string | null;
+  centreLabel?: string;
+}
+
 export function PaywallPage() {
   const nav = useNavigate();
+  const { state } = useLocation() as { state: PaywallState | null };
+  const testCentreId = state?.testCentreId ?? undefined;
+  const centreLabel = state?.centreLabel;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -22,7 +30,8 @@ export function PaywallPage() {
     setBusy(plan);
     setError(null);
     try {
-      const { url } = await api.checkout(plan);
+      // Premium is purchased per test centre; unlock the one the user came from.
+      const { url } = await api.checkout(plan, testCentreId ?? undefined);
       // Stripe Checkout (web). Redirect the browser to the hosted payment page.
       window.location.href = url;
     } catch (e) {
@@ -36,7 +45,13 @@ export function PaywallPage() {
       <button className="btn secondary auto" onClick={() => nav(-1)} style={{ marginBottom: 16 }}>
         ← Back
       </button>
-      <h1 className="page">RouteSync Premium</h1>
+      <h1 className="page">
+        {centreLabel ? `Unlock ${centreLabel}` : 'RouteSync Premium'}
+      </h1>
+      <p className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+        Premium is purchased per test centre and is not switchable —
+        {centreLabel ? ` this unlocks ${centreLabel}.` : ' you unlock one test centre per subscription.'}
+      </p>
       <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{bookingNote}</p>
       <div className="card">
         {features.map((f) => (

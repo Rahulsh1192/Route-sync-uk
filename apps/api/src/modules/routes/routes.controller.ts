@@ -19,6 +19,15 @@ export class RoutesController {
     return this.routes.detail(id);
   }
 
+  // Dry-run access check: tells the client whether to open the route, collect
+  // test details, or show the paywall — without claiming the demo route.
+  @Get(':id/access')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  routeAccess(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.routes.access(user.id, id);
+  }
+
   @Get(':id/playback')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

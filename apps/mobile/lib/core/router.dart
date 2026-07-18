@@ -13,6 +13,7 @@ import '../features/route_player/player_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/shell/app_shell.dart';
 import '../features/subscription/paywall_screen.dart';
+import '../features/test_details/test_details_screen.dart';
 
 GoRouter buildRouter(AuthController auth) {
   return GoRouter(
@@ -56,7 +57,23 @@ GoRouter buildRouter(AuthController auth) {
         path: '/route/:id/practice',
         builder: (context, state) => PracticeScreen(routeId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/paywall', builder: (_, __) => const PaywallScreen()),
+      GoRoute(
+        path: '/paywall',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            return PaywallScreen(
+              testCentreId: extra['testCentreId'] as String?,
+              centreLabel: extra['centreLabel'] as String?,
+            );
+          }
+          return const PaywallScreen();
+        },
+      ),
+      GoRoute(
+        path: '/test-details',
+        builder: (context, state) => TestDetailsScreen(returnTo: state.extra as String?),
+      ),
       GoRoute(path: '/upload', builder: (_, __) => const UploadScreen()),
       GoRoute(path: '/instructor-verify', builder: (_, __) => const InstructorVerifyScreen()),
     ],

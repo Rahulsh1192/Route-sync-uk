@@ -109,6 +109,7 @@ export const demoEntitlements: Entitlements = {
   plan: 'premium_yearly',
   status: 'active',
   currentPeriodEnd: null,
+  premiumTestCentreIds: [null], // universal grant in demo mode
   entitlements: {
     unlimitedRoutes: true,
     practiceMode: true,

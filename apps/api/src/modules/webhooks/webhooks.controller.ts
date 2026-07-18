@@ -84,6 +84,7 @@ export class WebhooksController {
             status: SubscriptionStatus.canceled,
             source: BillingSource.stripe,
             externalId: sub.id,
+            testCentreId: sub.metadata?.testCentreId ?? null,
           });
         }
         break;
@@ -121,6 +122,8 @@ export class WebhooksController {
       status: statusOverride ?? this.mapStripeStatus(sub.status),
       source: BillingSource.stripe,
       externalId: sub.id,
+      // Which test centre this per-centre subscription unlocks (set at checkout).
+      testCentreId: sub.metadata?.testCentreId ?? null,
       currentPeriodEnd: new Date(sub.current_period_end * 1000),
       priceMinor: sub.items.data[0]?.price?.unit_amount ?? undefined,
     });
@@ -165,6 +168,10 @@ export class WebhooksController {
       ev.store === 'PLAY_STORE' ? BillingSource.google : BillingSource.apple;
     const plan = this.subs.planFromProduct(ev.product_id ?? '');
     const expiresMs = ev.expiration_at_ms ?? ev.expires_date_ms;
+    // Per-centre Premium on mobile: the app sets a `test_centre_id` RevenueCat
+    // subscriber attribute at purchase; null falls back to a universal grant.
+    const testCentreId: string | null =
+      ev.subscriber_attributes?.test_centre_id?.value ?? null;
 
     switch (ev.type) {
       case 'INITIAL_PURCHASE':
@@ -177,6 +184,7 @@ export class WebhooksController {
           status: SubscriptionStatus.active,
           source,
           externalId: ev.transaction_id,
+          testCentreId,
           currentPeriodEnd: expiresMs ? new Date(Number(expiresMs)) : undefined,
         });
         break;
@@ -188,6 +196,7 @@ export class WebhooksController {
           status: SubscriptionStatus.canceled,
           source,
           externalId: ev.transaction_id,
+          testCentreId,
         });
         break;
       case 'BILLING_ISSUE':
@@ -197,6 +206,7 @@ export class WebhooksController {
           status: SubscriptionStatus.past_due,
           source,
           externalId: ev.transaction_id,
+          testCentreId,
         });
         break;
       default:

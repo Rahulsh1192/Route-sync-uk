@@ -1,5 +1,7 @@
 import type {
   RouteSummary,
+  RouteDetail,
+  RouteAccess,
   PlaybackManifest,
   PracticeRoute,
   Entitlements,
@@ -7,6 +9,9 @@ import type {
   InstructorStatus,
   UploadInitResult,
   UploadStatus,
+  TestCentre,
+  TestDetails,
+  TestDetailRecord,
 } from './types';
 
 export interface DeclaredFile {
@@ -171,6 +176,21 @@ export const api = {
     }
     return request<RouteSummary[]>(`/search/routes?${new URLSearchParams(q).toString()}`);
   },
+  route: async (id: string): Promise<RouteDetail> => {
+    if (demo.on) {
+      const r = demoRoutes.find((x) => x.id === id) ?? demoRoutes[0];
+      return { ...r, testCentreId: null }; // demo grant is universal
+    }
+    const { route } = await request<{ route: RouteDetail }>(`/routes/${id}`);
+    return route;
+  },
+  // Dry-run access decision (test details / paywall / ok) — no demo claim.
+  routeAccess: (id: string): Promise<RouteAccess> => {
+    if (demo.on) {
+      return Promise.resolve({ allowed: true, reason: 'ok', testCentreId: null, centreLabel: '' });
+    }
+    return request<RouteAccess>(`/routes/${id}/access`);
+  },
   playback: async (id: string) => {
     if (demo.on) {
       await sleep(300);
@@ -192,11 +212,50 @@ export const api = {
     return request<Entitlements>('/subscriptions/me');
   },
   plans: () => request<unknown[]>('/subscriptions/plans'),
-  checkout: (plan: 'premium_monthly' | 'premium_yearly') =>
+  // Premium is purchased per test centre; pass the centre being unlocked.
+  checkout: (plan: 'premium_monthly' | 'premium_yearly', testCentreId?: string) =>
     request<{ url: string }>('/subscriptions/checkout', {
       method: 'POST',
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, ...(testCentreId ? { testCentreId } : {}) }),
     }),
+
+  // --- test details (Phase 19b) ---
+  testCentres: (q?: string) => {
+    if (demo.on) {
+      // Surface the demo routes' towns as pickable centres.
+      return Promise.resolve(
+        demoRoutes.map((r) => ({
+          id: `demo-tc-${r.id}`,
+          name: `${r.town} test centre`,
+          town: r.town,
+          postcode: r.postcode,
+        })) as TestCentre[],
+      );
+    }
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return request<TestCentre[]>(`/search/test-centres${qs}`);
+  },
+  getTestDetails: (): Promise<TestDetails> => {
+    if (demo.on) {
+      return Promise.resolve({
+        current: {
+          id: 'demo',
+          testCentreId: 'demo-tc',
+          testDate: new Date().toISOString().slice(0, 10),
+          createdAt: new Date().toISOString(),
+        },
+        history: [],
+      });
+    }
+    return request<TestDetails>('/users/me/test-details');
+  },
+  saveTestDetails: (testCentreId: string, testDate: string) => {
+    if (demo.on) return Promise.resolve({} as TestDetailRecord);
+    return request<TestDetailRecord>('/users/me/test-details', {
+      method: 'POST',
+      body: JSON.stringify({ testCentreId, testDate }),
+    });
+  },
 
   // --- contributor tools ---
   profile: () => request<ContributorProfile>('/contributors/me/profile'),

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { IsIn } from 'class-validator';
+import { IsIn, IsOptional, IsUUID } from 'class-validator';
 import { SubscriptionsService } from './subscriptions.service';
 import { StripeService } from './stripe.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -9,6 +9,13 @@ import { CurrentUser, AuthUser } from '../../common/decorators/current-user.deco
 class CheckoutDto {
   @IsIn(['premium_monthly', 'premium_yearly'])
   plan!: 'premium_monthly' | 'premium_yearly';
+
+  // The test centre this Premium subscription unlocks. Premium is purchased per
+  // centre and is not switchable. Optional for now so existing clients keep
+  // working (omitting it creates a universal/legacy subscription).
+  @IsOptional()
+  @IsUUID()
+  testCentreId?: string;
 }
 
 @ApiTags('subscriptions')
@@ -36,6 +43,6 @@ export class SubscriptionsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   checkout(@CurrentUser() user: AuthUser, @Body() dto: CheckoutDto) {
-    return this.stripe.createCheckoutSession(user.id, dto.plan);
+    return this.stripe.createCheckoutSession(user.id, dto.plan, dto.testCentreId);
   }
 }

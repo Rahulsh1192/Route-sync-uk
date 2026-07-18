@@ -29,12 +29,15 @@ export class SearchController {
   }
 
   @Get('test-centres')
-  testCentres(@Query('near') near?: string) {
-    if (!near) throw new BadRequestException('near=lat,lng is required');
-    const [lat, lng] = near.split(',').map(Number);
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      throw new BadRequestException('near must be "lat,lng"');
+  testCentres(@Query('near') near?: string, @Query('q') q?: string) {
+    // ?near=lat,lng → nearest (PostGIS KNN); otherwise a name/town/postcode list.
+    if (near) {
+      const [lat, lng] = near.split(',').map(Number);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        throw new BadRequestException('near must be "lat,lng"');
+      }
+      return this.search.testCentresNear(lat, lng);
     }
-    return this.search.testCentresNear(lat, lng);
+    return this.search.testCentresSearch(q);
   }
 }
