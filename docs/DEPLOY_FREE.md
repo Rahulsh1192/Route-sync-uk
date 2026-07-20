@@ -57,7 +57,9 @@ Helper files already in the repo:
 2. When prompted, fill the secret env vars:
    - `DATABASE_URL` = from Step 1
    - `REDIS_URL` = from Step 2
-   - (leave the `S3_*` ones blank for now)
+   - The `S3_*` vars come pre-filled with placeholders in `render.yaml` — leave them.
+     (The API requires them to boot; they only need real Cloudflare R2 values once you
+     enable uploads.)
    The JWT secrets are generated automatically.
 3. Deploy. When it's live, note the URL, e.g. `https://routesync-api.onrender.com`.
 4. Test it: open `https://YOUR-API.onrender.com/api/health` — you should see

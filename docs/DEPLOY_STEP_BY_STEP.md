@@ -164,8 +164,9 @@ It encodes decisions you'd otherwise have to know:
 - `DATABASE_URL` = your Supabase **pooler** string (Step 2.3)
 - `REDIS_URL` = your Upstash **TCP** string (Step 3.1)
 
-(The JWT secrets are generated automatically by the Blueprint; leave the `S3_*` ones
-blank for now — they're only for file uploads.)
+(The JWT secrets are generated automatically by the Blueprint. The `S3_*` vars are
+**pre-filled with placeholders** in `render.yaml` — leave them. The API *requires* them
+to start, but they only need to be real once you enable uploads.)
 
 **Why:** This is the moment the API gets told *where its database and cache live*.
 These are set on **Render, not Vercel**, because the backend is what uses them. Render

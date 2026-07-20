@@ -33,16 +33,19 @@ services:
         value: "900"
       - key: JWT_REFRESH_TTL
         value: "2592000"
-      # Object storage (only needed once you enable uploads — safe to leave as-is for now):
+      # Object storage. NOTE: the API validates these at startup and WON'T BOOT if any
+      # are missing — so we give placeholders here. They let the app start; real
+      # uploads/video won't work until you replace them with genuine Cloudflare R2
+      # (or S3) credentials. Browsing seeded routes doesn't need them.
       - key: S3_ENDPOINT
-        sync: false
+        value: https://placeholder.r2.cloudflarestorage.com
       - key: S3_REGION
         value: auto
       - key: S3_BUCKET
         value: routesync-media
       - key: S3_ACCESS_KEY
-        sync: false
+        value: placeholder
       - key: S3_SECRET_KEY
-        sync: false
+        value: placeholder
       - key: S3_FORCE_PATH_STYLE
         value: "true"
