@@ -54,4 +54,26 @@ export class SearchService {
       LIMIT ${take}
     `;
   }
+
+  /**
+   * List / text-search test centres by name, town or postcode. Powers the
+   * test-details picker (Phase 19b). Empty query returns an alphabetical page.
+   */
+  async testCentresSearch(q?: string, take = 20) {
+    const term = q?.trim();
+    if (term) {
+      return this.prisma.$queryRaw`
+        SELECT id, name, town, postcode
+        FROM test_centres
+        WHERE name ILIKE '%' || ${term} || '%'
+           OR town ILIKE '%' || ${term} || '%'
+           OR postcode ILIKE ${term} || '%'
+        ORDER BY name
+        LIMIT ${take}
+      `;
+    }
+    return this.prisma.$queryRaw`
+      SELECT id, name, town, postcode FROM test_centres ORDER BY name LIMIT ${take}
+    `;
+  }
 }

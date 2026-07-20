@@ -26,8 +26,16 @@ export class StripeService {
     return !!this.stripe;
   }
 
-  /** Create a hosted Checkout session for a premium plan. client_reference_id = userId. */
-  async createCheckoutSession(userId: string, plan: 'premium_monthly' | 'premium_yearly') {
+  /**
+   * Create a hosted Checkout session for a premium plan. client_reference_id = userId.
+   * `testCentreId` records which centre this per-centre subscription unlocks; it is
+   * carried in subscription metadata so the webhook can attach the entitlement to it.
+   */
+  async createCheckoutSession(
+    userId: string,
+    plan: 'premium_monthly' | 'premium_yearly',
+    testCentreId?: string,
+  ) {
     if (!this.stripe) throw new BadRequestException('Payments are not configured');
     const price =
       plan === 'premium_monthly'
@@ -39,8 +47,10 @@ export class StripeService {
       mode: 'subscription',
       line_items: [{ price, quantity: 1 }],
       client_reference_id: userId,
-      // tie the resulting subscription back to our user for webhook reconciliation
-      subscription_data: { metadata: { userId, plan } },
+      // tie the resulting subscription back to our user + centre for webhook reconciliation
+      subscription_data: {
+        metadata: { userId, plan, ...(testCentreId ? { testCentreId } : {}) },
+      },
       success_url: this.config.get<string>('CHECKOUT_SUCCESS_URL')!,
       cancel_url: this.config.get<string>('CHECKOUT_CANCEL_URL')!,
     });

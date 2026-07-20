@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_client.dart';
 import '../../data/models.dart';
 import '../../data/repositories.dart';
 
-/// Route preview with Watch / Practice actions. Both are premium-gated server-side;
-/// a 403 here routes the user to the paywall.
+/// Route preview with Watch / Practice actions. Access is decided server-side
+/// (test-details gate → per-centre Premium → one-route demo allowance); we route
+/// the user to the test-details screen, the paywall, or the player accordingly.
 class RouteDetailScreen extends StatelessWidget {
   const RouteDetailScreen({super.key, required this.routeId, this.summary});
   final String routeId;
@@ -58,15 +60,32 @@ class RouteDetailScreen extends StatelessWidget {
     );
   }
 
-  /// Pre-check entitlement so we can show the paywall instead of a raw 403.
+  /// Ask the server whether this route is accessible, then route accordingly:
+  /// collect test details, show the paywall (with the centre), or open the player.
   Future<void> _open(BuildContext context, String path) async {
-    final ent = await context.read<SubscriptionRepository>().me();
-    final isSample = summary?.isSample ?? false;
-    if (!ent.isPremium && !(isSample && path.endsWith('/watch'))) {
-      if (context.mounted) context.push('/paywall');
+    final RouteAccess access;
+    try {
+      access = await context.read<RoutesRepository>().access(routeId);
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
       return;
     }
-    if (context.mounted) context.push(path);
+    if (!context.mounted) return;
+
+    if (access.reason == 'TEST_DETAILS_REQUIRED') {
+      context.push('/test-details', extra: '/route/$routeId');
+      return;
+    }
+    if (!access.allowed) {
+      context.push('/paywall', extra: {
+        'testCentreId': access.testCentreId,
+        'centreLabel': access.centreLabel,
+      });
+      return;
+    }
+    context.push(path);
   }
 }
 

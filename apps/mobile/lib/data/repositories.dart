@@ -54,6 +54,33 @@ class RoutesRepository {
     final res = await _api.get('/routes/$routeId/practice');
     return PracticeRoute.fromJson(res);
   }
+
+  /// Dry-run access decision (test-details / paywall / ok) without claiming the
+  /// demo route. Lets the UI route the user to the right next step.
+  Future<RouteAccess> access(String routeId) async {
+    final res = await _api.get('/routes/$routeId/access');
+    return RouteAccess.fromJson(res);
+  }
+}
+
+/// Phase 19b: the user's test centre + date, required before using any route.
+class TestDetailsRepository {
+  TestDetailsRepository(this._api);
+  final ApiClient _api;
+
+  Future<TestDetails> get() async =>
+      TestDetails.fromJson(await _api.get('/users/me/test-details'));
+
+  Future<void> add(String testCentreId, String testDate) => _api.post(
+        '/users/me/test-details',
+        body: {'testCentreId': testCentreId, 'testDate': testDate},
+      );
+
+  Future<List<TestCentre>> searchCentres(String? q) async {
+    final res = await _api.get('/search/test-centres',
+        query: {if (q != null && q.isNotEmpty) 'q': q});
+    return (res as List).map((e) => TestCentre.fromJson(e)).toList();
+  }
 }
 
 class SubscriptionRepository {

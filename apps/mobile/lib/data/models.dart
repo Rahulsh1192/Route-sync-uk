@@ -148,12 +148,83 @@ class PracticeRoute {
 }
 
 class Entitlements {
-  Entitlements({required this.plan, required this.isPremium});
+  Entitlements({required this.plan, required this.isPremium, this.premiumTestCentreIds = const []});
   final String plan;
   final bool isPremium;
 
+  /// Test centres the user has active Premium for; `null` entries mean a
+  /// universal/legacy grant. Premium is purchased per centre (Phase 19d).
+  final List<String?> premiumTestCentreIds;
+
   factory Entitlements.fromJson(Map<String, dynamic> j) {
     final plan = j['plan'] as String? ?? 'free';
-    return Entitlements(plan: plan, isPremium: plan != 'free');
+    final centres = (j['premiumTestCentreIds'] as List?)?.map((e) => e as String?).toList();
+    return Entitlements(
+      plan: plan,
+      isPremium: (centres?.isNotEmpty ?? false) || plan != 'free',
+      premiumTestCentreIds: centres ?? const [],
+    );
   }
+}
+
+/// Server access decision for a single route (Phases 19b–19d). Mirrors
+/// GET /routes/:id/access on the API.
+class RouteAccess {
+  RouteAccess({
+    required this.allowed,
+    required this.reason,
+    this.testCentreId,
+    required this.centreLabel,
+  });
+
+  final bool allowed;
+  final String reason; // 'ok' | 'TEST_DETAILS_REQUIRED' | 'PAYWALL'
+  final String? testCentreId;
+  final String centreLabel;
+
+  factory RouteAccess.fromJson(Map<String, dynamic> j) => RouteAccess(
+        allowed: j['allowed'] as bool? ?? false,
+        reason: j['reason'] as String? ?? 'PAYWALL',
+        testCentreId: j['testCentreId'] as String?,
+        centreLabel: j['centreLabel'] as String? ?? '',
+      );
+}
+
+class TestCentre {
+  TestCentre({required this.id, required this.name, this.town, this.postcode});
+  final String id;
+  final String name;
+  final String? town;
+  final String? postcode;
+
+  factory TestCentre.fromJson(Map<String, dynamic> j) => TestCentre(
+        id: j['id'] as String,
+        name: j['name'] as String? ?? 'Test centre',
+        town: j['town'] as String?,
+        postcode: j['postcode'] as String?,
+      );
+
+  String get label => [name, if (town != null) town, if (postcode != null) '($postcode)'].join(' ');
+}
+
+class TestDetail {
+  TestDetail({required this.testCentreId, required this.testDate});
+  final String testCentreId;
+  final String testDate; // ISO date
+
+  factory TestDetail.fromJson(Map<String, dynamic> j) => TestDetail(
+        testCentreId: j['testCentreId'] as String,
+        testDate: (j['testDate'] as String?) ?? '',
+      );
+}
+
+class TestDetails {
+  TestDetails({this.current});
+  final TestDetail? current;
+
+  factory TestDetails.fromJson(Map<String, dynamic> j) => TestDetails(
+        current: j['current'] == null
+            ? null
+            : TestDetail.fromJson(j['current'] as Map<String, dynamic>),
+      );
 }

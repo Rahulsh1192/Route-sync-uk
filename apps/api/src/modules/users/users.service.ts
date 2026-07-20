@@ -30,6 +30,36 @@ export class UsersService {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Phase 19b — test details (test centre + test date)
+  // Stored as history; the most recent row is the user's "current" details.
+  // ---------------------------------------------------------------------------
+
+  /** True once the user has declared their test details at least once. */
+  async hasTestDetails(userId: string): Promise<boolean> {
+    const n = await this.prisma.userTestDetail.count({ where: { userId } });
+    return n > 0;
+  }
+
+  /** Current (latest) test details plus the full history, newest first. */
+  async getTestDetails(userId: string) {
+    const history = await this.prisma.userTestDetail.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, testCentreId: true, testDate: true, createdAt: true },
+    });
+    return { current: history[0] ?? null, history };
+  }
+
+  /** Record a new test-details entry (kept as history). */
+  async addTestDetails(userId: string, testCentreId: string, testDate: string) {
+    const created = await this.prisma.userTestDetail.create({
+      data: { userId, testCentreId, testDate: new Date(testDate) },
+      select: { id: true, testCentreId: true, testDate: true, createdAt: true },
+    });
+    return created;
+  }
+
   /**
    * GDPR erasure. Records the request, anonymises PII, soft-deletes, revokes tokens.
    * Heavy artefact removal (media in R2) is delegated to an async job.

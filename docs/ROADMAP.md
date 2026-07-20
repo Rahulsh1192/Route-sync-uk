@@ -1,7 +1,9 @@
 # RouteSync — End-to-End Build Roadmap
 
-**Last updated:** 2026-07-16  
-**Version:** 2.0 — updated to reflect the full product spec including ADI booking,
+**Last updated:** 2026-07-18  
+**Version:** 2.1 — adds the access & pricing-model corrections (registration required for
+all access incl. demo, one-route-total demo, mandatory test-centre + test-date gate, and
+Premium purchased **per test centre / non-switchable**) on top of v2.0's ADI booking,
 in-app GPS recording, video-less routes, learner progress tracking, AI summaries,
 offline packages, and single-session security.
 
@@ -418,7 +420,75 @@ Approved Driving Instructors (ADIs). It combines:
 
 ---
 
-## Progress Snapshot (2026-07-16)
+## Phase 19 — Access & Pricing Model Corrections  ⬜ NOT STARTED
+
+> Product-rule corrections from the updated spec. These change access gating and the
+> shape of the entitlement/billing model, so they touch API, web, mobile, and admin.
+
+### 19a — Registration-required access (no anonymous demo)
+- ✅ Removed the anonymous "Explore the demo (no account)" button on web (`LoginPage`)
+- ✅ Removed the backend-unavailable → demo fallback in `AuthContext` (unreachable API now
+      surfaces a real error instead of dropping into anonymous demo)
+- ✅ Demo is now a **registered, non-Premium** state — an account is required before any access;
+      login copy updated to say so
+- ✅ Mobile already registration-only (login/register; OAuth TODO) — no anonymous demo to remove
+- ⬜ Optional cleanup: the inert client-side `demo` plumbing (`api/demo.ts`, `if (demo.on)`
+      branches, demo banner) is now unreachable and can be deleted
+
+### 19b — Test-details gate (test centre + test date)
+- ✅ Capture **test centre** and **test date** before a user can open any route (demo or Premium)
+- ✅ Schema: `user_test_details` **history** table (`db/schema.sql` + `db/migrate_phase_19b.sql`,
+      verified in Docker); current details = most recent row
+- ✅ API: `GET/POST /users/me/test-details`; `RoutesService` blocks playback/practice with
+      `TEST_DETAILS_REQUIRED` until details exist; `GET /search/test-centres?q=` list/search
+- ✅ Web: `TestDetailsPage` capture screen (centre search + date), route-detail gate redirects
+      to it, Account page entry point
+- ✅ Mobile: `TestDetailsScreen` (centre search + date), route-detail gate routes to it via
+      `RoutesRepository.access`; `TestDetailsRepository` added
+- ✅ Web: `TEST_DETAILS_REQUIRED` on deep-linked Watch/Practice pages now redirects to the
+      capture screen (premium denials go to route detail's per-centre paywall flow)
+
+### 19c — Demo = one route total (account-wide, at the declared test centre)
+- ✅ `demo_route_claims` table (`db/schema.sql` + `db/migrate_phase_19c.sql`, verified in Docker):
+      PK on `user_id` enforces exactly one claimed route per account
+- ✅ `RoutesService.resolveAccess`: test-details gate → per-centre Premium → one-route demo
+      allowance; the demo route must be at the user's **declared test centre** and is claimed on
+      first watch/practice (replaces the old blanket `isSample`-free rule)
+- ✅ `GET /routes/:id/access` dry-run decision; web `RouteDetailPage` routes to test-details /
+      paywall / open based on it
+- ✅ Copy updated to "one route total across the account" (paywall, account, login)
+- ✅ Mobile: `RouteDetailScreen` uses the `/routes/:id/access` decision (test-details / paywall /
+      open); the one-route claim is enforced server-side, so mobile inherits it automatically
+- ⬜ (Decision) demo route is scoped to the declared test centre; revisit if learners should be
+      able to switch which single route is claimed
+
+### 19d — Premium per test centre (non-switchable)
+- ✅ Re-model entitlements as `(user, test_centre)` — one active subscription per centre
+      (`db/schema.sql` + `db/migrate_phase_19.sql`; unique index → `(user_id, test_centre_id)`)
+- ✅ `subscriptions` schema: add `test_centre_id`; a user may hold multiple concurrent subs
+- ✅ `SubscriptionsService.isPremiumForCentre()` + route gating in `routes.service.ts`
+      keyed on the **route's test centre** (legacy null-centre subs grandfathered as universal)
+- ✅ Stripe/RevenueCat: `test_centre_id` threaded through checkout metadata + webhooks;
+      `applyEntitlement` keyed on `(user, centre)` so a new centre never overwrites another
+- ✅ `db/migrate_phase_19.sql` verified against a real pre-Phase-19 DB (Dockerised PostGIS):
+      applies cleanly, is idempotent, and the `(user_id, test_centre_id)` unique index allows
+      concurrent per-centre subs while rejecting a duplicate active sub for the same centre
+- ⬜ Run `db/migrate_phase_19.sql` against live/staging databases
+- ✅ Web paywall UX: route detail gates per centre (`hasCentreAccess`), passes the centre to
+      the paywall, checkout sends `testCentreId`; account shows unlocked-centre count
+- ✅ Mobile paywall UX: carries the test centre (heading + copy); `_purchase` documents setting
+      the RevenueCat `test_centre_id` subscriber attribute — actual IAP wiring still pending (Phase 10)
+- ⬜ `EntitlementGuard`: still uses account-wide `isPremium` for non-route gates (offline/upload)
+      — refine to per-centre where applicable
+- ⬜ Admin Revenue panel: break down subscribers by test centre
+
+### 19e — Copy & docs alignment
+- ✅ Platform guide, sales deck, architecture, and roadmap updated with the corrected rules
+- ⬜ In-app strings (web + mobile) updated to match
+
+---
+
+## Progress Snapshot (2026-07-18)
 
 | Phase | Area | Status | Completion |
 |---|---|---|---|
@@ -441,6 +511,7 @@ Approved Driving Instructors (ADIs). It combines:
 | **16** | **Offline route packages** | 🟡 **DB+API built** | **~50%** |
 | **17** | **ADI single-session security** | ✅ **Complete** | **~90%** |
 | **18** | **Pricing corrections** | ✅ **Complete** | **100%** |
+| **19** | **Access & pricing model corrections** | ✅ **Web + API + mobile done; verified in Docker** | **~90%** |
 
 ---
 
@@ -448,6 +519,8 @@ Approved Driving Instructors (ADIs). It combines:
 
 ```
 Phase 18  →  Pricing fix (trivial, do today)
+Phase 19  →  Access & pricing model corrections (registration gate, test-details gate,
+             one-route demo, per-centre non-switchable Premium — reshapes entitlements)
 Phase 17  →  Single-session ADI security (small, foundational for Phase 13)
 Phase 14  →  GPS recording + video-less routes (unblocks new content supply)
 Phase 13  →  ADI booking system (largest new workstream — db, api, ui, payments)

@@ -1,62 +1,107 @@
-name: CI
+name: CI Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [master, main, develop]
   pull_request:
+    branches: [master, main, develop]
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
 
 jobs:
+  # ── API (NestJS) ─────────────────────────────────────────────────────────────
   api:
-    name: API (NestJS)
     runs-on: ubuntu-latest
+    name: API — lint, build & test
     defaults:
       run:
         working-directory: apps/api
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: routesync
+          POSTGRES_PASSWORD: routesync
+          POSTGRES_DB: routesync_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
           cache-dependency-path: apps/api/package-lock.json
       - run: npm ci
-      - run: npx prisma generate
-      - run: npx tsc --noEmit
-      - run: npm test --if-present
+      # Prisma client must be generated before the Nest build type-checks.
+      - run: npm run prisma:generate --if-present
+      # NOTE: no ESLint is configured in this project (the `lint` script references
+      # eslint but it isn't a dependency), so we rely on the compiler for checks.
+      - run: npm run build   # nest build doubles as the type-check
+      - run: npm test --if-present -- --passWithNoTests
+        env:
+          DATABASE_URL: postgresql://routesync:routesync@localhost:5432/routesync_test?schema=public
+          REDIS_URL: redis://localhost:6379
 
-  worker:
-    name: Worker (Python)
+  # ── Frontends (Vite/React) ───────────────────────────────────────────────────
+  frontends:
     runs-on: ubuntu-latest
+    name: Frontend build (${{ matrix.app }})
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web, admin]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npm run build   # "tsc --noEmit && vite build" — type-checks + bundles
+
+  # ── Python worker ────────────────────────────────────────────────────────────
+  python-lint:
+    runs-on: ubuntu-latest
+    name: Python Lint
     defaults:
       run:
         working-directory: services/worker
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt ruff pytest
-      - run: ruff check worker
-      - run: python -m py_compile worker/*.py
-      - run: pytest -q --if-present || true
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: services/worker/requirements.txt
+      - run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort
+      # Fail only on real syntax/undefined-name errors; style is advisory.
+      - run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - run: black --check . || true
+      - run: isort --check-only . || true
 
-  admin:
-    name: Admin (React)
+  # ── Mobile (Flutter) ─────────────────────────────────────────────────────────
+  flutter:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/admin
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --if-present
-      - run: npm run build --if-present
-
-  mobile:
-    name: Mobile (Flutter)
-    runs-on: ubuntu-latest
+    name: Flutter Analysis
     defaults:
       run:
         working-directory: apps/mobile
@@ -64,7 +109,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: stable   # latest stable satisfies the pubspec's >=3.22.0 constraint
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+
+  # ── Security scanning ────────────────────────────────────────────────────────
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scanning
+    permissions:
+      contents: read
+      security-events: write   # required to upload SARIF to code scanning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

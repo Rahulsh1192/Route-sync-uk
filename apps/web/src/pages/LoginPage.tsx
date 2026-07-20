@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 export function LoginPage() {
-  const { login, register, startDemo, sessionInvalidated } = useAuth();
+  const { login, register, sessionInvalidated } = useAuth();
   const nav = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -69,20 +69,9 @@ export function LoginPage() {
         {isRegister ? 'Have an account? Sign in' : 'New here? Create an account'}
       </button>
 
-      <div style={{ textAlign: 'center', margin: '18px 0 8px', color: 'var(--muted)', fontSize: 13 }}>
-        — or —
-      </div>
-      <button
-        className="btn ghost"
-        onClick={() => {
-          startDemo();
-          nav('/discover');
-        }}
-      >
-        ✨ Explore the demo (no account)
-      </button>
-      <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 8 }}>
-        Sample routes with a real video player &amp; voice guidance — no backend needed.
+      <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 16 }}>
+        A free account is required — it takes a moment. You can then explore in demo mode
+        (one route) before subscribing.
       </p>
     </div>
   );

@@ -41,6 +41,8 @@ Learner watches the real drive · practises with voice guidance
 Learner books the ADI for a real lesson · passes their test
 ```
 
+> **Recording:** ADIs can record and upload the **GPS track (GPX)** and the **video separately** — a route may start life as GPS-only and gain video later (see the Instructor Journey).
+
 ### What makes it unique
 
 | Feature | RouteSync | YouTube | Theory apps |
@@ -61,8 +63,10 @@ Learner books the ADI for a real lesson · passes their test
 A person learning to drive in the UK who wants to familiarise themselves with their test routes before test day.
 
 - **Accesses via:** Web app (any browser) or mobile app (iOS/Android)
-- **Free plan:** Browse routes, watch 1 sample route
-- **Premium plan:** Unlimited routes, practice mode, AI summaries, offline access
+- **Registration required:** Every user must create an account — there is **no anonymous access**, not even for the demo
+- **Demo (free):** Browse routes; view or practise **one route total** across the whole account
+- **Premium plan:** Unlimited routes **for each purchased test centre** — Premium is bought **per test centre** and is **not switchable**, plus practice mode, AI summaries, offline access
+- **Before using any test route** (demo or Premium): share your **test centre** and **test date**
 - **No Premium needed to:** Book an instructor
 
 ---
@@ -72,7 +76,7 @@ An Approved Driving Instructor (DVSA-registered) who uploads routes and optional
 
 - **Accesses via:** Web app or mobile app
 - **Core tools:** Route upload, availability management, booking management
-- **Optional:** Subscribe to the Premium Route Library (same as learners) for lesson planning
+- **Optional:** Subscribe to the Premium Route Library (same subscription as learners) to **practise test centres** themselves
 
 ---
 
@@ -95,10 +99,12 @@ Open **http://localhost:5174** (or the production URL).
 2. Enter: Display name · Email · Password
 3. Click **Create account** — you're logged in immediately
 
-**Option B — Demo (no account)**
-1. Click **"✨ Explore the demo (no account)"**
-2. The full app loads with sample routes — no backend required
-3. Video player and voice practice work fully in demo mode
+**Option B — Demo (registration still required)**
+1. Register an account — **there is no anonymous access**
+2. Choose **demo mode** — you can view or practise **one route total** across your whole account
+3. Video player and voice practice work fully on that one demo route
+
+> **Shared gate — applies to every user (demo *and* Premium):** before you can open any test route, RouteSync asks for your **test centre** and **test date**. You must share these before using test routes.
 
 ---
 
@@ -145,7 +151,7 @@ The **video player** opens with four viewing modes:
 - Play/Pause · 0.5× slow motion
 - HUD shows current time · active junction label · total duration
 
-> **Free plan note:** Only the 1 sample route is watchable without Premium. All others redirect to the upgrade screen.
+> **Demo note:** Without Premium you can view or practise **one route total** across the whole account. Premium is purchased **per test centre**, so any route for a centre you haven't subscribed to redirects to the upgrade screen.
 
 ---
 
@@ -234,14 +240,16 @@ Navigate to **Account → Upgrade** or go to `/paywall`.
 
 | Plan | Price | Best for |
 |---|---|---|
-| **Free** | £0 | Browsing, 1 sample route |
-| **Premium Monthly** | £4.99/month | Test coming up soon |
-| **Premium Yearly** | £39.99/year | Long-term learners (save 33%) |
+| **Demo (Free)** | £0 | Browsing; one route total across the account |
+| **Premium Monthly** | £4.99/month · per test centre | Test coming up soon |
+| **Premium Yearly** | £39.99/year · per test centre | Long-term learners (save 33%) |
 
 > **Booking an instructor does NOT require Premium.** Anyone can book a lesson.
 
+> **Premium is per test centre and not switchable.** Each subscription unlocks one specific centre; to prepare at more than one centre, hold one subscription per centre.
+
 Premium includes:
-- ✅ Unlimited routes for your test centre
+- ✅ Unlimited routes for **each purchased test centre** (one centre per subscription, non-switchable)
 - ✅ Practice mode with UK voice guidance
 - ✅ Multi-view playback (front · rear · split · map)
 - ✅ AI-generated learning summaries
@@ -576,11 +584,11 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 ## 6. Feature Reference by Role
 
-| Feature | Free Learner | Premium Learner | Instructor | Admin |
+| Feature | Demo Learner | Premium Learner | Instructor | Admin |
 |---|---|---|---|---|
 | Browse route catalogue | ✅ | ✅ | ✅ | ✅ |
-| Watch 1 sample route | ✅ | ✅ | ✅ | ✅ |
-| Watch unlimited routes | ❌ | ✅ | ✅ | ✅ |
+| View/practise 1 route total (account-wide) | ✅ | ✅ | ✅ | ✅ |
+| Watch unlimited routes (per purchased test centre) | ❌ | ✅ | ✅ | ✅ |
 | Practice mode (voice) | ❌ | ✅ | ✅ | ✅ |
 | Multi-view playback | ❌ | ✅ | ✅ | ✅ |
 | AI learning summaries | ❌ | ✅ | ✅ | ✅ |
@@ -600,6 +608,8 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 | Community Fund admin | ❌ | ❌ | ❌ | ✅ |
 | View all bookings | ❌ | ❌ | ❌ | ✅ |
 
+> **Access rules:** Registration is required for all access (including the demo). Every user must provide their **test centre** and **test date** before using routes. "Premium Learner" columns above apply **per purchased test centre** — a learner preparing at multiple centres holds one subscription per centre.
+
 ---
 
 ## 7. Subscription & Pricing
@@ -608,9 +618,11 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 | Plan | Price | Included |
 |---|---|---|
-| **Free** | £0 | Browse + 1 sample route |
-| **Premium Monthly** | £4.99 / month | Everything |
-| **Premium Yearly** | £39.99 / year | Everything + 33% saving vs monthly |
+| **Demo (Free)** | £0 | Browse + one route total (account-wide) |
+| **Premium Monthly** | £4.99 / month · per test centre | Unlimited routes for one test centre |
+| **Premium Yearly** | £39.99 / year · per test centre | Unlimited routes for one test centre + 33% saving vs monthly |
+
+> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; learners preparing at multiple centres hold one subscription per centre. Registration is required for all access (including the demo), and every user must provide their test centre and test date before using routes.
 
 ### Instructor Lesson Bookings
 
@@ -635,7 +647,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 | Step | What to say | What to do |
 |---|---|---|
-| 1 | "No account needed — let's use the demo mode" | Open http://localhost:5174, click **✨ Explore the demo** |
+| 1 | "Registration account needed — let's use the demo mode" | Open http://localhost:5174, register, then choose **demo mode** (one route total; share test centre + date) |
 | 2 | "Here are all the routes for different test centres across the UK" | Show Discover page grid |
 | 3 | "Each card shows the route, distance, roundabout count, quality score" | Point to a card |
 | 4 | "Let me open one" | Click any route → Route Detail |

@@ -30,6 +30,9 @@ export function AccountPage() {
   }
 
   const premium = ent?.entitlements.multiView ?? false;
+  // Number of distinct test centres unlocked (null = a universal/legacy grant).
+  const centreCount = ent?.premiumTestCentreIds?.filter((c) => c !== null).length ?? 0;
+  const hasUniversal = ent?.premiumTestCentreIds?.includes(null) ?? false;
 
   return (
     <>
@@ -43,7 +46,11 @@ export function AccountPage() {
               {ent == null ? 'Loading…' : premium ? `Premium (${ent.plan})` : 'Free plan'}
             </div>
             <div className="muted" style={{ fontSize: 13 }}>
-              {premium ? 'All features unlocked' : '1 sample route — upgrade for unlimited access'}
+              {!premium
+                ? 'Demo — one route total. Upgrade for unlimited routes at a test centre.'
+                : hasUniversal
+                ? 'All test centres unlocked'
+                : `Premium for ${centreCount} test centre${centreCount === 1 ? '' : 's'}`}
             </div>
           </div>
           <div className="spacer" />
@@ -52,6 +59,22 @@ export function AccountPage() {
               Upgrade
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="row">
+          <span style={{ fontSize: 18 }}>📝</span>
+          <div>
+            <strong>Test details</strong>
+            <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+              Your test centre and date — required before using routes.
+            </p>
+          </div>
+          <div className="spacer" />
+          <button className="btn secondary auto" onClick={() => nav('/test-details')}>
+            Set / update
+          </button>
         </div>
       </div>
 

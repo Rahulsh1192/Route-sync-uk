@@ -1,0 +1,167 @@
+# ── RouteSync full stack ──────────────────────────────────────────────────────
+# Brings up infra (Postgres/Redis/MinIO) plus all three app images built from
+# their Dockerfiles. Run from the repo root:
+#
+#   docker compose up --build
+#
+# Services then reach each other by name (postgres, redis, minio) on the compose
+# network — the localhost URLs in the .env.example files are only for host-side
+# dev and are overridden below.
+#
+#   Web app    → http://localhost:5174
+#   Admin app  → http://localhost:5180
+#   API + docs → http://localhost:3000  (/docs for Swagger)
+#   MinIO console → http://localhost:9001  (routesync / routesync123)
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: routesync
+      POSTGRES_PASSWORD: routesync
+      POSTGRES_DB: routesync
+    ports: ["5434:5432"]   # host 5434 → container 5432 (5432/5433 often taken)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routesync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-compatible local stand-in for Cloudflare R2 / AWS S3
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: routesync
+      MINIO_ROOT_PASSWORD: routesync123
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"   # allow browser presigned PUT uploads (dev)
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # console
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Creates the default bucket on startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set local http://minio:9000 routesync routesync123) do sleep 1; done;
+      mc mb -p local/routesync-media || true;
+      mc anonymous set none local/routesync-media;
+      exit 0;
+      "
+
+  # ── Application services ────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      API_BASE_URL: http://localhost:3000
+      DATABASE_URL: postgresql://routesync:routesync@postgres:5432/routesync?schema=public
+      REDIS_URL: redis://redis:6379
+      # Object storage (points at the MinIO service on the compose network)
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: auto
+      S3_BUCKET: routesync-media
+      S3_ACCESS_KEY: routesync
+      S3_SECRET_KEY: routesync123
+      S3_FORCE_PATH_STYLE: "true"
+      SIGNED_URL_TTL: "3600"
+      # Dev secrets — override with real values in any shared/prod environment.
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      JWT_ACCESS_TTL: "900"
+      JWT_REFRESH_TTL: "2592000"
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    environment:
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://routesync:routesync@postgres:5432/routesync
+      API_BASE_URL: http://api:3000
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: auto
+      S3_BUCKET: routesync-media
+      S3_ACCESS_KEY: routesync
+      S3_SECRET_KEY: routesync123
+      # AI toggles (off by default for light local runs)
+      ENABLE_AI_BLUR: "false"
+      ENABLE_WHISPER: "false"
+      YOLO_MODEL: yolov8n.pt
+      # Optional self-hosted routing engine; empty = geometry fallback.
+      # Enable the valhalla profile below and set to http://valhalla:8002 to use it.
+      VALHALLA_URL: ""
+
+  frontends:
+    build:
+      context: .
+      dockerfile: Dockerfile     # root Dockerfile builds web + admin
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "5174:5174"   # web
+      - "5180:5180"   # admin
+
+  # ── Optional: self-hosted routing engine ────────────────────────────────────
+  # Enable with:  docker compose --profile maps up
+  # First run downloads a UK OSM extract and builds tiles (slow, ~minutes).
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    profiles: ["maps"]
+    ports:
+      - "8002:8002"
+    environment:
+      tile_urls: https://download.geofabrik.de/europe/great-britain-latest.osm.pbf
+      server_threads: 2
+    volumes:
+      - valhalla_tiles:/custom_files
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  valhalla_tiles:

@@ -118,8 +118,35 @@ model User {
   subscriptions  Subscription[]
   routes         Route[]
   uploads        Upload[]
+  testDetails    UserTestDetail[]
+  demoRouteClaim DemoRouteClaim?
 
   @@map("users")
+}
+
+// Phase 19c: a non-Premium user's single claimed route (one per account, keyed
+// on user_id). The route must belong to the user's declared test centre.
+model DemoRouteClaim {
+  userId    String   @id @map("user_id") @db.Uuid
+  routeId   String   @map("route_id") @db.Uuid
+  claimedAt DateTime @default(now()) @map("claimed_at") @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("demo_route_claims")
+}
+
+// Phase 19b: history of a user's declared test centre + date. The most recent
+// row is the "current" details; the gate requires at least one row to exist.
+model UserTestDetail {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  testCentreId String   @map("test_centre_id") @db.Uuid
+  testDate     DateTime @map("test_date") @db.Date
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("user_test_details")
 }
 
 model AuthIdentity {
@@ -155,6 +182,9 @@ model Subscription {
   status             SubscriptionStatus @default(active)
   source             BillingSource?
   externalId         String?            @map("external_id")
+  // Per-centre Premium: the test centre this subscription unlocks.
+  // NULL = legacy/universal subscription (covers all centres).
+  testCentreId       String?            @map("test_centre_id") @db.Uuid
   currentPeriodEnd   DateTime?          @map("current_period_end") @db.Timestamptz
   cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
   priceMinor         Int?               @map("price_minor")

@@ -1,0 +1,51 @@
+# Render Blueprint for the RouteSync API (free tier).
+# In Render: New > Blueprint > pick this repo. It reads this file and creates the
+# service. Then set the secret env vars (DATABASE_URL, REDIS_URL) in the dashboard.
+#
+# Notes:
+#  - `--include=dev` forces devDependencies (nest cli, typescript, prisma) to install
+#    even though NODE_ENV=production, otherwise the build can't compile.
+#  - Render injects PORT automatically; the app reads it (process.env.PORT).
+#  - Free web services sleep after ~15 min idle and cold-start on the next request.
+services:
+  - type: web
+    name: routesync-api
+    runtime: node
+    plan: free
+    rootDir: apps/api
+    buildCommand: npm install --include=dev && npm run prisma:generate && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Secrets — set these in the Render dashboard (sync:false = not stored in git):
+      - key: DATABASE_URL          # from Supabase (Postgres + PostGIS)
+        sync: false
+      - key: REDIS_URL             # from Upstash
+        sync: false
+      # Auto-generated strong secrets:
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: "900"
+      - key: JWT_REFRESH_TTL
+        value: "2592000"
+      # Object storage. NOTE: the API validates these at startup and WON'T BOOT if any
+      # are missing — so we give placeholders here. They let the app start; real
+      # uploads/video won't work until you replace them with genuine Cloudflare R2
+      # (or S3) credentials. Browsing seeded routes doesn't need them.
+      - key: S3_ENDPOINT
+        value: https://placeholder.r2.cloudflarestorage.com
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: routesync-media
+      - key: S3_ACCESS_KEY
+        value: placeholder
+      - key: S3_SECRET_KEY
+        value: placeholder
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"

@@ -31,6 +31,7 @@ class RouteSyncApp extends StatelessWidget {
         Provider<TokenStore>.value(value: tokens),
         Provider<AuthRepository>(create: (_) => AuthRepository(api, tokens)),
         Provider<RoutesRepository>(create: (_) => RoutesRepository(api)),
+        Provider<TestDetailsRepository>(create: (_) => TestDetailsRepository(api)),
         Provider<SubscriptionRepository>(create: (_) => SubscriptionRepository(api)),
         Provider<CommunityRepository>(create: (_) => CommunityRepository(api)),
         ChangeNotifierProvider<AuthController>(

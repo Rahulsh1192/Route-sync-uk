@@ -43,8 +43,14 @@ export function PracticePage() {
 
   useEffect(() => {
     api.practice(id!).then(setRoute).catch((e) => {
-      if (e instanceof ApiError && e.status === 403) nav('/paywall');
-      else setError((e as Error).message);
+      // Deep-linked here without clearing the gates: send to the right next step.
+      if (e instanceof ApiError && e.status === 403) {
+        if (e.message === 'TEST_DETAILS_REQUIRED') {
+          nav('/test-details', { state: { returnTo: `/route/${id}` } });
+        } else {
+          nav(`/route/${id}`); // route detail runs the per-centre paywall flow
+        }
+      } else setError((e as Error).message);
     });
     return () => {
       if (timer.current) window.clearInterval(timer.current);

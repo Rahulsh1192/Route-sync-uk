@@ -321,15 +321,32 @@ MasterClock(position)
 
 ## 10. Subscription system (deliverable #10)
 
-- **Plans:** Free (1 sample route), Premium £4.99/mo, £29.99/yr.
-- **Premium unlocks:** unlimited routes, practice mode, multi-view, offline, instructor
-  routes — enforced server-side by an `EntitlementGuard`, never trusted from the client.
+- **Access model:** Registration is required for **all** access, including the demo — there is no
+  anonymous entry. Before using any route (demo or Premium), the user must provide their
+  **test centre** and **test date**.
+- **Plans:** Demo/Free (**one route total, account-wide**), Premium £4.99/mo or £39.99/yr
+  **per test centre**.
+- **Premium is purchased per test centre and is not switchable** — model each subscription as a
+  `(user, test_centre)` entitlement unlocking unlimited routes for that one centre; covering
+  multiple centres means multiple concurrent subscriptions.
+- **Premium unlocks (for the purchased centre):** unlimited routes, practice mode, multi-view,
+  offline, instructor routes — enforced server-side by an `EntitlementGuard` keyed on the route's
+  test centre, never trusted from the client.
 - **Web** → Stripe Checkout + Customer Portal (handles UK VAT, dunning, refunds).
 - **Mobile** → **Apple/Google IAP via RevenueCat** (this is mandatory — Apple/Google
   require digital subscriptions to go through IAP; selling Stripe inside the app gets the
   app rejected). RevenueCat normalises both stores + Stripe into one entitlement.
-- Source of truth = `subscriptions` table, updated by **webhooks** (Stripe +
-  RevenueCat), reconciled nightly. Entitlement cached in Redis with short TTL.
+- Source of truth = `subscriptions` table (now carrying `test_centre_id`), updated by
+  **webhooks** (Stripe + RevenueCat), reconciled nightly. Entitlement cached in Redis with short TTL.
+- **Access-control tables (Phase 19):**
+  - `user_test_details` — history of each user's declared test centre + test date; the latest
+    row is the "current" details. The test-details gate requires at least one row.
+  - `demo_route_claims` — a non-Premium user's single claimed route (PK on `user_id` → one per
+    account); the claimed route must be at their declared test centre.
+- **Central decision point:** `RoutesService.resolveAccess()` folds the three checks — test-details
+  gate → per-centre Premium → one-route demo allowance — into one result. `GET /routes/:id/access`
+  exposes it as a dry run (no claim side-effect) so web + mobile route to the right next step;
+  `playback`/`practice` enforce it and claim the demo route on first use.
 
 ---
 

@@ -1,0 +1,97 @@
+name: Deploy
+
+# Runs only after "Docker Build & Push" completes successfully, so the images
+# this deploy pulls are guaranteed to exist. (You cannot use `needs:` across
+# workflows — that was the original bug — so we chain via workflow_run.)
+on:
+  workflow_run:
+    workflows: ["Docker Build & Push"]
+    types: [completed]
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (defaults to the branch name)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # For workflow_run, only proceed if the upstream build actually succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # docker-build tags images with the branch name (type=ref,event=branch),
+      # so the deployable tag is the branch that triggered the build.
+      - name: Resolve image tag
+        id: tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.event.workflow_run.head_branch }}"
+          fi
+          TAG="${TAG:-master}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Deploying tag: $TAG"
+
+      - name: Deploy to staging
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          # The remote /app/docker-compose.yml is expected to reference the three
+          # images by tag, e.g.  image: ghcr.io/${IMAGE_NAME}/api:${IMAGE_TAG}
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd /app && IMAGE_TAG='$IMAGE_TAG' docker compose pull && IMAGE_TAG='$IMAGE_TAG' docker compose up -d"
+
+      - name: Health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          # API listens on 3000 with a global "api" prefix → /api/health
+          for i in $(seq 1 30); do
+            if curl -fsS "http://$DEPLOY_HOST:3000/api/health"; then
+              echo "✅ Deployment healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ Health check failed"
+          exit 1
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "✅ RouteSync deployment successful (tag ${{ steps.tag.outputs.tag }})"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "❌ RouteSync deployment failed (tag ${{ steps.tag.outputs.tag }})"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

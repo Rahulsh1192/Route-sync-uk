@@ -16,6 +16,7 @@ import { InstructorsPage } from './pages/InstructorsPage';
 import { InstructorProfilePage } from './pages/InstructorProfilePage';
 import { BookingsPage } from './pages/BookingsPage';
 import { ProgressPage } from './pages/ProgressPage';
+import { TestDetailsPage } from './pages/TestDetailsPage';
 
 // Code-split the heavy media pages (hls.js + leaflet) out of the initial bundle
 // so first paint on mobile stays light.
@@ -56,6 +57,7 @@ export function App() {
       <Route path="/instructors/:id" element={<Protected><InstructorProfilePage /></Protected>} />
       <Route path="/bookings" element={<Protected><BookingsPage /></Protected>} />
       <Route path="/account/progress" element={<Protected><ProgressPage /></Protected>} />
+      <Route path="/test-details" element={<Protected><TestDetailsPage /></Protected>} />
 
       {/* full-screen experiences — lazy-loaded (heavy media libs) */}
       <Route

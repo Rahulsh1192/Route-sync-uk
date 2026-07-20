@@ -5,10 +5,15 @@ import 'package:go_router/go_router.dart';
 /// via RevenueCat (purchases_flutter). Web uses Stripe Checkout instead. After a
 /// successful purchase RevenueCat's webhook updates the server-side entitlement.
 class PaywallScreen extends StatelessWidget {
-  const PaywallScreen({super.key});
+  const PaywallScreen({super.key, this.testCentreId, this.centreLabel});
+
+  /// The test centre this subscription unlocks. Premium is purchased per centre
+  /// and is not switchable (Phase 19d).
+  final String? testCentreId;
+  final String? centreLabel;
 
   static const _features = [
-    'Unlimited routes for your test centre',
+    'Unlimited routes for the chosen test centre',
     'Practice mode with UK voice guidance',
     'Multi-view playback (front, rear, split, map)',
     'AI-generated learning summaries',
@@ -21,13 +26,21 @@ class PaywallScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final heading = centreLabel != null && centreLabel!.isNotEmpty
+        ? 'Unlock $centreLabel'
+        : 'Unlock a test centre';
     return Scaffold(
       appBar: AppBar(title: const Text('RouteSync Premium')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Unlock everything', style: Theme.of(context).textTheme.headlineMedium),
+          Text(heading, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
+          Text(
+            'Premium is purchased per test centre and is not switchable.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
           Text(_bookingNote,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
           const SizedBox(height: 16),
@@ -43,14 +56,14 @@ class PaywallScreen extends StatelessWidget {
           _PlanCard(
             title: 'Monthly',
             price: '£4.99',
-            period: 'per month',
+            period: 'per month · per test centre',
             onTap: () => _purchase(context, 'premium_monthly'),
           ),
           const SizedBox(height: 12),
           _PlanCard(
             title: 'Yearly',
             price: '£39.99',
-            period: 'per year — save 33%',
+            period: 'per year · per test centre — save 33%',
             highlight: true,
             onTap: () => _purchase(context, 'premium_yearly'),
           ),
@@ -66,12 +79,14 @@ class PaywallScreen extends StatelessWidget {
   }
 
   Future<void> _purchase(BuildContext context, String plan) async {
-    // TODO: drive RevenueCat purchase flow:
+    // TODO: drive RevenueCat purchase flow. Premium is per test centre, so set
+    // the subscriber attribute the webhook reads before purchasing:
+    //   await Purchases.setAttributes({'test_centre_id': testCentreId ?? ''});
     //   final offerings = await Purchases.getOfferings();
     //   await Purchases.purchasePackage(package);
-    // RevenueCat webhook then updates the entitlement server-side.
+    // The RevenueCat webhook then attaches the entitlement to this centre.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('IAP for $plan pending RevenueCat wiring')),
+      SnackBar(content: Text('IAP for $plan (centre: ${testCentreId ?? 'unset'}) pending RevenueCat wiring')),
     );
     if (context.mounted) context.pop();
   }
