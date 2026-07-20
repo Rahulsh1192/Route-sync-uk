@@ -1,25 +1,117 @@
-overview
+🎨 1. BRANDING & LANDING PAGE
+[ ] Rename app to Test Routify
 
+[ ] Add background video/image on landing page
 
-The core loop
-ADI records a test route while driving → uploads it to RouteSync, it can record and upload gps (gpx) file  and video separately 
+[ ] Add Google login
 
-2. The Three Roles
-Premium plan:
-Unlimited test routes of the selected test center, practice mode, AI summaries, offline access
-No Premium needed to: book an instructor
+[ ] Add Apple login
 
+[ ] Create new logo for Test Routify
 
-🎓 Instructor (ADI)
-Subscribe to the Premium Route Library (same as learners) for practicing test centers  
+🧭 2. HEADER & NAVIGATION (UPDATED AS PER YOUR REQUEST)
+Header
+[ ] Remove search bar from header completely
 
+Tabs
+[ ] Keep Discover Routes tab exactly as it is
 
-3. Learner Journey — Full Cycle
-Create account
-— you're logged in immediately
-Option B — Demo (still need registration ) and can view or practice one route of the selected test center but need to share the test details like the test center and the date before using test routes for premium or demo user
+[ ] Add Test Centres tab
 
+[ ] Remove all other sidebar search/filter entries
 
-8. Demo Walkthrough Scripts
-1
-"registration account needed — let's use the demo mode"
+[ ] After signing in → user should enter Test Centres section first (default landing page after login)
+
+Permissions
+[ ] Only admin/instructor can create/edit/delete test centres
+
+[ ] Students can only view test centres and routes
+
+Sidebar Search (REMOVED)
+❌ Postcode filter
+❌ Test centre filter
+❌ City/Town filter
+(You requested these to be removed — done)
+
+🏫 3. TEST CENTRES MODULE
+[ ] Create Test Centre (admin/instructor only)
+
+[ ] Edit Test Centre (admin/instructor only)
+
+[ ] Delete Test Centre (admin/instructor only)
+
+[ ] Test centre fields:
+
+Name
+
+Postcode
+
+City/Town
+
+Address
+
+Lat/Lng (auto from postcode API)
+
+Description
+
+[ ] Test centres can have multiple routes
+
+[ ] Every route must belong to a test centre
+
+🛣️ 4. ROUTES MODULE
+[ ] Distance must be shown in miles
+
+[ ] Remove time from route card
+
+[ ] Remove <span class="stat">🔄 4</span>
+
+[ ] Add instructor avatar on route card
+
+[ ] Add instructor name + verified badge
+
+[ ] Clicking instructor → open instructor profile
+
+[ ] Clicking route title → open route details page
+
+[ ] Instructor information should exist only inside routes
+
+[ ] Only admin/instructor can upload routes
+
+🔍 5. GLOBAL SEARCH (ROUTE LIST PAGE)
+[ ] Implement global search on route list page
+URL:
+https://route-sync-6uxbylh08-rahul-saurav.vercel.app/route/22222222-2222-2222-2222-222222222222
+
+Search should cover:
+
+Route title
+
+Instructor name
+
+Test centre
+
+City/Town
+
+Postcode
+
+(These filters are global search, not sidebar search.)
+
+🎥 6. WATCH ROUTE & PRACTICE ROUTE
+[ ] Fix logic so test centres can have multiple routes
+
+[ ] Ensure every route has a test centre
+
+[ ] Show instructor info
+
+[ ] Show distance in miles
+
+[ ] Remove time + refresh icon
+
+👨‍🏫 7. INSTRUCTOR MODULE
+[ ] Instructor profile page
+
+[ ] Show avatar, name, verified badge
+
+[ ] Show routes created
+
+[ ] Show associated test centres
