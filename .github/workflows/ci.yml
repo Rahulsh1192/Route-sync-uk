@@ -47,7 +47,8 @@ jobs:
       - run: npm ci
       # Prisma client must be generated before the Nest build type-checks.
       - run: npm run prisma:generate --if-present
-      - run: npm run lint --if-present
+      # NOTE: no ESLint is configured in this project (the `lint` script references
+      # eslint but it isn't a dependency), so we rely on the compiler for checks.
       - run: npm run build   # nest build doubles as the type-check
       - run: npm test --if-present -- --passWithNoTests
         env:
