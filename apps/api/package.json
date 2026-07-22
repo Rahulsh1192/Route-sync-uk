@@ -1,7 +1,7 @@
 {
   "name": "routesync-api",
   "version": "0.1.0",
-  "description": "RouteSync NestJS business API",
+  "description": "Test Routify NestJS business API",
   "private": true,
   "scripts": {
     "build": "nest build",

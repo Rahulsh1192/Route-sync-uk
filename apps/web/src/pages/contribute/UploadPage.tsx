@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, putToPresigned, DeclaredFile } from '../../api/client';
+import { TestCentre } from '../../api/types';
 
 type Phase = 'form' | 'uploading' | 'finalising';
 
@@ -8,6 +9,8 @@ export function UploadPage() {
   const nav = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [testCentreId, setTestCentreId] = useState('');
+  const [centres, setCentres] = useState<TestCentre[]>([]);
   const [front, setFront] = useState<File[]>([]);
   const [rear, setRear] = useState<File[]>([]);
   const [gpx, setGpx] = useState<File | null>(null);
@@ -17,8 +20,18 @@ export function UploadPage() {
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
 
+  // Every route must belong to a test centre (Phase 20), so load the list to pick from.
+  useEffect(() => {
+    api.listTestCentres().then(setCentres).catch(() => setCentres([]));
+  }, []);
+
   const canSubmit =
-    title.trim().length > 1 && gpx !== null && front.length > 0 && agree && phase === 'form';
+    title.trim().length > 1 &&
+    testCentreId !== '' &&
+    gpx !== null &&
+    front.length > 0 &&
+    agree &&
+    phase === 'form';
 
   async function submit() {
     setError(null);
@@ -41,6 +54,7 @@ export function UploadPage() {
       const { uploadId, targets } = await api.initUpload({
         title: title.trim(),
         description: description.trim() || undefined,
+        testCentreId,
         clockSource: 'file_mtime',
         files: declared,
       });
@@ -99,6 +113,16 @@ export function UploadPage() {
       <div className="card">
         <label>Route title</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Mill Hill morning route" />
+        <label>Test centre *</label>
+        <select value={testCentreId} onChange={(e) => setTestCentreId(e.target.value)}>
+          <option value="">Select the test centre this route belongs to…</option>
+          {centres.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {c.town ? ` — ${c.town}` : ''}
+            </option>
+          ))}
+        </select>
         <label>Description (optional)</label>
         <input value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>

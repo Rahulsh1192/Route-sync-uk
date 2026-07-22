@@ -1,4 +1,4 @@
-# RouteSync — System Architecture
+# Test Routify — System Architecture
 
 > A UK driving-route learning platform. Watch real, GPS-synchronised driving routes
 > (front + rear dashcam), then practise them later as turn-by-turn voice navigation.
@@ -322,8 +322,12 @@ MasterClock(position)
 ## 10. Subscription system (deliverable #10)
 
 - **Access model:** Registration is required for **all** access, including the demo — there is no
-  anonymous entry. Before using any route (demo or Premium), the user must provide their
-  **test centre** and **test date**.
+  anonymous entry. Learners then **browse freely**: test centres are a first-class, browsable
+  section (the default landing page after sign-in) and every route belongs to exactly one centre.
+  There is **no** mandatory test-centre/test-date gate (removed in Phase 20). Access resolves as:
+  (a) Premium for a route's test centre unlocks **all** routes at that centre; (b) otherwise the
+  **first route the user opens** becomes their one free demo route (account-wide, any centre);
+  (c) any further route → the per-centre paywall.
 - **Plans:** Demo/Free (**one route total, account-wide**), Premium £4.99/mo or £39.99/yr
   **per test centre**.
 - **Premium is purchased per test centre and is not switchable** — model each subscription as a
@@ -338,15 +342,14 @@ MasterClock(position)
   app rejected). RevenueCat normalises both stores + Stripe into one entitlement.
 - Source of truth = `subscriptions` table (now carrying `test_centre_id`), updated by
   **webhooks** (Stripe + RevenueCat), reconciled nightly. Entitlement cached in Redis with short TTL.
-- **Access-control tables (Phase 19):**
-  - `user_test_details` — history of each user's declared test centre + test date; the latest
-    row is the "current" details. The test-details gate requires at least one row.
+- **Access-control tables:**
   - `demo_route_claims` — a non-Premium user's single claimed route (PK on `user_id` → one per
-    account); the claimed route must be at their declared test centre.
-- **Central decision point:** `RoutesService.resolveAccess()` folds the three checks — test-details
-  gate → per-centre Premium → one-route demo allowance — into one result. `GET /routes/:id/access`
-  exposes it as a dry run (no claim side-effect) so web + mobile route to the right next step;
-  `playback`/`practice` enforce it and claim the demo route on first use.
+    account, account-wide/any centre); claimed on first watch/practise of the first route opened.
+- **Central decision point:** `RoutesService.resolveAccess()` folds the two checks — per-centre
+  Premium → one-route demo allowance — into one result (the Phase 19 test-details gate was removed
+  in Phase 20). `GET /routes/:id/access` exposes it as a dry run (no claim side-effect) so web +
+  mobile route to the right next step; `playback`/`practice` enforce it and claim the demo route on
+  first use.
 
 ---
 

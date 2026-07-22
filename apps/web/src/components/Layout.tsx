@@ -3,20 +3,18 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const bottomTabs = [
-  { to: '/discover',    label: 'Discover',     ico: '🧭' },
-  { to: '/search',      label: 'Search',        ico: '🔍' },
-  { to: '/instructors', label: 'Instructors',   ico: '🎓' },
-  { to: '/contribute',  label: 'Contribute',    ico: '⬆️' },
-  { to: '/account',     label: 'Account',       ico: '👤' },
+  { to: '/test-centres', label: 'Test Centres', ico: '🏫' },
+  { to: '/discover',     label: 'Discover',     ico: '🧭' },
+  { to: '/contribute',   label: 'Contribute',   ico: '⬆️' },
+  { to: '/account',      label: 'Account',      ico: '👤' },
 ];
 
 const desktopNav = [
-  { to: '/discover',    label: 'Discover' },
-  { to: '/search',      label: 'Search' },
-  { to: '/instructors', label: 'Instructors' },
-  { to: '/bookings',    label: 'My Bookings' },
-  { to: '/contribute',  label: 'Contribute' },
-  { to: '/account',     label: 'Account' },
+  { to: '/test-centres', label: 'Test Centres' },
+  { to: '/discover',     label: 'Discover Routes' },
+  { to: '/bookings',     label: 'My Bookings' },
+  { to: '/contribute',   label: 'Contribute' },
+  { to: '/account',      label: 'Account' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -24,8 +22,8 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <header className="topbar">
-        <NavLink to="/discover" className="brand">
-          Route<span>Sync</span>
+        <NavLink to="/test-centres" className="brand">
+          Test<span>Routify</span>
         </NavLink>
         <nav className="nav-desktop">
           {desktopNav.map((t) => (

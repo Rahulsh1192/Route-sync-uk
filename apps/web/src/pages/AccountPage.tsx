@@ -64,22 +64,6 @@ export function AccountPage() {
 
       <div className="card">
         <div className="row">
-          <span style={{ fontSize: 18 }}>📝</span>
-          <div>
-            <strong>Test details</strong>
-            <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
-              Your test centre and date — required before using routes.
-            </p>
-          </div>
-          <div className="spacer" />
-          <button className="btn secondary auto" onClick={() => nav('/test-details')}>
-            Set / update
-          </button>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="row">
           <span style={{ fontSize: 18 }}>🏫</span>
           <div>
             <strong>Book a driving instructor</strong>
@@ -126,7 +110,7 @@ export function AccountPage() {
           <div className="row">
             <span style={{ fontSize: 22 }}>📲</span>
             <div>
-              <strong>Install RouteSync</strong>
+              <strong>Install Test Routify</strong>
               <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
                 Add to your home screen for offline access and a faster experience.
               </p>

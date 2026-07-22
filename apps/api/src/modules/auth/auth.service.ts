@@ -109,7 +109,7 @@ export class AuthService {
         data: {
           email: email ?? undefined,
           emailVerified: !!email,
-          displayName: name ?? email?.split('@')[0] ?? 'RouteSync user',
+          displayName: name ?? email?.split('@')[0] ?? 'Test Routify user',
           identities: { create: { provider, providerUid } },
           subscriptions: { create: {} },
         },

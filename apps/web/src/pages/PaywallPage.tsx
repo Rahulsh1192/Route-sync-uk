@@ -46,7 +46,7 @@ export function PaywallPage() {
         ← Back
       </button>
       <h1 className="page">
-        {centreLabel ? `Unlock ${centreLabel}` : 'RouteSync Premium'}
+        {centreLabel ? `Unlock ${centreLabel}` : 'Test Routify Premium'}
       </h1>
       <p className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
         Premium is purchased per test centre and is not switchable —

@@ -21,13 +21,9 @@ export function WatchPage() {
 
   useEffect(() => {
     api.playback(id!).then(setManifest).catch((e) => {
-      // Deep-linked here without clearing the gates: send to the right next step.
+      // Deep-linked here without access: route detail runs the per-centre paywall flow.
       if (e instanceof ApiError && e.status === 403) {
-        if (e.message === 'TEST_DETAILS_REQUIRED') {
-          nav('/test-details', { state: { returnTo: `/route/${id}` } });
-        } else {
-          nav(`/route/${id}`); // route detail runs the per-centre paywall flow
-        }
+        nav(`/route/${id}`);
       } else setError((e as Error).message);
     });
   }, [id, nav]);

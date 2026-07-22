@@ -26,9 +26,9 @@ export function Login({ onLogin }: { onLogin: () => void }) {
     <div className="login-shell">
       <div className="login-card" role="main">
         <div className="login-logo">
-          <div className="login-logo-mark" aria-hidden="true">R</div>
+          <div className="login-logo-mark" aria-hidden="true">TR</div>
         </div>
-        <h1>RouteSync Admin</h1>
+        <h1>Test Routify Admin</h1>
         <p className="subtitle">Sign in to the admin console</p>
 
         {error && (

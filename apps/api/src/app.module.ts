@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { RoutesModule } from './modules/routes/routes.module';
+import { TestCentresModule } from './modules/test-centres/test-centres.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { SearchModule } from './modules/search/search.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
@@ -41,6 +42,7 @@ import { HealthController } from './health.controller';
     AuthModule,
     UsersModule,
     RoutesModule,
+    TestCentresModule,
     UploadsModule,
     SearchModule,
     WebhooksModule,

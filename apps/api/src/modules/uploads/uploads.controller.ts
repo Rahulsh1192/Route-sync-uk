@@ -14,15 +14,15 @@ import { CurrentUser, AuthUser } from '../../common/decorators/current-user.deco
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
-  // Only contributors/instructors/admins may upload routes.
+  // Phase 20: only instructors/admins may upload routes (students view only).
   @Post()
-  @Roles('contributor', 'instructor', 'admin')
+  @Roles('instructor', 'admin')
   init(@CurrentUser() user: AuthUser, @Body() dto: InitUploadDto) {
     return this.uploads.init(user.id, dto);
   }
 
   @Post(':id/complete')
-  @Roles('contributor', 'instructor', 'admin')
+  @Roles('instructor', 'admin')
   complete(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.uploads.complete(user.id, id);
   }

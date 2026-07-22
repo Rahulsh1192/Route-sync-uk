@@ -1,8 +1,8 @@
 {
-  "name": "RouteSync — Learn UK driving routes",
-  "short_name": "RouteSync",
+  "name": "Test Routify — Learn UK driving routes",
+  "short_name": "Test Routify",
   "description": "Watch real GPS-synced UK driving-test routes and practise them as turn-by-turn voice navigation.",
-  "start_url": "/discover",
+  "start_url": "/test-centres",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -25,14 +25,14 @@
   ],
   "shortcuts": [
     {
+      "name": "Test centres",
+      "url": "/test-centres",
+      "description": "Browse UK driving test centres and their routes"
+    },
+    {
       "name": "Discover routes",
       "url": "/discover",
       "description": "Browse all available driving test routes"
-    },
-    {
-      "name": "Find an instructor",
-      "url": "/instructors",
-      "description": "Book a verified ADI near you"
     }
   ]
 }

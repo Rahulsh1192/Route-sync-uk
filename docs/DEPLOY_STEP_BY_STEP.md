@@ -1,4 +1,4 @@
-# Deploying RouteSync — A Learning Guide (free tier)
+# Deploying Test Routify — A Learning Guide (free tier)
 
 A slow, explained walkthrough for a frontend developer deploying a full stack for the
 first time. Every step has a **Do** (the action) and a **Why** (what it's for). Follow
@@ -63,7 +63,7 @@ database and Redis. The frontend never sees them.
 ## 2. Database — Supabase
 
 The database is where all data lives permanently: users, routes, subscriptions, test
-centres. RouteSync uses **PostgreSQL**, and specifically needs the **PostGIS**
+centres. Test Routify uses **PostgreSQL**, and specifically needs the **PostGIS**
 add-on (for map/location maths), which is why we chose Supabase.
 
 ### Step 2.1 — Enable PostGIS
@@ -87,9 +87,15 @@ click. After it runs you'll have ~7 users, some routes, and 45 test centres.
 > **Concept — schema vs migrations vs seed:**
 > - *Schema* = the shape (which tables/columns exist).
 > - *Migration* = a later, careful change to that shape on a database that already has
->   data (e.g. "add a column"). We combined schema + all migrations into one file for
+>   data (e.g. "add a column"). We combined schema + most migrations into one file for
 >   you here.
 > - *Seed* = fake starter data for testing.
+
+**Then apply the Phase 20 migration:** in a new SQL Editor query, run
+[`db/migrate_phase_20.sql`](../db/migrate_phase_20.sql) — it adds the `test_centres.address`
+and `test_centres.description` columns and an index on `routes.test_centre_id` for the Test
+Centres module. Optionally also run [`db/seed_test_centres_demo.sql`](../db/seed_test_centres_demo.sql)
+for extra demo test-centre content.
 
 ### Step 2.3 — Get the connection string (this is `DATABASE_URL`)
 **Do:** Supabase → **Connect** → **Connection string** → **Session pooler** → copy the
@@ -116,7 +122,7 @@ postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432
 
 ## 3. Redis — Upstash
 
-**Why the app needs Redis:** Redis is a very fast in-memory store. RouteSync uses it as
+**Why the app needs Redis:** Redis is a very fast in-memory store. Test Routify uses it as
 a **job queue** (via a library called BullMQ) and a cache. The API tries to connect to
 it **at startup**, so if `REDIS_URL` is missing or wrong, the API won't boot.
 
@@ -230,10 +236,11 @@ app" fallback.
 **Do:** Open your web app's `*.vercel.app` URL. Register or sign in as a seeded account
 (password `Password123!`), e.g. `learner@routesync.uk`. Try to open a route.
 
-**Why / what you should see:** you'll be asked for your **test centre + test date**
-(the gate), then routed to the paywall for a route outside your centre. If that flow
-works, then: Vercel served the app → the rewrite reached Render → Render queried
-Supabase → the answer came back. Every layer is proven in one click.
+**Why / what you should see:** you land on **Test Centres**, open a centre and then a
+route — the first route you open is your free demo route; opening a second route routes
+you to the paywall for that route's centre. If that flow works, then: Vercel served the
+app → the rewrite reached Render → Render queried Supabase → the answer came back. Every
+layer is proven in one click.
 
 ---
 

@@ -23,3 +23,6 @@ apps/mobile/.flutter-plugins*
 .DS_Store
 coverage/
 *.tmp
+
+# Local Claude Code project data (not for the repo)
+.claude/

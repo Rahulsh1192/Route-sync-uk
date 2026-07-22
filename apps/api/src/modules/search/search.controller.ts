@@ -7,25 +7,10 @@ import { SearchService } from './search.service';
 export class SearchController {
   constructor(private readonly search: SearchService) {}
 
+  // Phase 20: one global query term across title / instructor / centre / town / postcode.
   @Get('routes')
-  routes(
-    @Query('testCentre') testCentre?: string,
-    @Query('town') town?: string,
-    @Query('postcode') postcode?: string,
-    @Query('difficulty') difficulty?: string,
-    @Query('contributor') contributor?: string,
-    @Query('instructor') instructor?: string,
-    @Query('q') q?: string,
-  ) {
-    return this.search.routes({
-      testCentre,
-      town,
-      postcode,
-      difficulty,
-      contributor,
-      instructor: instructor === undefined ? undefined : instructor === 'true',
-      q,
-    });
+  routes(@Query('q') q?: string) {
+    return this.search.routes(q);
   }
 
   @Get('test-centres')

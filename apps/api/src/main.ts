@@ -24,7 +24,7 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const config = new DocumentBuilder()
-    .setTitle('RouteSync API')
+    .setTitle('Test Routify API')
     .setDescription('UK driving-route learning platform — business API')
     .setVersion('0.1.0')
     .addBearerAuth()
@@ -33,6 +33,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  Logger.log(`RouteSync API on http://localhost:${port} (docs at /docs)`, 'Bootstrap');
+  Logger.log(`Test Routify API on http://localhost:${port} (docs at /docs)`, 'Bootstrap');
 }
 bootstrap();

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { RouteAccess, RouteDetail } from '../api/types';
+import { RouteAccess, RouteDetail, distanceLabel } from '../api/types';
+import { InstructorByline } from '../components/InstructorByline';
 
 export function RouteDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,13 +16,10 @@ export function RouteDetailPage() {
     api.routeAccess(id).then(setAccess).catch(() => setAccess(null));
   }, [id]);
 
-  // The server decides access (test-details gate → per-centre Premium → one-route
-  // demo allowance). We just route the user to the right next step.
+  // The server decides access (per-centre Premium → one-route demo allowance).
+  // We just route the user to the paywall when needed.
   function open(kind: 'watch' | 'practice') {
     if (!access) return; // still loading
-    if (access.reason === 'TEST_DETAILS_REQUIRED') {
-      return nav('/test-details', { state: { returnTo: `/route/${id}` } });
-    }
     if (!access.allowed) {
       return nav('/paywall', {
         state: { testCentreId: access.testCentreId, centreLabel: access.centreLabel },
@@ -37,15 +35,39 @@ export function RouteDetailPage() {
       </button>
       <div className="card">
         <h1 className="page" style={{ marginTop: 0 }}>{route?.title ?? 'Route'}</h1>
-        <p className="muted">
+
+        {(route?.town || route?.postcode) && (
+          <div className="muted" style={{ fontSize: 13 }}>
+            {[route?.town, route?.postcode].filter(Boolean).join(' · ')}
+          </div>
+        )}
+
+        {route?.testCentre && (
+          <div style={{ marginTop: 6, fontSize: 13 }}>
+            🏫{' '}
+            <Link to={`/test-centres/${route.testCentre.id}`}>{route.testCentre.name}</Link>
+          </div>
+        )}
+
+        {route?.instructorName && (
+          <div style={{ marginTop: 10 }}>
+            <InstructorByline
+              id={route.instructorId}
+              name={route.instructorName}
+              avatar={route.instructorAvatar}
+              verified={route.instructorVerified}
+            />
+          </div>
+        )}
+
+        <div className="row" style={{ marginTop: 12 }}>
+          <span className="stat">📏 {distanceLabel(route?.distanceM)}</span>
+        </div>
+
+        <p className="muted" style={{ marginTop: 12 }}>
           Watch the real drive synced to GPS, or practise it as turn-by-turn voice guidance
           with no video — just like your test.
         </p>
-        {access && access.reason === 'TEST_DETAILS_REQUIRED' && (
-          <p className="muted" style={{ fontSize: 13 }}>
-            Share your test centre and date first — it only takes a moment.
-          </p>
-        )}
         {access && access.reason === 'PAYWALL' && (
           <p className="muted" style={{ fontSize: 13 }}>
             Premium for <strong>{access.centreLabel || 'this test centre'}</strong> unlocks this route.

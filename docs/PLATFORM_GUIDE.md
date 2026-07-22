@@ -1,4 +1,4 @@
-# RouteSync — Complete Platform Guide
+# Test Routify — Complete Platform Guide
 
 > **Version:** 2026 · **Audience:** Sales demos, client onboarding, internal training
 
@@ -20,14 +20,14 @@
 
 ## 1. Platform Overview
 
-**RouteSync** is a UK driving-test learning platform that connects learner drivers with real, GPS-synchronised dashcam footage of local test routes — and lets them practise those routes as turn-by-turn British English voice navigation, exactly like a sat-nav but for their actual driving test.
+**Test Routify** is a UK driving-test learning platform that connects learner drivers with real, GPS-synchronised dashcam footage of local test routes — and lets them practise those routes as turn-by-turn British English voice navigation, exactly like a sat-nav but for their actual driving test.
 
 It also connects learners directly with verified **Approved Driving Instructors (ADIs)** for lesson bookings, and gives instructors a professional tool to upload routes, earn reputation, and grow their driving business.
 
 ### The core loop
 
 ```
-ADI records a test route while driving  →  uploads it to RouteSync
+ADI records a test route while driving  →  uploads it to Test Routify
       ↓
 Platform AI processes it automatically
 (GPS validation · privacy blur · quality score · voice instructions)
@@ -45,7 +45,7 @@ Learner books the ADI for a real lesson · passes their test
 
 ### What makes it unique
 
-| Feature | RouteSync | YouTube | Theory apps |
+| Feature | Test Routify | YouTube | Theory apps |
 |---|---|---|---|
 | Real test-route footage | ✅ Test-centre specific | ❌ Hit and miss | ❌ Not applicable |
 | GPS-synchronised video | ✅ Frame-perfect | ❌ | ❌ |
@@ -64,9 +64,9 @@ A person learning to drive in the UK who wants to familiarise themselves with th
 
 - **Accesses via:** Web app (any browser) or mobile app (iOS/Android)
 - **Registration required:** Every user must create an account — there is **no anonymous access**, not even for the demo
-- **Demo (free):** Browse routes; view or practise **one route total** across the whole account
+- **Browses freely:** Test centres and their routes are fully browsable — there is **no** test-centre/test-date gate
+- **Demo (free):** The **first route you open** becomes your one free demo route (account-wide, any centre); view or practise **one route total** across the whole account
 - **Premium plan:** Unlimited routes **for each purchased test centre** — Premium is bought **per test centre** and is **not switchable**, plus practice mode, AI summaries, offline access
-- **Before using any test route** (demo or Premium): share your **test centre** and **test date**
 - **No Premium needed to:** Book an instructor
 
 ---
@@ -81,7 +81,7 @@ An Approved Driving Instructor (DVSA-registered) who uploads routes and optional
 ---
 
 ### 🛡️ Admin / Moderator
-RouteSync internal staff who review uploaded routes, verify instructor credentials, manage users, and oversee platform revenue.
+Test Routify internal staff who review uploaded routes, verify instructor credentials, manage users, and oversee platform revenue.
 
 - **Accesses via:** Admin Console (web, desktop only)
 - **Requires:** `admin` or `moderator` role
@@ -101,32 +101,31 @@ Open **http://localhost:5174** (or the production URL).
 
 **Option B — Demo (registration still required)**
 1. Register an account — **there is no anonymous access**
-2. Choose **demo mode** — you can view or practise **one route total** across your whole account
+2. Browse freely — the **first route you open** becomes your one free demo route (account-wide, any centre); you can view or practise **one route total**
 3. Video player and voice practice work fully on that one demo route
 
-> **Shared gate — applies to every user (demo *and* Premium):** before you can open any test route, RouteSync asks for your **test centre** and **test date**. You must share these before using test routes.
+> **No gate:** there is no test-centre/test-date step. Learners browse test centres and routes freely; access is decided per route (free demo route, then the per-centre paywall).
 
 ---
 
-### Step 2 — Discover Routes
+### Step 2 — Test Centres & Discover Routes
 
-After login you land on the **Discover** page.
+After login you land on the **Test Centres** page — a browsable list of centres. Open a centre to see its routes, or go to **Discover Routes** to see the full catalogue.
 
 - A grid of published routes appears, sorted by quality score
-- Each card shows: **Route name · Test centre town · Difficulty · Distance · Duration · Roundabout count**
+- Each card shows: **Route name · Test centre town · Difficulty · Distance (miles)**
+- Each card carries an **instructor byline** — avatar + name + a verified badge (click it to open the instructor's profile)
 - Colour-coded quality badges: green (70+) · amber (50–69)
-- Routes tagged **Instructor** are from verified ADIs
 
 ---
 
-### Step 3 — Search for Your Test Centre
+### Step 3 — Search Routes
 
-Click **Search** in the navigation bar.
+There is one **global search** on the **Discover Routes** list (no separate search page or header search bar).
 
-1. Type your test centre name, town, or postcode (e.g. "Mill Hill" or "NW7")
-2. Filter by difficulty: Beginner · Intermediate · Advanced · **Test standard**
-3. Click **Search**
-4. Results show all matching routes
+1. Type into the search box on the Discover page
+2. It matches across **route title, instructor name, test centre, town/city, and postcode** (e.g. "Mill Hill", "NW7", or an instructor's name)
+3. Results filter live as you type
 
 ---
 
@@ -212,15 +211,15 @@ Below the stats: a full **Route History** list with completion percentage bars f
 
 ### Step 8 — Book an Instructor
 
-Navigate to **Instructors** in the navigation bar (or **Account → Find instructors**).
+There is no standalone Instructors browse tab — instructor identity surfaces through routes.
 
 **Finding an instructor:**
-1. Enter a postcode or area (optional) and maximum price (optional)
-2. Click **Search**
-3. Browse instructor cards — each shows: name, ADI verification badge, reputation score, routes contributed, lesson price, years of experience
+1. On any route card or route detail, click the **instructor byline** (avatar + name + verified badge)
+2. This opens the instructor's **Profile page** — avatar, name, verified badge, the routes they created, and the test centres they cover
+3. Their bio, lesson price, reputation, and available time slots are shown here
 
 **Booking a lesson:**
-1. Click any instructor card → their **Profile page**
+1. On the instructor's **Profile page**
 2. Read their bio and see their available time slots
 3. Click a slot to select it (highlighted)
 4. Add an optional message (e.g. "Preparing for Mill Hill test — need roundabout practice")
@@ -262,7 +261,7 @@ Premium includes:
 
 On the **Account** page, if your browser supports installation:
 
-1. An **"📲 Install RouteSync"** card appears
+1. An **"📲 Install Test Routify"** card appears
 2. Click **Install** → browser's native install dialog appears
 3. The app installs to your home screen and runs fullscreen like a native app
 
@@ -300,7 +299,7 @@ Before uploading any routes, you must accept the **Footage Licensing Agreement**
 3. Upload your **ADI certificate** or provide a link to evidence
 4. Click **Submit**
 
-A RouteSync admin will review your application (typically within 24 hours).
+A Test Routify admin will review your application (typically within 24 hours).
 
 **After verification you receive:**
 - ✅ A **Verified Instructor** badge visible to all learners
@@ -412,7 +411,7 @@ Booking statuses: **Pending → Confirmed → Completed / Cancelled / No show**
 
 ### Step 9 — ADI Account Security
 
-RouteSync enforces **one active session per ADI** at all times:
+Test Routify enforces **one active session per ADI** at all times:
 
 - Logging in on a new device **immediately signs out all other devices**
 - Prevents licence sharing and protects your uploaded content
@@ -528,7 +527,7 @@ Full table of all lesson bookings across the platform.
 | Instructor | The ADI delivering the lesson |
 | Status | Pending · Confirmed · Cancelled · Completed · No show |
 | Amount | Total charged to the learner |
-| Platform fee | RouteSync's revenue from this booking (10% of lesson fee) |
+| Platform fee | Test Routify's revenue from this booking (10% of lesson fee) |
 
 ---
 
@@ -546,7 +545,7 @@ Every unique combination of plan + status with subscriber count. Shows the full 
 
 ### 🏦 Community Fund
 
-RouteSync contributes 10% of net profit to the Instructor Community Fund monthly.
+Test Routify contributes 10% of net profit to the Instructor Community Fund monthly.
 
 **Balance overview:** Contributed · Paid out · Current balance
 
@@ -608,7 +607,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 | Community Fund admin | ❌ | ❌ | ❌ | ✅ |
 | View all bookings | ❌ | ❌ | ❌ | ✅ |
 
-> **Access rules:** Registration is required for all access (including the demo). Every user must provide their **test centre** and **test date** before using routes. "Premium Learner" columns above apply **per purchased test centre** — a learner preparing at multiple centres holds one subscription per centre.
+> **Access rules:** Registration is required for all access (including the demo). Learners browse freely — there is no test-centre/test-date gate; the first route a user opens is their one free demo route. "Premium Learner" columns above apply **per purchased test centre** — a learner preparing at multiple centres holds one subscription per centre.
 
 ---
 
@@ -622,18 +621,18 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 | **Premium Monthly** | £4.99 / month · per test centre | Unlimited routes for one test centre |
 | **Premium Yearly** | £39.99 / year · per test centre | Unlimited routes for one test centre + 33% saving vs monthly |
 
-> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; learners preparing at multiple centres hold one subscription per centre. Registration is required for all access (including the demo), and every user must provide their test centre and test date before using routes.
+> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; learners preparing at multiple centres hold one subscription per centre. Registration is required for all access (including the demo); learners then browse freely, with the first route they open becoming their one free demo route.
 
 ### Instructor Lesson Bookings
 
 - Each ADI sets their own **lesson price** (default £35/hour)
-- RouteSync charges a **10% platform service fee** added to the lesson price
-- Example: £35 lesson → learner pays £38.50 → instructor receives £35 → RouteSync keeps £3.50
+- Test Routify charges a **10% platform service fee** added to the lesson price
+- Example: £35 lesson → learner pays £38.50 → instructor receives £35 → Test Routify keeps £3.50
 - The platform fee % is configurable by admin without a code deploy
 
 ### Community Fund
 
-- **10% of RouteSync's net profit** is contributed to the Instructor Community Fund every month
+- **10% of Test Routify's net profit** is contributed to the Instructor Community Fund every month
 - Distributed to verified ADI contributors as a reward for building the content library
 - Full public ledger at `/api/fund/summary` — complete transparency
 
@@ -647,9 +646,9 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 | Step | What to say | What to do |
 |---|---|---|
-| 1 | "Registration account needed — let's use the demo mode" | Open http://localhost:5174, register, then choose **demo mode** (one route total; share test centre + date) |
-| 2 | "Here are all the routes for different test centres across the UK" | Show Discover page grid |
-| 3 | "Each card shows the route, distance, roundabout count, quality score" | Point to a card |
+| 1 | "Registration account needed — then you browse freely" | Open http://localhost:5174, register (one free demo route; no test-centre/date gate) |
+| 2 | "You land on Test Centres — open a centre, or browse all routes on Discover" | Show Test Centres, then the Discover grid |
+| 3 | "Each card shows the route, distance in miles, instructor byline, quality score" | Point to a card |
 | 4 | "Let me open one" | Click any route → Route Detail |
 | 5 | "This is actual dashcam footage from a real car driving the test route" | Click **▶ Watch route** |
 | 6 | "Front and rear cameras simultaneously" | Click **Split** view |
@@ -663,7 +662,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 ### Script B — Instructor Demo (5 minutes)
 
-*"Now let me show you what an ADI gets from RouteSync."*
+*"Now let me show you what an ADI gets from Test Routify."*
 
 | Step | What to say | What to do |
 |---|---|---|
@@ -671,8 +670,8 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 | 2 | "This is the contributor dashboard — reputation, credits, badges" | Show Contribute page |
 | 3 | "Upload is simple — front cam, rear cam, GPS file. Multiple clips are fine." | Show Upload page briefly |
 | 4 | "The platform handles everything — blurs faces and plates automatically" | Describe pipeline |
-| 5 | "Learners find you here" | Navigate to /instructors |
-| 6 | "They see your price, bio, and available slots" | Click Sarah Johnson's profile |
+| 5 | "Learners find you through your routes — every card carries your byline" | Click the instructor byline on a route card |
+| 6 | "That opens your profile — price, bio, routes, and available slots" | Show Sarah Johnson's profile |
 | 7 | "They pick a slot and request a lesson — you confirm or decline" | Show available slots |
 | 8 | "All your bookings in one place" | Show My Bookings |
 | 9 | "Payment is handled by the platform. You receive the lesson fee directly." | Mention Stripe Connect |
@@ -681,7 +680,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 ### Script C — Admin Demo (5 minutes)
 
-*"Here's the operations side — what the RouteSync team sees."*
+*"Here's the operations side — what the Test Routify team sees."*
 
 | Step | What to say | What to do |
 |---|---|---|
@@ -717,10 +716,8 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 | URL | What opens |
 |---|---|
-| **http://localhost:5174** | Consumer web app (learner / instructor) |
-| http://localhost:5174/discover | Route catalogue |
-| http://localhost:5174/search | Search routes by test centre |
-| http://localhost:5174/instructors | Browse and book instructors |
+| **http://localhost:5174** | Consumer web app — lands on Test Centres |
+| http://localhost:5174/discover | Route catalogue + global search |
 | http://localhost:5174/bookings | My lesson bookings |
 | http://localhost:5174/account | Account settings |
 | http://localhost:5174/account/progress | Learning progress dashboard |
@@ -731,5 +728,5 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 ---
 
-*RouteSync — Helping every UK learner pass first time.*
+*Test Routify — Helping every UK learner pass first time.*
 *Guide prepared: July 2026*

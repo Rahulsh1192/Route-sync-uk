@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { RouteSummary, TestCentre } from '../api/types';
+import { RouteCard } from '../components/RouteCard';
 
 interface Slot { id: string; slot_date: string; start_time: string; end_time: string; }
 interface Profile {
@@ -13,6 +15,8 @@ export function InstructorProfilePage() {
   const nav = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [routes, setRoutes] = useState<RouteSummary[]>([]);
+  const [centres, setCentres] = useState<TestCentre[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -20,12 +24,17 @@ export function InstructorProfilePage() {
   const [booked, setBooked] = useState(false);
 
   useEffect(() => {
+    if (!id) return;
     Promise.all([
       api.request<Profile>(`/instructors/${id}/profile`),
       api.request<Slot[]>(`/instructors/${id}/slots`),
     ])
       .then(([p, s]) => { setProfile(p); setSlots(s); })
       .catch((e) => setError((e as Error).message));
+    // Routes created + associated test centres (Phase 20).
+    api.instructorRoutes(id)
+      .then(({ routes, testCentres }) => { setRoutes(routes); setCentres(testCentres); })
+      .catch(() => {});
   }, [id]);
 
   async function book() {
@@ -79,6 +88,30 @@ export function InstructorProfilePage() {
         </div>
         {profile.bio && <p style={{ marginTop: 12 }}>{profile.bio}</p>}
       </div>
+
+      {centres.length > 0 && (
+        <div className="card">
+          <strong>Test centres covered</strong>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {centres.map((c) => (
+              <Link key={c.id} to={`/test-centres/${c.id}`} className="pill accent">
+                🏫 {c.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {routes.length > 0 && (
+        <div className="card">
+          <strong>Routes created ({routes.length})</strong>
+          <div className="grid" style={{ marginTop: 12 }}>
+            {routes.map((r) => (
+              <RouteCard key={r.id} route={r} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 

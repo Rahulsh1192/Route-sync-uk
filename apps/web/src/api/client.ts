@@ -10,8 +10,11 @@ import type {
   UploadInitResult,
   UploadStatus,
   TestCentre,
+  TestCentreDetail,
+  TestCentreInput,
   TestDetails,
   TestDetailRecord,
+  Me,
 } from './types';
 
 export interface DeclaredFile {
@@ -157,25 +160,52 @@ export const api = {
       body: JSON.stringify({ email, password, displayName }),
     }),
 
+  // current user (includes role, for UI gating)
+  meUser: async (): Promise<Me | null> => {
+    if (demo.on) {
+      return { id: 'demo', displayName: 'Demo user', role: 'user', email: null, avatarUrl: null };
+    }
+    return request<Me>('/users/me');
+  },
+
   // routes
   listRoutes: async () => {
     if (demo.on) return { items: demoRoutes, nextCursor: null };
     return request<{ items: RouteSummary[]; nextCursor: string | null }>('/routes');
   },
-  searchRoutes: async (q: Record<string, string>) => {
+  // Phase 20 global search: one term across title / instructor / centre / town / postcode.
+  searchRoutes: async (q?: string): Promise<RouteSummary[]> => {
     if (demo.on) {
-      const term = (q.q ?? '').toLowerCase();
+      const term = (q ?? '').toLowerCase();
       return demoRoutes.filter(
         (r) =>
-          (!q.difficulty || r.difficulty === q.difficulty) &&
-          (!term ||
-            r.title.toLowerCase().includes(term) ||
-            (r.town ?? '').toLowerCase().includes(term) ||
-            (r.postcode ?? '').toLowerCase().includes(term)),
+          !term ||
+          r.title.toLowerCase().includes(term) ||
+          (r.town ?? '').toLowerCase().includes(term) ||
+          (r.postcode ?? '').toLowerCase().includes(term) ||
+          (r.instructorName ?? '').toLowerCase().includes(term),
       );
     }
-    return request<RouteSummary[]>(`/search/routes?${new URLSearchParams(q).toString()}`);
+    const qs = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return request<RouteSummary[]>(`/search/routes${qs}`);
   },
+
+  // An instructor's published routes + the test centres they cover.
+  instructorRoutes: (id: string) =>
+    request<{ routes: RouteSummary[]; testCentres: TestCentre[] }>(`/routes/by-instructor/${id}`),
+
+  // --- test centres (Phase 20) ---
+  listTestCentres: (q?: string) => {
+    const qs = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return request<TestCentre[]>(`/test-centres${qs}`);
+  },
+  testCentre: (id: string) => request<TestCentreDetail>(`/test-centres/${id}`),
+  createTestCentre: (input: TestCentreInput) =>
+    request<TestCentre>('/test-centres', { method: 'POST', body: JSON.stringify(input) }),
+  updateTestCentre: (id: string, input: Partial<TestCentreInput>) =>
+    request<TestCentre>(`/test-centres/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  deleteTestCentre: (id: string) =>
+    request<{ ok: boolean }>(`/test-centres/${id}`, { method: 'DELETE' }),
   route: async (id: string): Promise<RouteDetail> => {
     if (demo.on) {
       const r = demoRoutes.find((x) => x.id === id) ?? demoRoutes[0];

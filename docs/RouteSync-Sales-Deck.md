@@ -1,4 +1,4 @@
-# RouteSync — Product Overview & Sales Guide
+# Test Routify — Product Overview & Sales Guide
 
 > **For Sales Use Only** — Share this document with clients, prospects, and stakeholders.
 
@@ -6,7 +6,7 @@
 
 ## Table of Contents
 
-1. [What is RouteSync?](#1-what-is-routesync)
+1. [What is Test Routify?](#1-what-is-routesync)
 2. [The Problem We Solve](#2-the-problem-we-solve)
 3. [Who Is It For?](#3-who-is-it-for)
 4. [How It Works — The Simple Story](#4-how-it-works--the-simple-story)
@@ -16,14 +16,14 @@
 8. [The Admin Console (For Operators)](#8-the-admin-console-for-operators)
 9. [How to Run a Demo](#9-how-to-run-a-demo)
 10. [How to Onboard a New User (Step-by-Step)](#10-how-to-onboard-a-new-user-step-by-step)
-11. [What Makes RouteSync Different](#11-what-makes-routesync-different)
+11. [What Makes Test Routify Different](#11-what-makes-routesync-different)
 12. [Frequently Asked Questions](#12-frequently-asked-questions)
 
 ---
 
-## 1. What is RouteSync?
+## 1. What is Test Routify?
 
-**RouteSync is a UK driving-test learning platform** that helps learner drivers pass their practical driving test faster by letting them:
+**Test Routify is a UK driving-test learning platform** that helps learner drivers pass their practical driving test faster by letting them:
 
 - **Watch** the exact roads of their local test centre, filmed from real cars with front and rear cameras
 - **Practice** those routes as turn-by-turn voice navigation — just like a sat-nav, but for their test route
@@ -43,10 +43,10 @@ Every year, **roughly 1.7 million people take the UK practical driving test**. T
 - They've never driven certain junctions or roundabouts before
 - Nerves kick in because everything feels unfamiliar
 
-**RouteSync fixes this** by making the test route familiar *before* test day. When learners have already virtually "driven" the route dozens of times, test day becomes familiar territory, not a frightening unknown.
+**Test Routify fixes this** by making the test route familiar *before* test day. When learners have already virtually "driven" the route dozens of times, test day becomes familiar territory, not a frightening unknown.
 
 ### For Driving Instructors (ADIs)
-Approved Driving Instructors spend hours showing pupils the same test routes repeatedly. RouteSync lets instructors:
+Approved Driving Instructors spend hours showing pupils the same test routes repeatedly. Test Routify lets instructors:
 - Upload their own route recordings once
 - Have pupils watch and practice independently between lessons
 - Earn recognition, credits, and credibility through a verified instructor badge
@@ -55,7 +55,7 @@ Approved Driving Instructors spend hours showing pupils the same test routes rep
 
 ## 3. Who Is It For?
 
-| User Type | How They Use RouteSync | What They Get |
+| User Type | How They Use Test Routify | What They Get |
 |---|---|---|
 | **Learner Driver** | Watches routes before lessons & test | Familiarity with roads, higher pass chance |
 | **Driving Instructor (ADI)** | Uploads routes, earns reputation & credits | Passive income, differentiated service, more pupils |
@@ -69,9 +69,9 @@ Approved Driving Instructors spend hours showing pupils the same test routes rep
 ```
 Instructor films the route
          ↓
-Uploads front cam + rear cam + GPS track to RouteSync
+Uploads front cam + rear cam + GPS track to Test Routify
          ↓
-RouteSync's AI processes it automatically
+Test Routify's AI processes it automatically
 (syncs video to GPS, checks quality, removes faces & plates)
          ↓
 Route is published on the platform
@@ -147,7 +147,7 @@ Example voice prompts:
 ---
 
 ### 5.6 — Verified Instructor Programme
-**What it does:** Driving instructors can submit their ADI (Approved Driving Instructor) number and evidence of qualification. Once verified by the RouteSync admin team, they receive:
+**What it does:** Driving instructors can submit their ADI (Approved Driving Instructor) number and evidence of qualification. Once verified by the Test Routify admin team, they receive:
 - ✅ A **"Verified Instructor"** badge on their profile
 - 🔼 A **search ranking boost** (their routes appear higher in results)
 - ⚡ **Fast-tracked** route approvals
@@ -188,7 +188,7 @@ Routes with scores below the threshold are flagged for admin review rather than 
 ---
 
 ### 5.9 — Subscription & Premium Features
-**What it does:** RouteSync operates on a freemium model:
+**What it does:** Test Routify operates on a freemium model:
 
 | Feature | Demo (Free) | Premium |
 |---|---|---|
@@ -200,7 +200,7 @@ Routes with scores below the threshold are flagged for admin review rather than 
 | Offline downloads | ❌ | ✅ |
 | Verified instructor routes | ❌ | ✅ |
 
-> **Access rules:** Registration is required for all access, including the demo — there is no anonymous entry. Before using any route (demo or Premium), the user provides their **test centre** and **test date**. **Premium is purchased per test centre and is not switchable** — each subscription unlocks one specific centre.
+> **Access rules:** Registration is required for all access, including the demo — there is no anonymous entry. Learners browse freely; the **first route a user opens** becomes their one free demo route (account-wide, any centre). **Premium is purchased per test centre and is not switchable** — each subscription unlocks every route at one specific centre.
 
 **Why it matters for clients:** The demo tier lets registered users discover the product and experience it — a powerful conversion funnel. Premium unlocks the full value for their chosen test centre. Learners are already spending £30–60/hour on lessons; £4.99/month is an easy upsell.
 
@@ -219,7 +219,7 @@ This happens automatically during the processing pipeline — no manual editing 
 
 ## 6. The Two Products
 
-RouteSync is actually **two products in one:**
+Test Routify is actually **two products in one:**
 
 ### Product A — The Consumer App
 **Who uses it:** Learner drivers (and curious instructors)
@@ -235,7 +235,7 @@ RouteSync is actually **two products in one:**
 - Manage their subscription and account
 
 ### Product B — The Admin Console
-**Who uses it:** The RouteSync operations team, moderators
+**Who uses it:** The Test Routify operations team, moderators
 **Available as:**
 - 🖥️ **Web dashboard** (desktop browser only, secure login required)
 
@@ -259,9 +259,9 @@ RouteSync is actually **two products in one:**
 | **Premium Monthly** | **£4.99/month** · per test centre | Learners with a test coming up soon |
 | **Premium Yearly** | **£39.99/year** · per test centre | Long-term learners (save ~33%) |
 
-> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; a learner preparing at multiple centres holds one subscription per centre. Registration is required for all access (including the demo), and every user provides their test centre and test date before using routes.
+> **Premium is purchased per test centre and is not switchable.** Each subscription unlocks unlimited routes for one specific centre; a learner preparing at multiple centres holds one subscription per centre. Registration is required for all access (including the demo); learners then browse freely, with the first route they open becoming their one free demo route.
 
-**Context:** The average learner takes 45 hours of professional lessons at £30–35/hour = ~**£1,500 in lesson costs**. RouteSync Premium at £4.99/month is less than **0.3% of that spend** — yet could meaningfully increase pass rates.
+**Context:** The average learner takes 45 hours of professional lessons at £30–35/hour = ~**£1,500 in lesson costs**. Test Routify Premium at £4.99/month is less than **0.3% of that spend** — yet could meaningfully increase pass rates.
 
 ### Revenue Streams
 1. **Subscriptions** — recurring monthly/yearly revenue (primary)
@@ -272,7 +272,7 @@ RouteSync is actually **two products in one:**
 
 ## 8. The Admin Console (For Operators)
 
-The Admin Console is RouteSync's operations headquarters. Here's a tour of each section:
+The Admin Console is Test Routify's operations headquarters. Here's a tour of each section:
 
 ### Review Queue
 All uploaded routes land here before going live. Admins see:
@@ -310,7 +310,7 @@ Real-time revenue dashboard:
 - Full breakdown by plan and status
 
 ### Community Fund
-RouteSync's transparency feature — 10% of net profit goes to the Instructor Community Fund:
+Test Routify's transparency feature — 10% of net profit goes to the Instructor Community Fund:
 - Total contributed to date
 - Total paid out
 - Current balance
@@ -328,15 +328,15 @@ Flagged content submitted by users — reviewed and actioned here.
 ### Option A — Quick Demo (registration required)
 1. Open a browser and go to the web app URL
 2. Register an account — **there is no anonymous access**; the demo needs a registered account
-3. Choose **demo mode**, then provide the **test centre** and **test date** to unlock your one demo route
-4. Show the client: Discover page → Route Detail → Watch page → Practice mode
+3. You land on **Test Centres** — open a centre, then open a route (the first route you open is your free demo route)
+4. Show the client: Test Centres → Discover → Route Detail → Watch page → Practice mode
 
 This is the **fastest demo path.** The video player and voice guidance work fully on the one demo route (demo is limited to one route total across the account).
 
 ### Option B — Full Account Demo (Shows the Complete Journey)
 1. Go to the web app and click **"New here? Create an account"**
 2. Enter a name, email, and password — takes 10 seconds
-3. You're now logged in and on the Discover page
+3. You're now logged in and land on the Test Centres page (open a centre, or go to Discover Routes)
 4. Browse routes, open one, click "Watch route"
 5. Show the multi-view player (front/rear/split/map)
 6. Go back, click "Practice route" → shows the paywall (upgrade prompt)
@@ -347,7 +347,7 @@ This is the **fastest demo path.** The video player and voice guidance work full
 
 | Step | What to Say | What to Click |
 |---|---|---|
-| 1 | "This is what a learner sees when they open RouteSync" | Open web app, register, then choose demo mode |
+| 1 | "This is what a learner sees when they open Test Routify" | Open web app, register, then choose demo mode |
 | 2 | "They can instantly browse all routes for their test centre" | Show Discover page |
 | 3 | "Let me show you a route — this is the actual road, filmed from a real car" | Open a route, click Watch |
 | 4 | "They can switch between front camera, rear camera, or see both at once" | Toggle view modes |
@@ -363,20 +363,19 @@ This is the **fastest demo path.** The video player and voice guidance work full
 ### For a Learner Driver
 
 **Step 1 — Create an Account**
-- Visit the RouteSync web app or download the mobile app
+- Visit the Test Routify web app or download the mobile app
 - Click "Create an account"
 - Enter: Display name, Email address, Password
 - Click "Create account" — you're in immediately, no email verification needed to get started
 
 **Step 2 — Browse Routes**
-- You land on the **Discover** page — a grid of published routes
-- Each card shows the route title, test centre location, difficulty, and a thumbnail
+- You land on the **Test Centres** page — open a centre, or go to **Discover Routes** for the full grid
+- Each card shows the route title, test centre location, difficulty, a thumbnail, and the instructor byline
 
 **Step 3 — Find Your Test Centre**
-- Click **Search** in the navigation
-- Type your test centre name, town, or postcode (e.g. "Hendon" or "NW4")
-- Filter by difficulty if needed
-- Browse the results
+- Use the **global search** on the Discover Routes list (no separate search page)
+- Type a route title, instructor name, test centre, town, or postcode (e.g. "Hendon" or "NW4")
+- Results filter as you type
 
 **Step 4 — Watch a Route**
 - Click any route card to open the Route Detail page
@@ -410,7 +409,7 @@ This is the **fastest demo path.** The video player and voice guidance work full
 - Or navigate directly to the Contribute section
 
 **Step 3 — Read and accept the footage licensing agreement**
-- RouteSync requires instructors to confirm they have rights to publish the footage
+- Test Routify requires instructors to confirm they have rights to publish the footage
 - This is a one-time click
 
 **Step 4 — Upload your first route**
@@ -429,21 +428,21 @@ This is the **fastest demo path.** The video player and voice guidance work full
 
 **Step 6 — Await admin approval**
 - Once processing completes, the route enters the **Review Queue** in the admin console
-- A RouteSync moderator reviews and approves it
+- A Test Routify moderator reviews and approves it
 - You'll see the route go live in the catalogue
 
 **Step 7 — Become a Verified Instructor**
 - In the Contribute section, click **"🎓 Become a verified instructor"**
 - Enter your ADI number and upload your evidence document
-- Submit — a RouteSync admin reviews and approves it
+- Submit — a Test Routify admin reviews and approves it
 - Your profile gets the ✅ Verified Instructor badge
 
 ---
 
-## 11. What Makes RouteSync Different
+## 11. What Makes Test Routify Different
 
 ### vs. YouTube / Generic Video
-| | YouTube | RouteSync |
+| | YouTube | Test Routify |
 |---|---|---|
 | Test route specific | ❌ Hit and miss | ✅ Always test route specific |
 | GPS synchronised | ❌ No | ✅ Frame-perfect GPS sync |
@@ -454,7 +453,7 @@ This is the **fastest demo path.** The video player and voice guidance work full
 | Mobile app | Partial | ✅ Native iOS & Android |
 
 ### vs. Traditional Theory/Hazard Perception Apps
-RouteSync is **not** a theory test app. It is specifically focused on the **practical driving test routes** — the actual roads, junctions, and manoeuvres you will be tested on. No other major platform does this with GPS-synced video and voice practice.
+Test Routify is **not** a theory test app. It is specifically focused on the **practical driving test routes** — the actual roads, junctions, and manoeuvres you will be tested on. No other major platform does this with GPS-synced video and voice practice.
 
 ### The Unfair Advantage
 The **supply-side flywheel**: Every new instructor who joins the platform as a contributor creates content that attracts new learners. More learners → more revenue → more incentive for instructors → more routes → more learners. The platform grows itself.
@@ -491,7 +490,7 @@ The **supply-side flywheel**: Every new instructor who joins the platform as a c
 > Not during the driving lesson for safety reasons, but between lessons — at home, on public transport, the night before the test — absolutely.
 
 **Q: What is the Community Fund?**
-> 10% of RouteSync's net profit is allocated to the Instructor Community Fund. This pot is distributed to verified instructor contributors as a reward for building the platform's content library. All transactions are publicly visible — full transparency.
+> 10% of Test Routify's net profit is allocated to the Instructor Community Fund. This pot is distributed to verified instructor contributors as a reward for building the platform's content library. All transactions are publicly visible — full transparency.
 
 ---
 
@@ -499,7 +498,7 @@ The **supply-side flywheel**: Every new instructor who joins the platform as a c
 
 | Item | Detail |
 |---|---|
-| **Product name** | RouteSync |
+| **Product name** | Test Routify |
 | **What it is** | UK driving test route learning platform |
 | **Consumer platforms** | Web (any browser) + iOS + Android |
 | **Admin platform** | Web dashboard |
@@ -515,6 +514,6 @@ The **supply-side flywheel**: Every new instructor who joins the platform as a c
 
 ---
 
-*RouteSync — Helping every UK learner pass first time.*
+*Test Routify — Helping every UK learner pass first time.*
 
 *Document prepared: July 2026*

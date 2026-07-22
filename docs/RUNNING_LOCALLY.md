@@ -1,4 +1,4 @@
-# RouteSync — Run It Locally (for testing)
+# Test Routify — Run It Locally (for testing)
 
 > A copy‑paste guide to get the whole app running on your machine so you can click
 > through it. No prior backend/DevOps experience needed — just follow the steps in
@@ -75,7 +75,8 @@ until docker exec infra-postgres-1 pg_isready -U routesync >/dev/null 2>&1; do s
 # load schema → phase migrations → seed data, in order
 for f in schema.sql migrate_phases_13_17.sql \
          migrate_phase_19.sql migrate_phase_19b.sql migrate_phase_19c.sql \
-         seed.sql seed_more.sql seed_booking_test.sql; do
+         migrate_phase_20.sql \
+         seed.sql seed_more.sql seed_booking_test.sql seed_test_centres_demo.sql; do
   echo "loading db/$f"
   docker exec -i infra-postgres-1 psql -U routesync -d routesync -v ON_ERROR_STOP=1 < "db/$f" \
     || { echo "FAILED on $f"; break; }
@@ -161,12 +162,11 @@ Use these seeded accounts (all password **`Password123!`**):
 
 ### A good first test run (learner journey)
 1. Go to **http://localhost:5174**, sign in as `learner@routesync.uk`.
-2. Open any route → you'll be asked for your **test centre + test date** (the new
-   gate). Fill it in.
-3. Open a route **at that test centre** → you can watch/practise it (your one free
-   demo route).
-4. Open a **different** route → you're sent to the **paywall** for that centre
-   (per-centre Premium).
+2. You land on **Test Centres** — browse the list and open a centre to see its routes.
+3. Open any route → the **first route you open becomes your one free demo route**
+   (account-wide, any centre); you can watch/practise it.
+4. Open a **different** route → you're sent to the **paywall** for that route's centre
+   (per-centre Premium unlocks every route at that centre).
 
 ### Admin
 Sign in to **http://localhost:5180** with `demo@routesync.uk`. Review the route

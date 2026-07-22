@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { api, tokens } from '../api/client';
 import { demo } from '../api/demo';
+import type { Me } from '../api/types';
+import { isStaffRole } from '../api/types';
 
 interface AuthState {
   authed: boolean;
   demoMode: boolean;
   sessionInvalidated: boolean;
+  user: Me | null;
+  isStaff: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -17,6 +21,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authed, setAuthed] = useState<boolean>(tokens.hasSession);
   const [demoMode, setDemoMode] = useState<boolean>(demo.on);
   const [sessionInvalidated, setSessionInvalidated] = useState(false);
+  const [user, setUser] = useState<Me | null>(null);
+
+  const loadUser = useCallback(async () => {
+    try {
+      setUser(await api.meUser());
+    } catch {
+      setUser(null);
+    }
+  }, []);
+
+  // Fetch the profile (for role-based UI) whenever we hold a session.
+  useEffect(() => {
+    if (authed) loadUser();
+    else setUser(null);
+  }, [authed, loadUser]);
 
   // Phase 17: Listen for session-invalidated event fired by api client
   useEffect(() => {
@@ -48,11 +67,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokens.clear();
     setDemoMode(false);
     setAuthed(false);
+    setUser(null);
     setSessionInvalidated(false);
   }, []);
 
   return (
-    <AuthCtx.Provider value={{ authed, demoMode, sessionInvalidated, login, register, logout }}>
+    <AuthCtx.Provider
+      value={{
+        authed,
+        demoMode,
+        sessionInvalidated,
+        user,
+        isStaff: isStaffRole(user?.role),
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthCtx.Provider>
   );

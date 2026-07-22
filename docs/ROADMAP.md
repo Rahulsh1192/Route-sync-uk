@@ -1,11 +1,12 @@
-# RouteSync — End-to-End Build Roadmap
+# Test Routify — End-to-End Build Roadmap
 
 **Last updated:** 2026-07-18  
-**Version:** 2.1 — adds the access & pricing-model corrections (registration required for
-all access incl. demo, one-route-total demo, mandatory test-centre + test-date gate, and
-Premium purchased **per test centre / non-switchable**) on top of v2.0's ADI booking,
-in-app GPS recording, video-less routes, learner progress tracking, AI summaries,
-offline packages, and single-session security.
+**Version:** 2.2 — adds Phase 20 (first-class **Test Centres** module and simplified access:
+the mandatory test-centre + test-date gate is **removed**, replaced by a one-free-demo-route
+allowance). Builds on v2.1's access & pricing-model corrections (registration required for
+all access incl. demo, one-route-total demo, and Premium purchased **per test centre /
+non-switchable**) and v2.0's ADI booking, in-app GPS recording, video-less routes, learner
+progress tracking, AI summaries, offline packages, and single-session security.
 
 Status legend: ✅ done & verified · 🟡 partial / stubbed · ⬜ not started
 
@@ -13,7 +14,7 @@ Status legend: ✅ done & verified · 🟡 partial / stubbed · ⬜ not started
 
 ## Product Overview (v2)
 
-RouteSync is a premium AI-powered learning platform for UK learner drivers and
+Test Routify is a premium AI-powered learning platform for UK learner drivers and
 Approved Driving Instructors (ADIs). It combines:
 
 - **Route learning** — GPS-synchronised front + rear dashcam video for real test routes
@@ -256,7 +257,7 @@ Approved Driving Instructors (ADIs). It combines:
 - ⬜ `GET  /instructors/me/bookings` — ADI views incoming bookings
 - ⬜ `PATCH /bookings/:id` — ADI accepts / declines / cancels
 - ⬜ `GET  /admin/bookings` — admin overview (all bookings)
-- ⬜ Stripe Connect: instructor onboarding, payment split (lesson fee → instructor, platform fee → RouteSync)
+- ⬜ Stripe Connect: instructor onboarding, payment split (lesson fee → instructor, platform fee → Test Routify)
 - ⬜ Platform service fee configuration (fixed or percentage, stored in config)
 - ⬜ Booking confirmation email (BullMQ job → SendGrid/SES)
 
@@ -488,6 +489,48 @@ Approved Driving Instructors (ADIs). It combines:
 
 ---
 
+## Phase 20 — Test Centres & Simplified Access  ✅ SHIPPED (latest)
+
+> Test centres become a first-class, browsable module and the default landing page.
+> The mandatory test-centre + test-date gate is removed in favour of a one-free-demo-route
+> allowance, so learners can browse and sample freely.
+
+### 20a — Test Centres module
+- ✅ Test centres are a browsable section and the **default landing page** after sign-in
+- ✅ Instructors/admins can create/edit/delete test centres; students/learners are view-only
+- ✅ Create/edit auto-geocodes the postcode → lat/lng via the free **postcodes.io** API (no key)
+- ✅ Fields: name, postcode (required), town/city, region, address, description
+- ✅ Every route belongs to exactly one test centre; a test centre has many routes
+
+### 20b — Access model simplified (gate removed)
+- ✅ Removed the mandatory "test details" gate (test centre + test date) — learners browse freely
+- ✅ Access order: (a) Premium for a route's test centre unlocks all routes at that centre;
+      (b) otherwise the **first route the user opens** becomes their one free demo route
+      (account-wide, any centre); (c) any further route → per-centre paywall
+- ✅ Premium still purchased per test centre and non-switchable; booking an instructor still
+      needs no Premium
+
+### 20c — Navigation & discovery
+- ✅ Removed the header search bar and the old sidebar search/filter page
+- ✅ One global search on the route list (Discover) matching route title, instructor name,
+      test centre, town/city, and postcode
+- ✅ Removed the standalone "Instructors" browse tab — instructor identity now surfaces through
+      routes; clicking an instructor opens their profile page
+- ✅ Tabs: Test Centres · Discover Routes · My Bookings · Contribute · Account
+
+### 20d — Route cards & instructor profile
+- ✅ Route-card distance shown in **miles** (not km); time/duration and roundabout-count stats removed
+- ✅ Cards show an instructor byline: avatar + name + verified badge (clickable to the profile)
+- ✅ Instructor profile shows avatar, name, verified badge, the routes they created, and the
+      test centres they cover
+
+### 20e — DB & migration
+- ✅ `db/migrate_phase_20.sql` — adds `test_centres.address`, `test_centres.description`, and an
+      index on `routes.test_centre_id`
+- ✅ `db/seed_test_centres_demo.sql` — demo test-centre content
+
+---
+
 ## Progress Snapshot (2026-07-18)
 
 | Phase | Area | Status | Completion |
@@ -512,6 +555,7 @@ Approved Driving Instructors (ADIs). It combines:
 | **17** | **ADI single-session security** | ✅ **Complete** | **~90%** |
 | **18** | **Pricing corrections** | ✅ **Complete** | **100%** |
 | **19** | **Access & pricing model corrections** | ✅ **Web + API + mobile done; verified in Docker** | **~90%** |
+| **20** | **Test Centres & simplified access** | ✅ **Shipped (test centres module, gate removed, one-free-demo route)** | **100%** |
 
 ---
 
@@ -538,7 +582,7 @@ Phase 12  →  Hardening, Dockerfiles, observability, load testing
 
 | Decision | Choice | Reason |
 |---|---|---|
-| Instructor payments | Stripe Connect (Express) | Enables split payments — lesson fee to ADI, platform fee to RouteSync, all in one Checkout session |
+| Instructor payments | Stripe Connect (Express) | Enables split payments — lesson fee to ADI, platform fee to Test Routify, all in one Checkout session |
 | Platform service fee | Configurable % or flat fee stored in `platform_config` table | Allows fee to be adjusted without code deploy |
 | LLM for AI summaries | OpenAI GPT-4o (primary) / Gemini (fallback) | Provider-agnostic interface; summaries are low-latency background jobs |
 | Live GPS recording | Flutter `geolocator` package, background location | Already in pubspec; background mode needs `background_locator_2` addition |

@@ -1,4 +1,13 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, ValidateNested, Min } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum UploadFileKind {
@@ -30,9 +39,9 @@ export class InitUploadDto {
   @IsString()
   description?: string;
 
-  @IsOptional()
-  @IsString()
-  testCentreId?: string;
+  // Phase 20: every route must belong to a test centre, so this is now required.
+  @IsUUID()
+  testCentreId!: string;
 
   @IsOptional()
   @IsString()

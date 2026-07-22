@@ -14,6 +14,12 @@ export class RoutesController {
     return this.routes.list({ cursor, take: take ? parseInt(take, 10) : undefined });
   }
 
+  // An instructor's published routes + the test centres they cover.
+  @Get('by-instructor/:userId')
+  byInstructor(@Param('userId') userId: string) {
+    return this.routes.byInstructor(userId);
+  }
+
   @Get(':id')
   detail(@Param('id') id: string) {
     return this.routes.detail(id);

@@ -1,9 +1,18 @@
-export interface RouteSummary {
+/** Instructor byline attached to routes (flattened from the contributor). */
+export interface RouteInstructor {
+  instructorId?: string | null;
+  instructorName?: string | null;
+  instructorAvatar?: string | null;
+  instructorVerified?: boolean;
+}
+
+export interface RouteSummary extends RouteInstructor {
   id: string;
   title: string;
   town?: string | null;
   postcode?: string | null;
   difficulty?: string | null;
+  testCentreId?: string | null;
   distanceM?: number | null;
   durationS?: number | null;
   junctionCount?: number | null;
@@ -11,6 +20,21 @@ export interface RouteSummary {
   qualityScore?: number | null;
   isSample?: boolean;
   isInstructor?: boolean;
+}
+
+export interface Me {
+  id: string;
+  email?: string | null;
+  displayName: string;
+  avatarUrl?: string | null;
+  role: string;
+  locale?: string;
+  createdAt?: string;
+}
+
+/** True for staff who can manage test centres / upload routes. */
+export function isStaffRole(role?: string | null): boolean {
+  return role === 'instructor' || role === 'admin' || role === 'moderator';
 }
 
 export interface VideoStream {
@@ -72,13 +96,15 @@ export interface Entitlements {
   };
 }
 
-export interface RouteDetail {
+export interface RouteDetail extends RouteInstructor {
   id: string;
   title: string;
+  description?: string | null;
   town?: string | null;
   postcode?: string | null;
   difficulty?: string | null;
   testCentreId?: string | null;
+  testCentre?: TestCentre | null;
   isSample?: boolean;
   isInstructor?: boolean;
   distanceM?: number | null;
@@ -106,7 +132,7 @@ export function hasCentreAccess(
 
 export interface RouteAccess {
   allowed: boolean;
-  reason: 'ok' | 'TEST_DETAILS_REQUIRED' | 'PAYWALL';
+  reason: 'ok' | 'PAYWALL';
   testCentreId: string | null;
   centreLabel: string;
 }
@@ -116,6 +142,26 @@ export interface TestCentre {
   name: string;
   town?: string | null;
   postcode?: string | null;
+  region?: string | null;
+  address?: string | null;
+  description?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  routeCount?: number;
+}
+
+export interface TestCentreDetail {
+  centre: TestCentre;
+  routes: RouteSummary[];
+}
+
+export interface TestCentreInput {
+  name: string;
+  postcode: string;
+  town?: string;
+  region?: string;
+  address?: string;
+  description?: string;
 }
 
 export interface TestDetailRecord {
@@ -181,8 +227,9 @@ export interface InstructorStatus {
   verified_at?: string | null;
 }
 
+/** Distance shown in miles (Phase 20 — UK convention). */
 export function distanceLabel(m?: number | null): string {
-  return m == null ? '—' : `${(m / 1000).toFixed(1)} km`;
+  return m == null ? '—' : `${(m / 1609.344).toFixed(1)} mi`;
 }
 export function durationLabel(s?: number | null): string {
   return s == null ? '—' : `${Math.round(s / 60)} min`;

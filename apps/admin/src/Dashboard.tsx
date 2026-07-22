@@ -39,9 +39,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     <div className="shell">
       <aside className="sidebar" role="navigation" aria-label="Main navigation">
         <div className="brand">
-          <div className="brand-icon" aria-hidden="true">R</div>
+          <div className="brand-icon" aria-hidden="true">TR</div>
           <div>
-            <div className="brand-name">RouteSync</div>
+            <div className="brand-name">Test Routify</div>
             <div className="brand-sub">Admin Console</div>
           </div>
         </div>

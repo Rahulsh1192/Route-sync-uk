@@ -1,4 +1,4 @@
-# RouteSync — The Whole App, Explained for a Frontend Developer
+# Test Routify — The Whole App, Explained for a Frontend Developer
 
 > You know how to build UIs. This document explains **everything else** — the
 > backend, the database, background jobs, storage, deployment — at an **abstract
@@ -31,7 +31,7 @@ Your world is the dining room. This doc walks you through the rest of the kitche
 
 ## 2. The pieces of *this* app
 
-Here's every part of RouteSync and which folder it lives in:
+Here's every part of Test Routify and which folder it lives in:
 
 | Piece | Plain-English job | Folder | Tech |
 |---|---|---|---|
@@ -58,7 +58,7 @@ The **backend** runs on a server you control. It exists because:
 
 - **Trust / security.** Anyone can open your frontend code and tamper with it. So
   the rules that *matter* ("is this user allowed to watch this route?") must be
-  enforced on the backend, where users can't reach the code. In RouteSync, the
+  enforced on the backend, where users can't reach the code. In Test Routify, the
   frontend *asks* "can I open this route?" but the **backend decides**.
 - **Shared truth.** Every user's phone, laptop and the admin dashboard must see the
   same data. That single source of truth lives on the backend.
@@ -78,7 +78,7 @@ sends **requests** to them and gets **JSON** back.
 
 A request is basically: *a verb + a URL + (optionally) some data*.
 
-| Verb | Means | Example in RouteSync |
+| Verb | Means | Example in Test Routify |
 |---|---|---|
 | `GET` | "give me" | `GET /routes` → the list of routes |
 | `POST` | "create / do" | `POST /auth/login` → log in |
@@ -98,7 +98,7 @@ Swagger). That page *is* the contract between frontend and backend.
 ## 5. The database — where data lives forever
 
 The **database** is a program whose only job is to store data safely and hand it
-back fast. RouteSync uses **PostgreSQL** ("Postgres").
+back fast. Test Routify uses **PostgreSQL** ("Postgres").
 
 Picture a set of **spreadsheets called tables**. Each table holds one kind of thing,
 one row per item:
@@ -129,16 +129,17 @@ destroying anything.
 > renovation step is a "migration".
 
 In this repo, migrations are the `db/migrate_*.sql` files. Recent product changes
-(per-test-centre subscriptions, the test-details requirement, the one-route demo
-limit) each shipped as one of these scripts. Running them upgrades the database in
-place; running them twice is safe (they check "does this already exist?" first).
+(per-test-centre subscriptions, the one-route demo limit, and the first-class Test
+Centres module — `db/migrate_phase_20.sql`) each shipped as one of these scripts.
+Running them upgrades the database in place; running them twice is safe (they check
+"does this already exist?" first).
 
 ---
 
 ## 6. The background worker + the queue — for slow work
 
 Some tasks are **too slow to do while the user waits**. When an instructor uploads a
-20-minute dashcam video, RouteSync must stitch clips, sync them to GPS, blur faces
+20-minute dashcam video, Test Routify must stitch clips, sync them to GPS, blur faces
 and number plates, and score quality. That takes minutes.
 
 If the backend did that during the upload request, the user's app would freeze for
@@ -163,7 +164,7 @@ reuse quickly instead of asking the database every time.
 Databases are great for small, structured data (names, dates, IDs) but **terrible
 for big files** like videos. Those go into **object storage** instead — think of it
 as a giant, cheap, infinite hard drive in the cloud (Amazon S3, Cloudflare R2).
-Locally, RouteSync fakes this with a tool called **MinIO**.
+Locally, Test Routify fakes this with a tool called **MinIO**.
 
 The pattern: the video file lives in object storage; the **database only stores a
 short pointer** ("the video is at this location"). When a learner watches a route,
@@ -261,9 +262,9 @@ always-on, backed up, secured, and able to handle many users.
 To tie it together, here's what happens when a learner taps **"Watch route"**:
 
 1. **Web app (frontend)** sends `GET /routes/123/access` with the user's token.
-2. **API (backend)** checks: are you logged in? have you entered your test details?
-   do you have Premium for this route's test centre, or is this your one demo route?
-   It answers `allowed` / `paywall` / `needs test details`.
+2. **API (backend)** checks: are you logged in? do you have Premium for this route's
+   test centre, or is this your one free demo route (or the first route you've opened)?
+   It answers `allowed` / `paywall`.
 3. If allowed, the app requests the video; the **API** looks up the file's location
    in the **database**, then returns a temporary streaming link into **object
    storage**.
@@ -276,17 +277,17 @@ Every concept above shows up in that one interaction.
 
 ---
 
-## 14. The RouteSync business rules worth knowing
+## 14. The Test Routify business rules worth knowing
 
 A few product rules are enforced in the backend and shape the whole UX:
 
 - **Registration is required for everything** — there's no anonymous access.
-- **Before using any route**, a user must provide their **test centre + test date**
-  (stored with history).
-- **Demo (free) users get exactly one route total**, and it must be at their declared
-  test centre.
-- **Premium is bought per test centre and isn't switchable** — covering two centres
-  means two subscriptions.
+- **Learners browse freely** — there's no mandatory test-centre/test-date gate. Test
+  centres are a first-class, browsable section (the default landing page).
+- **Demo (free) users get exactly one route total** — the first route they open becomes
+  their free demo route (account-wide, any centre); any further route hits the paywall.
+- **Premium is bought per test centre and isn't switchable** — it unlocks all routes at
+  that centre; covering two centres means two subscriptions.
 - **Booking an instructor never requires Premium.**
 
 The backend's job is to make these true no matter what the frontend does.

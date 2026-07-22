@@ -13,40 +13,30 @@ export class RoutesService {
   ) {}
 
   /**
-   * Central access decision for a single route, covering Phases 19b–19d:
-   *   - `TEST_DETAILS_REQUIRED`: user hasn't declared their test centre + date yet.
-   *   - `ok`: Premium for this route's centre, OR the demo user's one claimed route,
-   *     OR a claimable route (no claim yet AND at their declared centre).
-   *   - `PAYWALL`: needs Premium (wrong centre, or demo route already used).
+   * Central access decision for a single route. The Phase 19b test-details gate
+   * was retired in Phase 20 — learners browse freely; access is decided purely by
+   * Premium + the one-route demo allowance:
+   *   - `ok`: Premium for this route's centre, OR this is the account's one claimed
+   *     demo route, OR no demo route has been claimed yet (this becomes it).
+   *   - `PAYWALL`: needs Premium (the free demo route was already used on another).
    *
-   * `commit=true` (real playback/practice) claims the route for a demo user on
-   * first access; `commit=false` (the access-check endpoint) is a dry run.
-   * Premium is per test centre; the demo allowance is one route total, account-wide,
-   * and only for a route at the user's declared test centre.
+   * `commit=true` (real playback/practice) claims the route for a non-Premium user
+   * on first access; `commit=false` (the access-check endpoint) is a dry run.
+   * Premium is per test centre; the demo allowance is one route total, account-wide.
    */
   private async resolveAccess(
     userId: string,
     route: { id: string; testCentreId: string | null },
     commit: boolean,
-  ): Promise<'ok' | 'TEST_DETAILS_REQUIRED' | 'PAYWALL'> {
-    // 19b: must have declared test details; the latest row is the current centre.
-    const td = await this.prisma.userTestDetail.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      select: { testCentreId: true },
-    });
-    if (!td) return 'TEST_DETAILS_REQUIRED';
-
-    // 19d: Premium for this route's centre → unlimited.
+  ): Promise<'ok' | 'PAYWALL'> {
+    // Premium for this route's centre → unlimited.
     if (await this.subs.isPremiumForCentre(userId, route.testCentreId)) return 'ok';
 
-    // 19c: demo allowance — one route total across the account.
+    // Demo allowance — one route total across the account.
     const claim = await this.prisma.demoRouteClaim.findUnique({ where: { userId } });
     if (claim) return claim.routeId === route.id ? 'ok' : 'PAYWALL';
 
-    // No claim yet: only claimable if this route is at the declared test centre.
-    if (!route.testCentreId || route.testCentreId !== td.testCentreId) return 'PAYWALL';
-
+    // No claim yet: the first route the user opens becomes their free demo route.
     if (commit) {
       try {
         await this.prisma.demoRouteClaim.create({ data: { userId, routeId: route.id } });
@@ -60,8 +50,7 @@ export class RoutesService {
   }
 
   /** Turn an access decision into the thrown error playback/practice use. */
-  private enforce(decision: 'ok' | 'TEST_DETAILS_REQUIRED' | 'PAYWALL') {
-    if (decision === 'TEST_DETAILS_REQUIRED') throw new ForbiddenException('TEST_DETAILS_REQUIRED');
+  private enforce(decision: 'ok' | 'PAYWALL') {
     if (decision === 'PAYWALL') {
       throw new ForbiddenException('Premium subscription required for this test centre');
     }
@@ -99,6 +88,7 @@ export class RoutesService {
         town: true,
         postcode: true,
         difficulty: true,
+        testCentreId: true,
         distanceM: true,
         durationS: true,
         junctionCount: true,
@@ -107,21 +97,79 @@ export class RoutesService {
         qualityScore: true,
         isSample: true,
         isInstructor: true,
+        contributor: { select: { id: true, displayName: true, avatarUrl: true, role: true } },
       },
     });
     const nextCursor = routes.length > take ? routes.pop()!.id : null;
-    return { items: routes, nextCursor };
+    return { items: routes.map((r) => this.withInstructor(r)), nextCursor };
+  }
+
+  /** Flatten the contributor relation into instructor fields the clients render. */
+  private withInstructor<T extends { contributor?: { id: string; displayName: string; avatarUrl: string | null; role: string } | null }>(
+    route: T,
+  ) {
+    const { contributor, ...rest } = route;
+    return {
+      ...rest,
+      instructorId: contributor?.id ?? null,
+      instructorName: contributor?.displayName ?? null,
+      instructorAvatar: contributor?.avatarUrl ?? null,
+      instructorVerified: contributor?.role === 'instructor' || contributor?.role === 'admin',
+    };
   }
 
   async detail(routeId: string) {
     const route = await this.prisma.route.findFirst({
       where: { id: routeId, status: RouteStatus.published, deletedAt: null },
+      include: { contributor: { select: { id: true, displayName: true, avatarUrl: true, role: true } } },
     });
     if (!route) throw new NotFoundException('Route not found');
     const preview = await this.prisma.$queryRaw`
       SELECT thumbnail_key, map_preview_key FROM route_previews WHERE route_id = ${routeId}::uuid
     `;
-    return { route, preview };
+    // Attach the owning test centre (name/town) so the detail page can link to it.
+    let testCentre: unknown = null;
+    if (route.testCentreId) {
+      const rows = await this.prisma.$queryRaw<any[]>`
+        SELECT id, name, town, postcode FROM test_centres WHERE id = ${route.testCentreId}::uuid
+      `;
+      testCentre = rows[0] ?? null;
+    }
+    return { route: { ...this.withInstructor(route), testCentre }, preview };
+  }
+
+  /**
+   * An instructor's published routes plus the distinct test centres they cover.
+   * Powers the instructor profile page (Phase 20).
+   */
+  async byInstructor(userId: string) {
+    const routes = await this.prisma.route.findMany({
+      where: { contributorId: userId, status: RouteStatus.published, deletedAt: null },
+      orderBy: [{ qualityScore: 'desc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        title: true,
+        town: true,
+        postcode: true,
+        difficulty: true,
+        testCentreId: true,
+        distanceM: true,
+        durationS: true,
+        qualityScore: true,
+        isSample: true,
+        isInstructor: true,
+        contributor: { select: { id: true, displayName: true, avatarUrl: true, role: true } },
+      },
+    });
+    const testCentres = await this.prisma.$queryRaw<any[]>`
+      SELECT DISTINCT tc.id, tc.name, tc.town, tc.postcode
+      FROM routes r
+      JOIN test_centres tc ON tc.id = r.test_centre_id
+      WHERE r.contributor_id = ${userId}::uuid
+        AND r.status = 'published' AND r.deleted_at IS NULL
+      ORDER BY tc.name
+    `;
+    return { routes: routes.map((r) => this.withInstructor(r)), testCentres };
   }
 
   /**

@@ -19,7 +19,8 @@ export function LoginPage() {
     try {
       if (isRegister) await register(email.trim(), password, name.trim());
       else await login(email.trim(), password);
-      nav('/discover');
+      // New default landing after sign-in: the Test Centres section.
+      nav('/test-centres');
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -28,51 +29,81 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 380, margin: '8vh auto 0' }}>
-      <h1 style={{ textAlign: 'center', fontSize: 30, marginBottom: 4 }}>
-        Route<span style={{ color: 'var(--accent-2)' }}>Sync</span>
-      </h1>
-      <p className="muted" style={{ textAlign: 'center', marginTop: 0 }}>
-        Learn UK driving-test routes
-      </p>
-      {sessionInvalidated && (
-        <div className="error" style={{ marginTop: 16 }}>
-          You were signed out because your account was used on another device.
+    <div className="landing">
+      {/* Branded hero — the background image/motif lives in CSS (.landing-hero). */}
+      <section className="landing-hero" aria-hidden="true">
+        <div className="landing-hero-overlay" />
+        <div className="landing-hero-content">
+          <img src="/icon.svg" alt="" className="landing-logo" width={72} height={72} />
+          <h1 className="landing-wordmark">
+            Test<span>Routify</span>
+          </h1>
+          <p className="landing-tagline">
+            Learn the real UK driving-test routes for your test centre — watch them
+            GPS-synced, then practise with turn-by-turn voice guidance.
+          </p>
+          <ul className="landing-points">
+            <li>🎥 Real routes filmed at your test centre</li>
+            <li>🗺️ Practise turn-by-turn, hands-free</li>
+            <li>🎓 Verified instructor routes</li>
+          </ul>
         </div>
-      )}
-      <form onSubmit={submit} className="card" style={{ marginTop: 24 }}>
-        {isRegister && (
-          <>
-            <label>Display name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} required />
-          </>
-        )}
-        <label>Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <div className="error">{error}</div>}
-        <button className="btn" disabled={busy} type="submit" style={{ marginTop: 12 }}>
-          {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
-        </button>
-      </form>
-      <button
-        className="btn secondary"
-        style={{ marginTop: 4 }}
-        onClick={() => setIsRegister((v) => !v)}
-      >
-        {isRegister ? 'Have an account? Sign in' : 'New here? Create an account'}
-      </button>
+      </section>
 
-      <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 16 }}>
-        A free account is required — it takes a moment. You can then explore in demo mode
-        (one route) before subscribing.
-      </p>
+      {/* Auth card */}
+      <section className="landing-auth">
+        <div className="landing-auth-inner">
+          <h2 style={{ marginTop: 0, marginBottom: 4 }}>
+            {isRegister ? 'Create your account' : 'Welcome back'}
+          </h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {isRegister
+              ? 'It only takes a moment.'
+              : 'Sign in to continue to Test Routify.'}
+          </p>
+
+          {sessionInvalidated && (
+            <div className="error" style={{ marginTop: 16 }}>
+              You were signed out because your account was used on another device.
+            </div>
+          )}
+
+          <form onSubmit={submit} className="card" style={{ marginTop: 16 }}>
+            {isRegister && (
+              <>
+                <label>Display name</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} required />
+              </>
+            )}
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {error && <div className="error">{error}</div>}
+            <button className="btn" disabled={busy} type="submit" style={{ marginTop: 12 }}>
+              {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
+            </button>
+          </form>
+
+          <button
+            className="btn secondary"
+            style={{ marginTop: 4 }}
+            onClick={() => setIsRegister((v) => !v)}
+          >
+            {isRegister ? 'Have an account? Sign in' : 'New here? Create an account'}
+          </button>
+
+          <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 16 }}>
+            A free account is required. You can explore in demo mode (one route) before
+            subscribing to your test centre.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }

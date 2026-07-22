@@ -1,4 +1,4 @@
-# RouteSync
+# Test Routify
 
 A UK driving-route learning platform: watch real, GPS-synchronised driving routes
 (front + rear dashcam) and practise them later as turn-by-turn voice navigation.

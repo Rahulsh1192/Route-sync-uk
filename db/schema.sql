@@ -129,7 +129,9 @@ CREATE TABLE test_centres (
   town        TEXT,
   postcode    TEXT,
   region      TEXT,
-  location    GEOGRAPHY(Point,4326) NOT NULL,
+  address     TEXT,                                  -- Phase 20: full street address
+  description TEXT,                                  -- Phase 20: notes shown on the centre page
+  location    GEOGRAPHY(Point,4326) NOT NULL,        -- lat/lng auto-geocoded from postcode
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_test_centres_geo ON test_centres USING GIST (location);

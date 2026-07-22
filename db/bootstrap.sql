@@ -140,6 +140,8 @@ CREATE TABLE test_centres (
   town        TEXT,
   postcode    TEXT,
   region      TEXT,
+  address     TEXT,                                  -- Phase 20
+  description TEXT,                                  -- Phase 20
   location    GEOGRAPHY(Point,4326) NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

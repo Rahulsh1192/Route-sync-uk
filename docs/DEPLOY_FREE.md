@@ -1,10 +1,10 @@
-# RouteSync — Go Live for Free
+# Test Routify — Go Live for Free
 
-A step-by-step guide to deploy the **current phase** of RouteSync at zero cost, using
+A step-by-step guide to deploy the **current phase** of Test Routify at zero cost, using
 only free tiers. No servers to manage; everything deploys from your GitHub repo.
 
-> **What works free:** web app, admin app, API, database, auth, and all the Phase 19
-> access rules (test-details gate, per-centre paywall, one-route demo).
+> **What works free:** web app, admin app, API, database, auth, the Test Centres module,
+> and the access rules (per-centre paywall, one free demo route).
 > **What doesn't:** the Python media **worker** (video/AI processing) — too heavy for
 > free tiers, so **uploading/processing new routes is disabled**. Browsing seeded
 > routes, login, the gates, the paywall, and practice mode all work.
@@ -42,7 +42,12 @@ Helper files already in the repo:
 3. Open [`db/bootstrap.sql`](../db/bootstrap.sql), copy **the whole file**, paste into a
    new SQL Editor query, and **Run**. It creates every table and loads demo data
    (7 users, seeded routes, 45 test centres).
-4. Go to **Project Settings → Database → Connection string → URI**. Copy it — this is
+4. Apply the Phase 20 migration: open [`db/migrate_phase_20.sql`](../db/migrate_phase_20.sql),
+   paste into a new query, and **Run** (adds `test_centres.address`/`description` and the
+   `routes.test_centre_id` index). Optionally also run
+   [`db/seed_test_centres_demo.sql`](../db/seed_test_centres_demo.sql) for extra demo
+   test-centre content.
+5. Go to **Project Settings → Database → Connection string → URI**. Copy it — this is
    your **`DATABASE_URL`**. (Append `?schema=public` if it isn't there.)
 
 ## Step 2 — Redis (Upstash)

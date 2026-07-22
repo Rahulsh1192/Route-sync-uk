@@ -30,7 +30,7 @@ class PaywallScreen extends StatelessWidget {
         ? 'Unlock $centreLabel'
         : 'Unlock a test centre';
     return Scaffold(
-      appBar: AppBar(title: const Text('RouteSync Premium')),
+      appBar: AppBar(title: const Text('Test Routify Premium')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
