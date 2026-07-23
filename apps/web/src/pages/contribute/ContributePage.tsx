@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/AuthContext';
 
 export function ContributePage() {
   const nav = useNavigate();
-  const { demoMode } = useAuth();
+  const { demoMode, isStaff } = useAuth();
   const [profile, setProfile] = useState<ContributorProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,19 +61,42 @@ export function ContributePage() {
         </div>
       )}
 
-      <button className="btn" onClick={() => nav('/contribute/upload')} style={{ marginBottom: 12 }}>
-        ⬆️ Upload a new route
-      </button>
-      <button className="btn secondary" onClick={() => nav('/contribute/instructor')}>
-        🎓 Become a verified instructor
-      </button>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="muted" style={{ fontSize: 13 }}>
-          Verified ADIs get an instructor badge, a search boost and fast-tracked approvals.
-          Every published route earns credits and builds your reputation.
+      {isStaff ? (
+        // Instructors / admins: full contributor tools.
+        <>
+          <button className="btn" onClick={() => nav('/contribute/upload')} style={{ marginBottom: 12 }}>
+            ⬆️ Upload a new route
+          </button>
+          <div className="card" style={{ marginTop: 4 }}>
+            <div className="muted" style={{ fontSize: 13 }}>
+              Every published route earns credits and builds your reputation. Uploads must be
+              attached to a test centre.
+            </div>
+          </div>
+        </>
+      ) : (
+        // Normal users are read-only until approved as an instructor.
+        <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
+          <div className="row">
+            <span style={{ fontSize: 22 }}>🎓</span>
+            <div>
+              <strong>Become an Instructor</strong>
+              <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+                Uploading routes and managing test centres is for verified instructors. Apply with
+                your DVSA ADI number — an admin reviews it, and once approved you'll get upload
+                access. Until then your account stays read-only.
+              </p>
+            </div>
+          </div>
+          <button
+            className="btn"
+            style={{ marginTop: 12 }}
+            onClick={() => nav('/contribute/instructor')}
+          >
+            🎓 Become an Instructor
+          </button>
         </div>
-      </div>
+      )}
     </>
   );
 }

@@ -32,9 +32,16 @@ export interface Me {
   createdAt?: string;
 }
 
-/** True for staff who can manage test centres / upload routes. */
+/** True for staff who can manage test centres / upload routes (matches the API's
+ * `@Roles('instructor','admin')` on those endpoints). Moderators use the admin
+ * console, not the content-management buttons in the learner app. */
 export function isStaffRole(role?: string | null): boolean {
-  return role === 'instructor' || role === 'admin' || role === 'moderator';
+  return role === 'instructor' || role === 'admin';
+}
+
+/** A signed-up member who isn't yet staff — eligible to apply to be an instructor. */
+export function canApplyAsInstructor(role?: string | null): boolean {
+  return role === 'user' || role === 'contributor';
 }
 
 export interface VideoStream {

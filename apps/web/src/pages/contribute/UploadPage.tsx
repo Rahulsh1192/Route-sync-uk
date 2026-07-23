@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, putToPresigned, DeclaredFile } from '../../api/client';
 import { TestCentre } from '../../api/types';
+import { useAuth } from '../../auth/AuthContext';
 
 type Phase = 'form' | 'uploading' | 'finalising';
 
 export function UploadPage() {
   const nav = useNavigate();
+  const { isStaff } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [testCentreId, setTestCentreId] = useState('');
@@ -75,6 +77,25 @@ export function UploadPage() {
       setError((e as Error).message);
       setPhase('form');
     }
+  }
+
+  // Uploading routes is instructor/admin only — normal users are read-only.
+  if (!isStaff) {
+    return (
+      <>
+        <button className="btn secondary auto" onClick={() => nav('/contribute')} style={{ marginBottom: 16 }}>
+          ← Back
+        </button>
+        <h1 className="page">Upload a route</h1>
+        <div className="card">
+          <p>Uploading routes is available to <strong>verified instructors</strong>. Apply with your
+            DVSA ADI number and, once an admin approves you, you'll be able to upload.</p>
+          <button className="btn" onClick={() => nav('/contribute/instructor')} style={{ marginTop: 8 }}>
+            🎓 Become an Instructor
+          </button>
+        </div>
+      </>
+    );
   }
 
   if (phase !== 'form') {

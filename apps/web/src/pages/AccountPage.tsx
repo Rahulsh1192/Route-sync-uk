@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { Entitlements } from '../api/types';
+import { Entitlements, canApplyAsInstructor } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 
 export function AccountPage() {
-  const { logout } = useAuth();
+  const { logout, user, isStaff } = useAuth();
   const nav = useNavigate();
   const [ent, setEnt] = useState<Entitlements | null>(null);
   const [canInstall, setCanInstall] = useState(false);
@@ -72,8 +72,8 @@ export function AccountPage() {
             </p>
           </div>
           <div className="spacer" />
-          <button className="btn secondary auto" onClick={() => nav('/instructors')}>
-            Find instructors
+          <button className="btn secondary auto" onClick={() => nav('/discover')}>
+            Browse routes
           </button>
         </div>
       </div>
@@ -94,16 +94,37 @@ export function AccountPage() {
         </div>
       </div>
 
-      <div className="card">
-        <strong>Contribute a route</strong>
-        <p className="muted" style={{ fontSize: 14 }}>
-          Recording front + rear dashcam clips and a GPX track? Upload them, track processing,
-          and earn credits &amp; badges.
-        </p>
-        <button className="btn secondary" onClick={() => nav('/contribute')}>
-          Open contributor tools
-        </button>
-      </div>
+      {/* Instructors/admins get the contributor tools; normal users get a clear
+          path to apply as an instructor (approved by an admin). */}
+      {isStaff ? (
+        <div className="card">
+          <strong>Contribute a route</strong>
+          <p className="muted" style={{ fontSize: 14 }}>
+            Recording front + rear dashcam clips and a GPX track? Upload them, track processing,
+            and earn credits &amp; badges.
+          </p>
+          <button className="btn secondary" onClick={() => nav('/contribute')}>
+            Open contributor tools
+          </button>
+        </div>
+      ) : canApplyAsInstructor(user?.role) ? (
+        <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
+          <div className="row">
+            <span style={{ fontSize: 22 }}>🎓</span>
+            <div>
+              <strong>Become an Instructor</strong>
+              <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
+                Are you a DVSA-approved driving instructor? Apply to upload routes and manage
+                test centres. An admin verifies your ADI number before you're approved.
+              </p>
+            </div>
+            <div className="spacer" />
+            <button className="btn auto" onClick={() => nav('/contribute/instructor')}>
+              Become an Instructor
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {canInstall && (
         <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
