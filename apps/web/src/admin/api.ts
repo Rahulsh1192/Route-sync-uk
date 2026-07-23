@@ -1,37 +1,11 @@
-// Minimal typed API client for the admin dashboard.
-// Stores the bearer token in localStorage and attaches it to every request.
+// Typed API client for the admin console. Reuses the shared web auth
+// (bearer token + refresh) from ../api/client, so there is one login for the
+// whole app rather than a separate admin token.
+import { api as webApi, ApiError } from '../api/client';
+export { ApiError };
 
-const TOKEN_KEY = 'routesync_admin_token';
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-export function setToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
-}
-
-export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-  }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getToken();
-  const res = await fetch(`/api${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.title || body.detail || `HTTP ${res.status}`);
-  }
-  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return webApi.request<T>(path, init);
 }
 
 // --- types ---
@@ -122,12 +96,6 @@ export interface Report {
 }
 
 export const api = {
-  login: (email: string, password: string) =>
-    request<{ accessToken: string }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
-
   analytics: () => request<Analytics>('/admin/analytics'),
   reviewQueue: () => request<ReviewRoute[]>('/admin/review-queue'),
   routeDetail: (id: string) => request<RouteDetail>(`/admin/routes/${id}`),

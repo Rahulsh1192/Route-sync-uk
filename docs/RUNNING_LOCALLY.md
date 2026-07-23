@@ -11,14 +11,13 @@ Everything here has been run and verified against this repo. If a step fails, se
 
 ## 0. What you'll end up with
 
-Four things running at once:
+Three things running at once:
 
 | Piece | What it is | URL |
 |---|---|---|
 | **Infrastructure** | Database + cache + file storage (in Docker) | — |
 | **API** | The backend the apps talk to | http://localhost:3000 (docs at `/docs`) |
-| **Web app** | The learner-facing app | http://localhost:5174 |
-| **Admin app** | The staff dashboard | http://localhost:5180 |
+| **Web app** | The learner-facing app (the admin console lives inside it at `/admin`) | http://localhost:5174 |
 
 The mobile (Flutter) app and the Python media worker are **optional** for basic
 testing — the web app is the fastest way to see everything.
@@ -30,7 +29,7 @@ testing — the web app is the fastest way to see everything.
 | Tool | Why | Check it's installed |
 |---|---|---|
 | **Docker Desktop** | Runs the database, cache and storage for you | `docker --version` |
-| **Node.js 20** | Runs the API and the two web apps | `node --version` |
+| **Node.js 20** | Runs the API and the web app | `node --version` |
 | _(optional)_ Python 3.11 | Runs the media/AI worker | `python --version` |
 | _(optional)_ Flutter 3.22+ | Runs the mobile app | `flutter --version` |
 
@@ -133,30 +132,19 @@ npm run dev
 
 Open **http://localhost:5174**. It proxies API calls to the API automatically.
 
----
-
-## 6. Start the admin app (optional)
-
-Another **new terminal**:
-
-```bash
-cd apps/admin
-npm install
-npm run dev
-```
-
-Open **http://localhost:5180**.
+The admin console is part of this same web app — there's no separate app to start.
+Log in as an admin/moderator (see below) and you land on it at `/admin` automatically.
 
 ---
 
-## 7. Log in and test
+## 6. Log in and test
 
 Use these seeded accounts (all password **`Password123!`**):
 
 | Role | Email | Use it to see… |
 |---|---|---|
-| Admin | `demo@routesync.uk` | Admin dashboard + the web app |
-| Admin | `admin@routesync.uk` | Admin dashboard |
+| Admin | `demo@routesync.uk` | Admin console at `/admin` |
+| Admin | `admin@routesync.uk` | Admin console at `/admin` |
 | Instructor | `instructor@routesync.uk` | Contributor / instructor tools |
 | Learner | `learner@routesync.uk` | The normal learner journey |
 
@@ -169,12 +157,13 @@ Use these seeded accounts (all password **`Password123!`**):
    (per-centre Premium unlocks every route at that centre).
 
 ### Admin
-Sign in to **http://localhost:5180** with `demo@routesync.uk`. Review the route
-queue, users, instructors, revenue, etc.
+Sign in to the web app (**http://localhost:5174**) as `admin@routesync.uk` and you'll
+be taken to the admin console at **`/admin`** automatically. Review the route queue,
+users, instructors, revenue, etc.
 
 ---
 
-## 8. (Optional) The media worker
+## 7. (Optional) The media worker
 
 Only needed if you want to test real video/GPS processing of uploads:
 
@@ -185,7 +174,7 @@ pip install -r requirements.txt
 python -m worker.main
 ```
 
-## 8b. (Optional) The mobile app
+## 7b. (Optional) The mobile app
 
 ```bash
 cd apps/mobile
@@ -220,7 +209,7 @@ docker compose -f infra/docker-compose.yml up -d
 | `docker: command not found` | Docker Desktop isn't installed or isn't running. Start it and retry. |
 | API can't connect to the database | Make sure `DATABASE_URL` in `apps/api/.env` uses port **5434** (not 5432/5433), and that step 2 is running. |
 | Web app shows "Cannot reach the server" | The API (step 4) isn't running, or crashed — check its terminal. |
-| Port already in use (3000/5174/5180/5434) | Another app is using it. Stop that app, or change the port. |
+| Port already in use (3000/5174/5434) | Another app is using it. Stop that app, or change the port. |
 | Seed step prints `FAILED … duplicate key` | The database was already seeded. Either skip step 3, or [reset](#reset-everything) first. |
 | `psql`/container name not found | The Postgres container is named `infra-postgres-1`. Confirm with `docker ps`. |
 
@@ -231,8 +220,7 @@ docker compose -f infra/docker-compose.yml up -d
 | Service | URL |
 |---|---|
 | API + Swagger docs | http://localhost:3000/docs |
-| Web app | http://localhost:5174 |
-| Admin app | http://localhost:5180 |
+| Web app (admin console at `/admin`) | http://localhost:5174 |
 | MinIO storage console | http://localhost:9001 (user `routesync` / pass `routesync123`) |
 
 That's it — you now have the full stack running locally for testing.

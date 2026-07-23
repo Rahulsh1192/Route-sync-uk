@@ -44,7 +44,7 @@ Approved Driving Instructors (ADIs). It combines:
 - ✅ System architecture document (all 16 design deliverables) — `docs/ARCHITECTURE.md`
 - ✅ Final tech stack chosen (free/local-friendly) with rented-vs-built decisions
 - ✅ PostgreSQL + PostGIS schema, incl. gap-filling tables — `db/schema.sql`
-- ✅ Monorepo layout (apps/api, apps/admin, apps/mobile, services/worker, infra)
+- ✅ Monorepo layout (apps/api, apps/web, apps/mobile, services/worker, infra)
 - ✅ Local infra: docker-compose (Postgres+PostGIS, Redis, MinIO) — `infra/`
 - ✅ CI/CD workflow, .gitignore, env templates, per-package READMEs
 - ✅ Sales deck (MD + PDF) — `docs/RouteSync-Sales-Deck.md`
@@ -528,6 +528,20 @@ Approved Driving Instructors (ADIs). It combines:
 - ✅ `db/migrate_phase_20.sql` — adds `test_centres.address`, `test_centres.description`, and an
       index on `routes.test_centre_id`
 - ✅ `db/seed_test_centres_demo.sql` — demo test-centre content
+
+---
+
+## Phase 20.1 — Admin console merged into the web app  ✅ SHIPPED (latest)
+
+- ✅ Removed the separate admin front-end app (`apps/admin`, port 5180). There is now one
+      front-end app — the web app (`apps/web`, port 5174).
+- ✅ Admin console is lazy-loaded inside the web app at `/admin`, gated to admin/moderator roles.
+- ✅ Role-based landing after sign-in: admin/moderator users land on `/admin`; instructors and
+      learners land on Test Centres (`/test-centres`).
+- ✅ Server-side authorization unchanged — the API still enforces admin/moderator on
+      `/api/admin/*` via its `RolesGuard` (client-side merge is not a security downgrade).
+- ✅ Deployment simplified to one front-end build/deploy; the admin ships as a lazy-loaded
+      chunk inside the web bundle.
 
 ---
 

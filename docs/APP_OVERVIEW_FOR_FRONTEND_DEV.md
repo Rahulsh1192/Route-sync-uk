@@ -11,8 +11,8 @@
 
 Think of the app as a **restaurant**:
 
-- **The dining room** = the parts you already know: the **web app, admin app, and
-  mobile app**. This is what users see and touch.
+- **The dining room** = the parts you already know: the **web app (which includes the
+  admin console at `/admin`) and the mobile app**. This is what users see and touch.
 - **The kitchen** = the **backend API**. Customers never enter it. They send orders
   (requests) and get plates back (responses). All the real decisions happen here.
 - **The pantry / cold store** = the **database**. Where ingredients (data) are kept
@@ -35,8 +35,7 @@ Here's every part of Test Routify and which folder it lives in:
 
 | Piece | Plain-English job | Folder | Tech |
 |---|---|---|---|
-| **Web app** | Learner-facing site (you know this world) | `apps/web` | React + Vite |
-| **Admin app** | Staff dashboard to approve routes, manage users | `apps/admin` | React + Vite |
+| **Web app** | Learner-facing site; also hosts the staff admin console at `/admin` (lazy-loaded, admin/moderator only) | `apps/web` | React + Vite |
 | **Mobile app** | Native iOS/Android version | `apps/mobile` | Flutter (Dart) |
 | **API (backend)** | The "kitchen" — all business rules, auth, data access | `apps/api` | NestJS (TypeScript) |
 | **Worker** | Background video/GPS/AI processing | `services/worker` | Python |
@@ -44,7 +43,8 @@ Here's every part of Test Routify and which folder it lives in:
 | **Infrastructure** | Local Docker setup for DB/cache/storage | `infra` | docker-compose |
 | **Docs** | What you're reading | `docs` | Markdown |
 
-Three frontends, one backend, one worker, and the plumbing underneath.
+Two frontends (the web app — which includes the admin console at `/admin` — and the
+mobile app), one backend, one worker, and the plumbing underneath.
 
 ---
 
@@ -244,8 +244,8 @@ instead of only on your laptop.
 The pieces that run on your machine (API, database, worker, the built web files)
 need a permanent home:
 
-- The **web/admin apps** are built into plain static files (HTML/JS/CSS) and served
-  from a fast host or CDN.
+- The **web app** (which includes the admin console at `/admin`) is built into plain
+  static files (HTML/JS/CSS) and served from a fast host or CDN.
 - The **API and worker** run as containers on a server (or a platform like Fly.io,
   Render, AWS).
 - The **database, Redis and storage** become *managed* cloud versions (someone else

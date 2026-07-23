@@ -26,7 +26,7 @@ jobs:
           - name: worker
             dockerfile: services/worker/Dockerfile
           - name: frontends
-            dockerfile: Dockerfile        # root Dockerfile builds web + admin
+            dockerfile: Dockerfile        # root Dockerfile builds the web app (admin is /admin inside it)
 
     name: Build ${{ matrix.name }}
     steps:

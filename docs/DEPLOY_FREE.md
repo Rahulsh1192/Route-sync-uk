@@ -3,7 +3,7 @@
 A step-by-step guide to deploy the **current phase** of Test Routify at zero cost, using
 only free tiers. No servers to manage; everything deploys from your GitHub repo.
 
-> **What works free:** web app, admin app, API, database, auth, the Test Centres module,
+> **What works free:** web app (including the admin console at `/admin`), API, database, auth, the Test Centres module,
 > and the access rules (per-centre paywall, one free demo route).
 > **What doesn't:** the Python media **worker** (video/AI processing) — too heavy for
 > free tiers, so **uploading/processing new routes is disabled**. Browsing seeded
@@ -22,13 +22,13 @@ only free tiers. No servers to manage; everything deploys from your GitHub repo.
 | Database (Postgres **+ PostGIS**) | **Supabase** | 500 MB; pauses when idle |
 | Redis (job queue/cache) | **Upstash** | Serverless, generous free |
 | API (`apps/api`) | **Render** (Web Service) | Sleeps when idle |
-| Web + Admin (`apps/web`, `apps/admin`) | **Vercel** | Static hosting from repo |
+| Web app (`apps/web`) | **Vercel** | Static hosting from repo (admin console at `/admin`) |
 | File storage (optional) | Cloudflare **R2** | Only if you enable uploads |
 
 Helper files already in the repo:
 - [`db/bootstrap.sql`](../db/bootstrap.sql) — the whole database in one paste (verified).
 - [`render.yaml`](../render.yaml) — API service definition for Render.
-- [`apps/web/vercel.json`](../apps/web/vercel.json), [`apps/admin/vercel.json`](../apps/admin/vercel.json) — route `/api` calls to your API.
+- [`apps/web/vercel.json`](../apps/web/vercel.json) — routes `/api` calls to your API.
 
 ---
 
@@ -70,19 +70,19 @@ Helper files already in the repo:
 4. Test it: open `https://YOUR-API.onrender.com/api/health` — you should see
    `{"status":"ok","db":"up"}`.
 
-## Step 4 — Web + Admin (Vercel)
+## Step 4 — Web app (Vercel)
 
-Do this **twice** — once for `apps/web`, once for `apps/admin`.
+Just one project — the admin console ships inside the web app at `/admin`.
 
 1. Create a free account → **Add New → Project** → import this repo.
-2. Set **Root Directory** to `apps/web` (then `apps/admin` for the 2nd project).
+2. Set **Root Directory** to `apps/web`.
    Framework preset: **Vite**. Build/output are already in `vercel.json`.
-3. **Before deploying**, edit the `destination` in that app's `vercel.json` (or do it
+3. **Before deploying**, edit the `destination` in `apps/web/vercel.json` (or do it
    after) so it points at **your** Render URL from Step 3:
    ```
    https://routesync-api.onrender.com/api/:path*   →   https://YOUR-API.onrender.com/api/:path*
    ```
-4. Deploy. Your web app is live at a `*.vercel.app` URL.
+4. Deploy. Your web app is live at a `*.vercel.app` URL (admin console at `/admin`).
 
 > The `vercel.json` rewrite makes the browser call `/api/...` on the same domain, and
 > Vercel proxies it to the API server-side — so **no CORS setup is needed**.
@@ -109,7 +109,7 @@ Set on the **API** (Render). Only the first two are strictly required to boot.
 | `GOOGLE_CLIENT_ID`, `APPLE_*` | ⬜ | Only for social login |
 | `SENTRY_DSN` | ⬜ | Only for error monitoring |
 
-The **frontends** need no env vars — the `/api` rewrite in `vercel.json` handles the API URL.
+The **frontend** needs no env vars — the `/api` rewrite in `vercel.json` handles the API URL.
 
 ---
 

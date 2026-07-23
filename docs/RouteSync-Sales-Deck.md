@@ -237,7 +237,7 @@ Test Routify is actually **two products in one:**
 ### Product B — The Admin Console
 **Who uses it:** The Test Routify operations team, moderators
 **Available as:**
-- 🖥️ **Web dashboard** (desktop browser only, secure login required)
+- 🖥️ **Web dashboard** — part of the same web app, at `/admin` (desktop browser, admin/moderator login only; they land here automatically after sign-in)
 
 **What they can do:**
 - Review and approve/reject uploaded routes
@@ -501,7 +501,7 @@ The **supply-side flywheel**: Every new instructor who joins the platform as a c
 | **Product name** | Test Routify |
 | **What it is** | UK driving test route learning platform |
 | **Consumer platforms** | Web (any browser) + iOS + Android |
-| **Admin platform** | Web dashboard |
+| **Admin platform** | Admin console at `/admin` inside the web app (admin/moderator) |
 | **Demo (Free) plan** | Browse + one route total (account-wide) |
 | **Premium Monthly** | £4.99/month · per test centre |
 | **Premium Yearly** | £39.99/year · per test centre (save ~33%) |

@@ -83,7 +83,7 @@ An Approved Driving Instructor (DVSA-registered) who uploads routes and optional
 ### 🛡️ Admin / Moderator
 Test Routify internal staff who review uploaded routes, verify instructor credentials, manage users, and oversee platform revenue.
 
-- **Accesses via:** Admin Console (web, desktop only)
+- **Accesses via:** the admin console inside the web app at `/admin` (desktop browser). Admins/moderators land there automatically after sign-in.
 - **Requires:** `admin` or `moderator` role
 
 ---
@@ -440,7 +440,7 @@ Every published route earns:
 
 ## 5. Admin Journey — Full Cycle
 
-Admin console: **http://localhost:5180**
+Admin console: sign in to the web app at **http://localhost:5174** as an admin/moderator — you land on **`/admin`** automatically.
 Login: `demo@routesync.uk` / `Password123!`
 
 ---
@@ -684,7 +684,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 
 | Step | What to say | What to do |
 |---|---|---|
-| 1 | "Admin console — login" | Open http://localhost:5180, login as demo@routesync.uk |
+| 1 | "Admin console — login" | Open http://localhost:5174, log in as demo@routesync.uk → you land on /admin |
 | 2 | "Live platform stats at the top — users, published routes, premium subs" | Point to header |
 | 3 | "Review Queue — every uploaded route lands here first" | Click Review Queue |
 | 4 | "Quality score, sync confidence, GPS — all automatic" | Point to scores |
@@ -722,7 +722,7 @@ Admins take action in the **Users** or **Review Queue** panels, then the report 
 | http://localhost:5174/account | Account settings |
 | http://localhost:5174/account/progress | Learning progress dashboard |
 | http://localhost:5174/paywall | Subscription upgrade page |
-| **http://localhost:5180** | Admin console |
+| **http://localhost:5174/admin** | Admin console (admin/moderator land here after sign-in) |
 | http://localhost:3000/docs | Full API documentation (Swagger) |
 | http://localhost:9001 | MinIO storage console (dev only) |
 

@@ -19,8 +19,8 @@ export function LoginPage() {
     try {
       if (isRegister) await register(email.trim(), password, name.trim());
       else await login(email.trim(), password);
-      // New default landing after sign-in: the Test Centres section.
-      nav('/test-centres');
+      // Role-based landing (admins → console, everyone else → Test Centres).
+      nav('/');
     } catch (err) {
       setError((err as Error).message);
     } finally {

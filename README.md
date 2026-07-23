@@ -13,8 +13,8 @@ A UK driving-route learning platform: watch real, GPS-synchronised driving route
 
 ```
 apps/api        NestJS business API (TypeScript)
-apps/web        React + Vite consumer web app (responsive, mobile-friendly) — ships first
-apps/admin      React + Vite admin dashboard
+apps/web        React + Vite web app (responsive, mobile-friendly) — includes the admin
+                console at /admin (lazy-loaded, admin/moderator only) — ships first
 apps/mobile     Flutter app (future native build)
 services/worker Python media + AI pipeline (FFmpeg/OpenCV/YOLO/Whisper)
 infra           docker-compose for local dev (postgres+postgis, redis, minio)
@@ -26,7 +26,7 @@ db              SQL schema + migrations
 | Layer | Prod | Local dev |
 |---|---|---|
 | Mobile | Flutter | — |
-| Admin | React + Vite | — |
+| Web + Admin | React + Vite | node 20 |
 | API | NestJS | node 20 |
 | Workers | Python (FFmpeg/OpenCV/YOLO/Whisper) | python 3.11 |
 | DB | Postgres 16 + PostGIS | docker (postgis/postgis) |

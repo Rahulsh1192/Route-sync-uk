@@ -16,7 +16,7 @@ giving each one a permanent home on the internet:
 
 ```
         ┌──────────────┐        ┌──────────────┐
-Users → │  Web / Admin │ ──/api→ │     API      │ ─→ Database (Postgres)
+Users → │   Web app    │ ──/api→ │     API      │ ─→ Database (Postgres)
         │  (Vercel)    │        │   (Render)   │ ─→ Redis (Upstash)
         └──────────────┘        └──────────────┘ ─→ File storage (later)
 ```
@@ -195,25 +195,26 @@ the bad env var.
 
 ---
 
-## 5. Frontends — Vercel
+## 5. Frontend — Vercel
 
-The web and admin apps are **not** running programs — they're just built files
-(HTML/JS/CSS) that a CDN serves. That's why they go on Vercel (built for static hosting)
-and are cheap/instant, with no "sleep".
+The web app is **not** a running program — it's just built files
+(HTML/JS/CSS) that a CDN serves. That's why it goes on Vercel (built for static hosting)
+and is cheap/instant, with no "sleep". (The admin console ships inside it, lazy-loaded at
+`/admin`.)
 
-### Step 5.1 — Create two projects
+### Step 5.1 — Create the project
 **Do:** Vercel → **Add New → Project** → import the repo. Set **Root Directory** to
-`apps/web`. Framework preset: **Vite**. Deploy. Repeat with Root Directory `apps/admin`.
+`apps/web`. Framework preset: **Vite**. Deploy.
 
 **Why:** It's a monorepo (many apps in one repo), so you tell Vercel *which folder* is
 the app. "Vite" tells it how to build (`npm run build`) and where the output goes
-(`dist`). Two apps = two projects.
+(`dist`). One front-end app = one project (the admin console is bundled inside it,
+lazy-loaded at `/admin`).
 
 ### Step 5.2 — The `/api` rewrite (the crucial bit)
-**Do:** The repo already includes [`apps/web/vercel.json`](../apps/web/vercel.json) and
-[`apps/admin/vercel.json`](../apps/admin/vercel.json). In **each**, change the rewrite
-`destination` from `https://routesync-api.onrender.com/...` to **your real Render URL**
-from Step 4.3. Commit/push (or edit and redeploy).
+**Do:** The repo already includes [`apps/web/vercel.json`](../apps/web/vercel.json).
+Change the rewrite `destination` from `https://routesync-api.onrender.com/...` to
+**your real Render URL** from Step 4.3. Commit/push (or edit and redeploy).
 
 **Why this is essential:** the frontend code calls the API using **relative paths** like
 `/api/routes` (no server name). In local dev, Vite quietly forwarded `/api` to

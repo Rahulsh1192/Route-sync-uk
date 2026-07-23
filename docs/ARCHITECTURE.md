@@ -30,7 +30,7 @@ running code under [`apps/`](../apps/) and [`services/`](../services/).
 | Concern | Choice | Why this one | Free/local dev stand-in |
 |---|---|---|---|
 | Mobile app | **Flutter** (iOS + Android) | One codebase, native video + maps plugins | n/a |
-| Admin dashboard | **React + Vite + TypeScript** | Data-dense desktop UI; different problem from mobile | n/a |
+| Web app + admin console | **React + Vite + TypeScript** | One SPA; the admin console is lazy-loaded at `/admin` (admin/moderator only) | n/a |
 | Business API | **NestJS (TypeScript)** | Structured, modular, great DTO/validation/auth story | n/a |
 | Media + AI workers | **Python** (FastAPI control + RQ workers) | FFmpeg, OpenCV, YOLO, Whisper are Python-native | runs locally |
 | Database | **PostgreSQL 16 + PostGIS** | Spatial types/indexes for routes, fingerprints, test-centre search | docker |
@@ -68,7 +68,7 @@ mode and per-request pricing is hostile at video scale.
 └───────────────────┘               │  routes · uploads · search │
         ▲                           │  community · admin · fund  │
         │                           └───────────┬────────────────┘
-   React Admin (web)                            │
+   React web app (+ /admin)                     │
                                    ┌─────────────┼───────────────┐
                                    ▼             ▼               ▼
                             ┌──────────┐  ┌────────────┐  ┌──────────────┐
@@ -366,7 +366,9 @@ MasterClock(position)
 
 ## 12. Admin dashboard (deliverable #12)
 
-React + Vite app, RBAC-gated. Panels: **Review queue** (pipeline output, blur preview,
+Part of the web app (`apps/web`) — the admin console is lazy-loaded at `/admin` and
+gated to admin/moderator roles (server-side authz is still enforced on `/api/admin/*`
+by the API's `RolesGuard`). Panels: **Review queue** (pipeline output, blur preview,
 quality/sync scores, approve/reject with reason) · **Route moderation** · **User mgmt**
 (roles, suspensions, GDPR actions) · **Instructor verification** · **Analytics**
 (DAU, conversion, route watch funnels) · **Revenue** (Stripe/IAP) · **Fund management**
@@ -381,7 +383,7 @@ GitHub Actions
   lint+typecheck  → unit tests → build images → push to registry
   ↳ api (Nest)    : jest, eslint, prisma migrate diff
   ↳ worker (py)   : pytest, ruff, mypy
-  ↳ admin (react) : vitest, eslint, build
+  ↳ web (react)   : vitest, eslint, build (incl. lazy-loaded /admin console)
   ↳ mobile        : flutter analyze, flutter test, build apk/ipa (matrix)
   deploy: staging on main → smoke tests → manual gate → production
   db: migrations run as a pre-deploy job (forward-only, reversible)
@@ -462,7 +464,7 @@ routing-app/
 ├── db/schema.sql                 ← PostgreSQL + PostGIS schema (#4)
 ├── apps/
 │   ├── api/                      ← NestJS business API (#3, #16)
-│   ├── admin/                    ← React admin dashboard (#12)
+│   ├── web/                      ← React web app; includes admin console at /admin (#12)
 │   └── mobile/                   ← Flutter app
 ├── services/
 │   └── worker/                   ← Python media + AI pipeline (#6,#7,#8,#16)

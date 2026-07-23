@@ -18,12 +18,13 @@ import { TestCentresPage } from './pages/TestCentresPage';
 import { TestCentreDetailPage } from './pages/TestCentreDetailPage';
 import { TestCentreFormPage } from './pages/TestCentreFormPage';
 
-// Code-split the heavy media pages (hls.js + leaflet) out of the initial bundle
-// so first paint on mobile stays light.
+// Code-split the heavy media pages (hls.js + leaflet) and the admin console
+// (staff-only) out of the learner bundle.
 const WatchPage = lazy(() => import('./pages/WatchPage').then((m) => ({ default: m.WatchPage })));
 const PracticePage = lazy(() =>
   import('./pages/PracticePage').then((m) => ({ default: m.PracticePage })),
 );
+const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })));
 
 const Loading = () => (
   <div className="center">
@@ -31,22 +32,54 @@ const Loading = () => (
   </div>
 );
 
-/** Wraps protected pages: redirects to /login when unauthenticated. */
+const isAdminRole = (role?: string | null) => role === 'admin' || role === 'moderator';
+
+/** Wraps protected learner pages: redirects to /login when unauthenticated. */
 function Protected({ children }: { children: React.ReactNode }) {
   const { authed } = useAuth();
   if (!authed) return <Navigate to="/login" replace />;
   return <Layout>{children}</Layout>;
 }
 
+/** Admin console: authed + admin/moderator only, rendered without the learner shell. */
+function AdminProtected({ children }: { children: React.ReactNode }) {
+  const { authed, user } = useAuth();
+  if (!authed) return <Navigate to="/login" replace />;
+  if (!user) return <Loading />; // wait for role before deciding
+  if (!isAdminRole(user.role)) return <Navigate to="/test-centres" replace />;
+  return <>{children}</>;
+}
+
+/** Post-login landing: admins → console, everyone else → Test Centres. */
+function RoleLanding() {
+  const { authed, user } = useAuth();
+  if (!authed) return <Navigate to="/login" replace />;
+  if (!user) return <Loading />;
+  return <Navigate to={isAdminRole(user.role) ? '/admin' : '/test-centres'} replace />;
+}
+
 export function App() {
   const { authed } = useAuth();
-  // Post-login home is the Test Centres section (Phase 20).
-  const home = '/test-centres';
   return (
     <Routes>
-      <Route path="/login" element={authed ? <Navigate to={home} replace /> : <LoginPage />} />
+      <Route path="/login" element={authed ? <Navigate to="/" replace /> : <LoginPage />} />
 
-      {/* Test centres — the default landing after sign-in */}
+      {/* role-based landing */}
+      <Route path="/" element={<RoleLanding />} />
+
+      {/* Admin console (staff only, no learner shell, lazy-loaded) */}
+      <Route
+        path="/admin"
+        element={
+          <AdminProtected>
+            <Suspense fallback={<Loading />}>
+              <AdminApp />
+            </Suspense>
+          </AdminProtected>
+        }
+      />
+
+      {/* Test centres */}
       <Route path="/test-centres" element={<Protected><TestCentresPage /></Protected>} />
       <Route path="/test-centres/new" element={<Protected><TestCentreFormPage mode="create" /></Protected>} />
       <Route path="/test-centres/:id" element={<Protected><TestCentreDetailPage /></Protected>} />
@@ -88,10 +121,10 @@ export function App() {
 
       {/* Legacy paths → their new homes */}
       <Route path="/search" element={<Navigate to="/discover" replace />} />
-      <Route path="/instructors" element={<Navigate to={home} replace />} />
-      <Route path="/test-details" element={<Navigate to={home} replace />} />
+      <Route path="/instructors" element={<Navigate to="/" replace />} />
+      <Route path="/test-details" element={<Navigate to="/" replace />} />
 
-      <Route path="*" element={<Navigate to={authed ? home : '/login'} replace />} />
+      <Route path="*" element={<Navigate to={authed ? '/' : '/login'} replace />} />
     </Routes>
   );
 }
