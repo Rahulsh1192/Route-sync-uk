@@ -898,4 +898,78 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_invoice_external
 CREATE INDEX IF NOT EXISTS idx_sub_invoice_coverage
   ON subscription_invoices (test_centre_id, period_start, period_end);
 
+-- =============================================================================
+-- PHASE 23 — Reference routes (R1) + recorded journeys + GPS↔R1 conformance.
+-- See db/migrate_phase_23.sql for the full rationale.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS reference_routes (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_centre_id UUID REFERENCES test_centres(id),
+  name           TEXT NOT NULL,
+  start_label    TEXT,
+  end_label      TEXT,
+  source_gpx_key TEXT,
+  geom           GEOGRAPHY(LineString, 4326) NOT NULL,
+  length_m       DOUBLE PRECISION NOT NULL DEFAULT 0,
+  point_count    INTEGER NOT NULL DEFAULT 0,
+  created_by     UUID REFERENCES users(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_reference_routes_centre ON reference_routes (test_centre_id);
+CREATE INDEX IF NOT EXISTS idx_reference_routes_geo    ON reference_routes USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS journeys (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reference_route_id  UUID NOT NULL REFERENCES reference_routes(id) ON DELETE CASCADE,
+  instructor_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  route_id            UUID REFERENCES routes(id) ON DELETE SET NULL,
+  video_source        TEXT NOT NULL DEFAULT 'phone',
+  status              TEXT NOT NULL DEFAULT 'recording',
+  started_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  submitted_at        TIMESTAMPTZ,
+  coverage_pct        NUMERIC(6,3),
+  max_deviation_m     NUMERIC(8,2),
+  deviation_count     INTEGER,
+  sync_confidence     INTEGER,
+  verdict             TEXT,
+  reject_reason       TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_journeys_instructor ON journeys (instructor_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_journeys_reference  ON journeys (reference_route_id);
+
+CREATE TABLE IF NOT EXISTS journey_gps_points (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_id     UUID NOT NULL REFERENCES journeys(id) ON DELETE CASCADE,
+  seq            INTEGER NOT NULL,
+  t_ms           BIGINT NOT NULL,
+  lat            DOUBLE PRECISION NOT NULL,
+  lng            DOUBLE PRECISION NOT NULL,
+  accuracy_m     REAL,
+  speed_mps      REAL,
+  matched_arc_m  DOUBLE PRECISION,
+  cross_track_m  REAL,
+  on_route       BOOLEAN
+);
+CREATE INDEX IF NOT EXISTS idx_journey_gps_seq ON journey_gps_points (journey_id, seq);
+
+CREATE TABLE IF NOT EXISTS journey_segments (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_id   UUID NOT NULL REFERENCES journeys(id) ON DELETE CASCADE,
+  seq          INTEGER NOT NULL,
+  start_t_ms   BIGINT NOT NULL,
+  end_t_ms     BIGINT NOT NULL,
+  start_arc_m  DOUBLE PRECISION NOT NULL,
+  end_arc_m    DOUBLE PRECISION NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_journey_segments ON journey_segments (journey_id, seq);
+
+INSERT INTO platform_config (key, value) VALUES
+  ('journey_deviation_m', '30'),
+  ('journey_deviation_sustain_m', '50'),
+  ('journey_min_coverage_pct', '98'),
+  ('journey_gap_m', '75'),
+  ('journey_reentry_tolerance_m', '35')
+  ON CONFLICT (key) DO NOTHING;
+
 COMMIT;
