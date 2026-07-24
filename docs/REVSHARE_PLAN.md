@@ -4,6 +4,17 @@
 > revenue (content share) alongside lesson booking commission — designed to be
 > scalable, fair, loss-minimising, easy to run, and fully traceable.
 > Every fork below is resolved to a single recommended choice.
+>
+> **LAUNCH STATUS (Phase 21 shipped).** The instructor content share is **0% at
+> launch** (`revshare_instructor_pct = 0`) — a **charity + marketing** model:
+> instructors donate routes (subscription profit funds the Community Fund) and are
+> rewarded by marketing exposure (their profile + "Book a lesson" shown in the
+> player). The full pipeline below — watch-time logging, the signed ledger, the
+> monthly attribution job, and the admin **Instructor Earnings** panel — is
+> **built and runs in shadow mode**. Enabling a real paid share is a single
+> config change (`revshare_instructor_pct` → e.g. `45`) plus Stripe Connect;
+> **no schema or code change**. The `45%` etc. below are the *pre-configured
+> future values*, not what pays out today.
 
 ---
 
@@ -21,7 +32,7 @@
 | Lever | Decision | Rationale |
 |---|---|---|
 | Attribution basis | **Watch-seconds on published routes**, from **paying subscribers of that centre** | Fair, self-selects quality, no free-rider dilution, anti-gaming |
-| Split | **Platform 55% / instructor pool 45%** of **gross** per-centre subscription revenue | Simple for instructors ("45% of list price"); 55% absorbs Stripe + infra + profit |
+| Split | **Launch: instructor 0% / platform 100%** (`revshare_instructor_pct = 0`; profit funds the charity fund). **Future (pre-set): instructor 45% / platform 55%** of gross | Charity + marketing model first; flip one config value to pay a share later. 55% absorbs Stripe + infra + profit |
 | Booking commission | **10%** on top of lesson fee (already built) — separate stream | Second income for instructors; each route is their lead magnet |
 | Yearly plans | **Amortise**: recognise `price / 12` into the pool each active month | Fairer, avoids payout spikes, and shrinks refund exposure |
 | Payout cadence | **Monthly**, on day **5** for the previous calendar month | Predictable; covers most refunds before payout |
@@ -155,14 +166,16 @@ Required for both content payouts and lesson-fee payouts (schema already hints v
 ---
 
 ## 8. Phased rollout (de-risked, data-first)
-| Phase | Ships | Why first |
+| Phase | Ships | Status |
 |---|---|---|
-| **1. Data** | `route_watch_events` + `/routes/:id/watch` + client beacons | Can't pay fairly without watch data — start collecting immediately |
-| **2. Engine (shadow)** | attribution job + ledger + admin **read-only** reporting | Validate the numbers for a month or two with **no real money moving** |
-| **3. Payouts** | Stripe Connect onboarding + transfers + holdback + refund/dispute webhooks | Turn on real money once numbers are trusted |
-| **4. Transparency** | instructor "My Earnings" page + admin config UI | Scale & self-service once payouts are proven |
+| **1. Data** | `route_watch_events` + `POST /routes/:id/watch` + player beacons (`useWatchTime`) + instructor byline / "Book a lesson" in the player | **✅ Shipped (Phase 21)** |
+| **2. Engine (shadow)** | attribution job (`RevshareService.runAttribution`, monthly cron) + signed ledger + admin **Instructor Earnings** read-only panel | **✅ Shipped (share = 0%)** |
+| **3. Payouts** | Stripe Connect onboarding + transfers + holdback + refund/dispute webhooks | ⏸ Deferred — enable when `revshare_instructor_pct` > 0 + legal sign-off |
+| **4. Transparency** | instructor "My Earnings" page + admin config UI | ⏸ With Phase 3 |
 
-Prerequisite for real revenue at all: **activate Stripe** on subscriptions (currently unconfigured) and align the **£29.99 vs £39.99** yearly-price mismatch so pools compute correctly.
+Prerequisite for real revenue at all: **activate Stripe** on subscriptions
+(currently unconfigured). The **£29.99 vs £39.99** yearly-price mismatch is now
+**fixed** (`PRICE_YEARLY_MINOR = 3999`), so pools compute correctly.
 
 ---
 
@@ -175,8 +188,11 @@ Prerequisite for real revenue at all: **activate Stripe** on subscriptions (curr
 
 ---
 
-## 10. Open inputs I need from you before building Phase 3
+## 10. Open inputs needed before enabling Phase 3 (a paid share)
+Phases 1–2 are shipped and need nothing further. Before flipping
+`revshare_instructor_pct` above 0:
 1. Confirm the **45% instructor / 55% platform** split (or your number).
 2. Confirm **watch-time from paying subscribers only** (recommended) vs all viewers.
 3. Company/legal readiness for **Stripe Connect** payouts (KYC, instructor tax/VAT handling).
-_These don't block Phases 1–2, which are safe to build now._
+4. A decision that the **charity + marketing** launch model isn't delivering enough
+   route supply on its own (the trigger to start paying a share).

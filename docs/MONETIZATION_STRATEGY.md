@@ -8,6 +8,32 @@
 
 ---
 
+## 0. Launch decision (what we're actually shipping)
+
+**At launch the instructor share of subscription revenue is 0%.** We are *not*
+paying instructors a cut of subscriptions to begin with. Instead:
+
+- **It's a social-welfare model.** Instructors record routes as a contribution to
+  a good cause — subscription profit funds the **Community Fund**, which donates
+  to people who need support (e.g. mental-health / "depressed community"
+  charities). The instructor's route is their act of giving.
+- **The instructor's payoff is marketing, not cash.** While a learner watches a
+  route, the instructor's **name, photo and "Book a lesson" button** are shown.
+  Every route is free advertising that drives **lesson bookings** — that's the
+  business they get in return.
+- **If this model doesn't work, we turn on a paid share later.** The revenue-share
+  engine is fully built and runs every month in **shadow mode** (it records
+  watch-time and computes what each instructor *would* earn). Switching on a real
+  share is a **one-value config change** (`revshare_instructor_pct`, currently
+  `0`) — **no code change, no redeploy**.
+
+So everything in sections 2–4 below (the 45/55 split, watch-time attribution,
+holdbacks) is our **designed-and-ready future option**, not what pays out today.
+Today: instructors earn **£0 from subscriptions**, get **marketing + booking
+leads**, and the platform's subscription profit feeds the **charity fund**.
+
+---
+
 ## 1. How the app makes money (two streams)
 
 1. **Premium subscriptions — per test centre.** Learners pay to unlock all the
@@ -33,7 +59,14 @@ Two ways to work with instructors:
 - **Option B — Only give instructors leads** (bookings) and pay them nothing for
   the route videos.
 
-### Our recommendation: **do both — but lead with Option A.**
+### Our recommendation: **launch with Option B (charity + marketing), keep Option A built and ready.**
+
+> Updated for the launch decision in section 0: we start with **no cash share**
+> (Option B) — instructors give routes to the cause and earn through bookings —
+> because it's simpler, has zero payout risk, and lets us prove demand first. The
+> Option A machinery below is fully built so we can switch a paid share on the day
+> the data says it's worth it. The reasoning that follows explains *why Option A
+> exists and how it would work* when we enable it.
 
 **Why not Option B alone?** Our whole product depends on a **library of real
 route videos** per test centre — that's what learners pay for. Filming and
@@ -114,12 +147,17 @@ naturally time-proportional.
 
 ## 5. How we'll build it (phased, low-risk)
 
-| Phase | What ships | Money moving? |
-|---|---|:--:|
-| **1. Data** | Start logging **watch-time** per route (we can't pay fairly without it) | No |
-| **2. Engine (shadow)** | Calculate each instructor's earnings monthly and show them in admin — **numbers only, no payouts** — to validate for a month or two | No |
-| **3. Payouts** | Stripe Connect onboarding + real monthly payouts + refund/holdback handling | **Yes** |
-| **4. Transparency** | Instructor "My Earnings" page + admin config controls | Yes |
+| Phase | What ships | Money moving? | Status |
+|---|---|:--:|---|
+| **1. Data** | Log **watch-time** per route + show the instructor's profile / "Book a lesson" button in the player | No | **✅ Shipped** |
+| **2. Engine (shadow)** | Calculate each instructor's earnings monthly and show them in admin (**Instructor Earnings** panel) — numbers only, no payouts | No | **✅ Shipped (share = 0%)** |
+| **3. Payouts** | Stripe Connect onboarding + real monthly payouts + refund/holdback handling | **Yes** | ⏸ Gated on flipping `revshare_instructor_pct` > 0 + legal sign-off |
+| **4. Transparency** | Instructor "My Earnings" page + admin config controls | Yes | ⏸ With Phase 3 |
+
+**Where we are now:** Phases 1 & 2 are live. The engine records watch-time and
+computes attribution every month, but with the share at **0%** every accrual is
+£0 and all subscription profit stays with the platform (feeding the charity
+fund). Phase 3 is a **config flip away** — no rebuild.
 
 Everything is recorded as a **traceable ledger** (every penny in/out, with the
 exact calculation stored), so payouts are auditable and reproducible.
@@ -128,20 +166,28 @@ exact calculation stored), so payouts are auditable and reproducible.
 
 ## 6. Prerequisites before real money can flow
 - **Turn on Stripe** for subscriptions (currently not configured on the live site).
-- **Fix a price mismatch:** the profit formula assumes a **£29.99** yearly price
-  but we actually charge **£39.99** — align these so reports are accurate.
-- **Stripe Connect** setup for paying instructors (identity/tax checks).
+- ~~Fix a price mismatch (£29.99 vs £39.99 yearly)~~ — **✅ Fixed:** the profit
+  formula now uses the real **£39.99** yearly price.
+- **Stripe Connect** setup — only needed **if/when we enable a paid instructor
+  share** (Phase 3). Not required for the launch (charity + marketing) model.
 
 ---
 
 ## 7. Decisions we'd like the team to confirm
-1. **The split — 45% to instructors / 55% to platform.** Comfortable? Higher or lower?
-2. **Attribution — pay by watch-time from *paying* subscribers only** (recommended)
-   vs. all viewers.
-3. **Booking commission — keep at 10%?**
-4. **Reserve/holdback — 10% held for 90 days** acceptable to instructors?
-5. Any **legal/tax** considerations for paying instructors (employment status,
-   VAT, contracts)?
+
+**For launch (charity + marketing model) — confirm we're happy that:**
+1. Instructors get **£0 subscription share at launch**; their reward is **marketing
+   exposure + booking leads**, and subscription profit funds the **Community Fund**.
+2. **Booking commission stays at 10%** (this is the instructor-facing money today).
+3. Which **charity/cause** the Community Fund donates to, and how beneficiaries
+   are chosen (admin already supports recording beneficiaries + payouts).
+
+**Later, *before* we switch on a paid instructor share (the values are pre-set,
+just confirm when the time comes):**
+4. **The split — 45% to instructors / 55% to platform.** Higher or lower?
+5. **Attribution — watch-time from *paying* subscribers only** (recommended) vs. all viewers.
+6. **Reserve/holdback — 10% held for 90 days** acceptable to instructors?
+7. **Legal/tax** for paying instructors (employment status, VAT, contracts) + Stripe Connect KYC.
 
 ---
 
