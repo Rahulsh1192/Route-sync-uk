@@ -103,13 +103,14 @@ export function Earnings() {
               <th scope="col">Gross</th>
               <th scope="col">Instructor pool</th>
               <th scope="col">Platform</th>
+              <th scope="col">Basis</th>
               <th scope="col">Status</th>
               <th scope="col"></th>
             </tr>
           </thead>
           <tbody>
             {runs?.length === 0 && (
-              <tr><td colSpan={6} className="meta">No runs yet — click "Run now" to compute one.</td></tr>
+              <tr><td colSpan={7} className="meta">No runs yet — click "Run now" to compute one.</td></tr>
             )}
             {runs?.map((r) => (
               <tr key={r.period}>
@@ -117,6 +118,18 @@ export function Earnings() {
                 <td style={{ fontVariantNumeric: 'tabular-nums' }}>{pounds(r.grossMinor)}</td>
                 <td style={{ fontVariantNumeric: 'tabular-nums' }}>{pounds(r.poolMinor)}</td>
                 <td style={{ fontVariantNumeric: 'tabular-nums' }}>{pounds(r.platformMinor)}</td>
+                <td>
+                  <span
+                    className={`pill ${r.config?.grossSource === 'invoices' ? 'good' : ''}`}
+                    title={
+                      r.config?.grossSource === 'invoices'
+                        ? 'Gross from actual invoices collected'
+                        : 'Estimated from currently-active subscriptions (no invoices for this period yet)'
+                    }
+                  >
+                    {r.config?.grossSource === 'invoices' ? 'actual' : 'estimate'}
+                  </span>
+                </td>
                 <td><span className="pill good">{r.status}</span></td>
                 <td>
                   <button className="btn-ghost btn-sm" onClick={() => openDetail(r.period)}>

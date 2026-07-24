@@ -871,4 +871,31 @@ INSERT INTO platform_config (key, value) VALUES
   ('revshare_payout_day', '5')
   ON CONFLICT (key) DO NOTHING;
 
+-- =============================================================================
+-- PHASE 22 — Subscription invoices (actual collected revenue for rev-share).
+-- Source of truth for money charged per period; yearly charges amortised over
+-- their coverage window. See db/migrate_phase_22.sql.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS subscription_invoices (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subscription_id  UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
+  test_centre_id   UUID REFERENCES test_centres(id),
+  plan             subscription_plan NOT NULL,
+  source           billing_source,
+  amount_minor     INTEGER NOT NULL,
+  refunded_minor   INTEGER NOT NULL DEFAULT 0,
+  currency         CHAR(3) NOT NULL DEFAULT 'GBP',
+  period_start     DATE NOT NULL,
+  period_end       DATE NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'paid',
+  external_id      TEXT,
+  paid_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_invoice_external
+  ON subscription_invoices (source, external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sub_invoice_coverage
+  ON subscription_invoices (test_centre_id, period_start, period_end);
+
 COMMIT;

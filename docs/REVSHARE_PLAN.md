@@ -127,12 +127,22 @@ The player must report *actual* seconds, so the client tells the server:
 
 ## 4. Monthly attribution job
 A `@nestjs/schedule` cron (the app already uses `ScheduleModule`) on `revshare_payout_day`, for the previous month, **idempotent by period**:
-1. Create `revshare_runs` (draft) + snapshot config.
-2. Per centre: `gross = Σ monthly-equivalent of active subs` (monthly = price; yearly = price/12); `pool = gross × 45%`.
-3. Aggregate qualifying watch-seconds per (centre, instructor) — join events → routes → uploader, filtered to that centre's **paying subscribers**, applying threshold + cap.
-4. Write `revshare_run_lines` + `instructor_earnings` `content_accrual` entries; unattributed pool → platform.
-5. Mark run **finalized** (numbers frozen & auditable).
-6. **Payout step (separate, admin-approved):** for each instructor, `payable = ledger balance − outstanding holdback`; if `≥ min payout` → Stripe transfer, write `payouts` + `payout` + `holdback` ledger entries; release holdbacks older than 90 days (`holdback_release`).
+1. Per centre: `gross` from **actual invoices** collected (`subscription_invoices`),
+   **day-weighted amortised** across each charge's coverage window (so a yearly
+   charge contributes ~1/12 per month) and **net of refunds**. If no invoices
+   exist for the period yet (pre-Stripe shadow mode), fall back to the
+   monthly-equivalent of currently-active subs and flag the run `grossSource:
+   'estimate'` (vs `'invoices'`). `pool = gross × instructor_pct` (0 at launch).
+2. Aggregate qualifying watch-seconds per (centre, instructor) — join events → routes → uploader, filtered to that centre's **paying subscribers**, applying threshold + cap.
+3. Write `revshare_runs` (finalized, with a config snapshot incl. `grossSource`) + `revshare_run_lines` + `instructor_earnings` `content_accrual` entries (only when amount > 0); unattributed pool → platform.
+4. **Payout step (separate, admin-approved, Phase 3):** for each instructor, `payable = ledger balance − outstanding holdback`; if `≥ min payout` → Stripe transfer, write `payouts` + `payout` + `holdback` ledger entries; release holdbacks older than 90 days (`holdback_release`).
+
+**`subscription_invoices` (Phase 22)** is the collected-revenue source of truth,
+populated from billing webhooks — Stripe `invoice.paid`/`invoice.payment_succeeded`
+and RevenueCat `INITIAL_PURCHASE`/`RENEWAL`; refunds via Stripe `charge.refunded`
+(cumulative) and RC support cancellations. Unique on `(source, external_id)` so
+replayed webhooks never double-count. The admin panel labels each run **actual**
+vs **estimate** so nobody mistakes a shadow estimate for real cash.
 
 ---
 

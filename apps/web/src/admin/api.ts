@@ -100,6 +100,7 @@ export interface RevshareRun {
   grossMinor: number;
   poolMinor: number;
   platformMinor: number;
+  config: { instructorPct?: number; grossSource?: 'invoices' | 'estimate' } | null;
   createdAt: string;
 }
 export interface RevshareRunLine {
@@ -112,7 +113,7 @@ export interface RevshareRunLine {
   amountMinor: number;
 }
 export interface RevshareRunDetail {
-  run: RevshareRun & { id: string; config: Record<string, number> | null };
+  run: RevshareRun & { id: string };
   lines: RevshareRunLine[];
 }
 export interface RevshareInstructor {

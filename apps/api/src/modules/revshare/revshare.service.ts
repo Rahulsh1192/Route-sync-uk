@@ -106,16 +106,44 @@ export class RevshareService {
     const cfg = await this.config();
     const { start, end } = this.periodBounds(period);
 
-    // Per-centre gross (monthly-equivalent) from currently-active subscriptions.
-    const centreGross = await this.prisma.$queryRaw<Array<{ test_centre_id: string | null; gross: number }>>`
+    // Preferred: gross from ACTUAL invoices collected, amortised (day-weighted)
+    // across each charge's coverage window — so a yearly charge contributes ~1/12
+    // per month and refunds are netted off. This is the real cash basis for pools.
+    const invoiceGross = await this.prisma.$queryRaw<Array<{ test_centre_id: string | null; gross: number }>>`
+      WITH inv AS (
+        SELECT test_centre_id,
+               (amount_minor - refunded_minor) AS net,
+               GREATEST(period_start, ${start}::date) AS ov_start,
+               LEAST(period_end, ${end}::date) AS ov_end,
+               GREATEST((period_end - period_start), 1) AS total_days
+        FROM subscription_invoices
+        WHERE status <> 'refunded'
+          AND period_start < ${end}::date AND period_end > ${start}::date
+          AND (amount_minor - refunded_minor) > 0
+      )
       SELECT test_centre_id,
-             ROUND(SUM(CASE WHEN plan = 'premium_yearly'
-                            THEN COALESCE(price_minor, 3999) / 12.0
-                            ELSE COALESCE(price_minor, 499) END))::int AS gross
-      FROM subscriptions
-      WHERE plan IN ('premium_monthly', 'premium_yearly')
-        AND status IN ('active', 'trialing', 'past_due')
+             ROUND(SUM(net * (ov_end - ov_start)::numeric / total_days))::int AS gross
+      FROM inv
+      WHERE ov_end > ov_start
       GROUP BY test_centre_id`;
+
+    let centreGross = invoiceGross;
+    let grossSource: 'invoices' | 'estimate' = 'invoices';
+    if (!invoiceGross.length) {
+      // No recorded invoices for the period (e.g. pre-Stripe shadow mode) → fall
+      // back to a monthly-equivalent estimate from currently-active subscriptions
+      // and flag the run so the numbers are read as an estimate, not real cash.
+      centreGross = await this.prisma.$queryRaw<Array<{ test_centre_id: string | null; gross: number }>>`
+        SELECT test_centre_id,
+               ROUND(SUM(CASE WHEN plan = 'premium_yearly'
+                              THEN COALESCE(price_minor, 3999) / 12.0
+                              ELSE COALESCE(price_minor, 499) END))::int AS gross
+        FROM subscriptions
+        WHERE plan IN ('premium_monthly', 'premium_yearly')
+          AND status IN ('active', 'trialing', 'past_due')
+        GROUP BY test_centre_id`;
+      grossSource = 'estimate';
+    }
 
     const grossTotal = centreGross.reduce((s, c) => s + Number(c.gross), 0);
     const poolByCentre = new Map<string, number>();
@@ -161,7 +189,7 @@ export class RevshareService {
     const [{ id: runId }] = await this.prisma.$queryRaw<Array<{ id: string }>>`
       INSERT INTO revshare_runs (period, status, gross_minor, pool_minor, platform_minor, config)
       VALUES (${period}, 'finalized', ${grossTotal}, ${poolTotal}, ${platformTotal},
-              ${JSON.stringify(cfg)}::jsonb)
+              ${JSON.stringify({ ...cfg, grossSource })}::jsonb)
       RETURNING id`;
 
     let lines = 0;
@@ -194,10 +222,18 @@ export class RevshareService {
     }
 
     this.logger.log(
-      `Rev-share ${period}: gross ${grossTotal}, pool ${poolTotal} (pct ${cfg.instructorPct}), ` +
-        `platform ${platformTotal}, ${lines} lines, accrued ${accrued} (pence)`,
+      `Rev-share ${period} (${grossSource}): gross ${grossTotal}, pool ${poolTotal} ` +
+        `(pct ${cfg.instructorPct}), platform ${platformTotal}, ${lines} lines, accrued ${accrued} (pence)`,
     );
-    return { period, grossMinor: grossTotal, poolMinor: poolTotal, platformMinor: platformTotal, lines, accruedMinor: accrued };
+    return {
+      period,
+      grossSource,
+      grossMinor: grossTotal,
+      poolMinor: poolTotal,
+      platformMinor: platformTotal,
+      lines,
+      accruedMinor: accrued,
+    };
   }
 
   // ---- reporting (admin, read-only) ----------------------------------------
@@ -205,7 +241,7 @@ export class RevshareService {
   runs() {
     return this.prisma.$queryRaw`
       SELECT period, status, gross_minor AS "grossMinor", pool_minor AS "poolMinor",
-             platform_minor AS "platformMinor", created_at AS "createdAt"
+             platform_minor AS "platformMinor", config, created_at AS "createdAt"
       FROM revshare_runs ORDER BY period DESC LIMIT 24`;
   }
 

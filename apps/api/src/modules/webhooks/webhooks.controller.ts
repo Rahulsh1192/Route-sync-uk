@@ -102,10 +102,61 @@ export class WebhooksController {
         }
         break;
       }
+      case 'invoice.paid':
+      case 'invoice.payment_succeeded': {
+        // Actual money collected — the source of truth for rev-share pools.
+        await this.recordStripeInvoice(event.data.object as Stripe.Invoice);
+        break;
+      }
+      case 'charge.refunded': {
+        const ch = event.data.object as Stripe.Charge;
+        const invoiceId = typeof ch.invoice === 'string' ? ch.invoice : ch.invoice?.id;
+        if (invoiceId && ch.amount_refunded > 0) {
+          // amount_refunded is cumulative on the charge; recordRefund is idempotent.
+          await this.subs.recordRefund(BillingSource.stripe, invoiceId, ch.amount_refunded);
+        }
+        break;
+      }
       default:
         this.logger.debug(`Unhandled Stripe event: ${event.type}`);
     }
     return { received: true };
+  }
+
+  /** Record a paid subscription invoice as collected revenue (idempotent). */
+  private async recordStripeInvoice(inv: Stripe.Invoice) {
+    const amount = inv.amount_paid ?? 0;
+    const subId = inv.subscription ? String(inv.subscription) : null;
+    if (amount <= 0 || !subId) return; // only paid subscription invoices feed rev-share
+    const sub = await this.stripe.getSubscription(subId);
+    const userId = sub?.metadata?.userId;
+    if (!userId || !sub) return;
+    const plan = this.stripe.planFromPrice(sub.items.data[0]?.price?.id);
+    const line = inv.lines?.data?.[0];
+    const startMs = (line?.period?.start ?? inv.created ?? Math.floor(Date.now() / 1000)) * 1000;
+    const endMs = line?.period?.end
+      ? line.period.end * 1000
+      : this.addMonths(new Date(startMs), plan === 'premium_yearly' ? 12 : 1).getTime();
+    await this.subs.recordInvoice({
+      userId,
+      plan,
+      source: BillingSource.stripe,
+      amountMinor: amount,
+      currency: (inv.currency ?? 'gbp').toUpperCase(),
+      testCentreId: sub.metadata?.testCentreId ?? null,
+      externalId: inv.id,
+      periodStart: new Date(startMs),
+      periodEnd: new Date(endMs),
+      paidAt: inv.status_transitions?.paid_at
+        ? new Date(inv.status_transitions.paid_at * 1000)
+        : new Date(),
+    });
+  }
+
+  private addMonths(d: Date, m: number): Date {
+    const x = new Date(d);
+    x.setMonth(x.getMonth() + m);
+    return x;
   }
 
   private async applyStripeSubscription(
@@ -187,6 +238,31 @@ export class WebhooksController {
           testCentreId,
           currentPeriodEnd: expiresMs ? new Date(Number(expiresMs)) : undefined,
         });
+        // Only actual charges feed rev-share revenue (not uncancel/plan-change).
+        if (ev.type === 'INITIAL_PURCHASE' || ev.type === 'RENEWAL') {
+          const priceMajor = ev.price_in_purchased_currency ?? ev.price;
+          const amountMinor =
+            priceMajor != null
+              ? Math.round(Number(priceMajor) * 100)
+              : plan === 'premium_yearly'
+              ? 3999
+              : 499;
+          const startMs = Number(ev.purchased_at_ms ?? ev.event_timestamp_ms ?? Date.now());
+          const endMs = expiresMs
+            ? Number(expiresMs)
+            : this.addMonths(new Date(startMs), plan === 'premium_yearly' ? 12 : 1).getTime();
+          await this.subs.recordInvoice({
+            userId,
+            plan,
+            source,
+            amountMinor,
+            currency: (ev.currency ?? 'GBP').toUpperCase(),
+            testCentreId,
+            externalId: ev.transaction_id,
+            periodStart: new Date(startMs),
+            periodEnd: new Date(endMs),
+          });
+        }
         break;
       case 'CANCELLATION':
       case 'EXPIRATION':
@@ -198,6 +274,30 @@ export class WebhooksController {
           externalId: ev.transaction_id,
           testCentreId,
         });
+        // A support-initiated cancellation is a refund — reverse the collected
+        // revenue for that charge so it drops out of the rev-share pool.
+        if (ev.cancel_reason === 'CUSTOMER_SUPPORT' && ev.transaction_id) {
+          const priceMajor = ev.price_in_purchased_currency ?? ev.price;
+          const amountMinor =
+            priceMajor != null
+              ? Math.round(Number(priceMajor) * 100)
+              : plan === 'premium_yearly'
+              ? 3999
+              : 499;
+          await this.subs.recordRefund(source, ev.transaction_id, amountMinor);
+        }
+        break;
+      case 'REFUND':
+        if (ev.transaction_id) {
+          const priceMajor = ev.price_in_purchased_currency ?? ev.price;
+          const amountMinor =
+            priceMajor != null
+              ? Math.round(Number(priceMajor) * 100)
+              : plan === 'premium_yearly'
+              ? 3999
+              : 499;
+          await this.subs.recordRefund(source, ev.transaction_id, amountMinor);
+        }
         break;
       case 'BILLING_ISSUE':
         await this.subs.applyEntitlement({

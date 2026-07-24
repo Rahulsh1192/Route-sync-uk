@@ -183,6 +183,70 @@ export class SubscriptionsService {
     );
   }
 
+  /**
+   * Record an actual subscription charge (the source of truth for collected
+   * revenue used by the rev-share engine). `periodStart`/`periodEnd` is the
+   * COVERAGE window the charge pays for, so a yearly charge is amortised across
+   * its 12 months. Idempotent on `(source, externalId)` so replayed webhooks
+   * never double-count.
+   */
+  async recordInvoice(params: {
+    userId: string;
+    plan: SubscriptionPlan;
+    source: BillingSource;
+    amountMinor: number;
+    currency?: string;
+    testCentreId?: string | null;
+    externalId?: string;
+    periodStart: Date;
+    periodEnd: Date;
+    paidAt?: Date;
+  }) {
+    if (!params.amountMinor || params.amountMinor <= 0) return;
+    const testCentreId = params.testCentreId ?? null;
+    await this.prisma.$executeRaw`
+      INSERT INTO subscription_invoices
+        (user_id, subscription_id, test_centre_id, plan, source, amount_minor, currency,
+         period_start, period_end, external_id, paid_at)
+      VALUES (
+        ${params.userId}::uuid,
+        (SELECT id FROM subscriptions
+           WHERE user_id = ${params.userId}::uuid
+             AND (test_centre_id = ${testCentreId}::uuid
+                  OR (${testCentreId}::uuid IS NULL AND test_centre_id IS NULL))
+           ORDER BY created_at DESC LIMIT 1),
+        ${testCentreId}::uuid,
+        ${params.plan}::subscription_plan,
+        ${params.source}::billing_source,
+        ${params.amountMinor},
+        ${params.currency ?? 'GBP'},
+        ${params.periodStart}::date, ${params.periodEnd}::date,
+        ${params.externalId ?? null},
+        ${params.paidAt ?? new Date()}
+      )
+      ON CONFLICT (source, external_id) WHERE external_id IS NOT NULL DO NOTHING`;
+    this.logger.log(
+      `Invoice recorded for ${params.userId}: ${params.amountMinor} (${params.plan}, ` +
+        `centre ${testCentreId ?? 'universal'}, ext ${params.externalId ?? 'n/a'})`,
+    );
+  }
+
+  /**
+   * Mark a recorded invoice refunded. `refundedTotalMinor` is the CUMULATIVE
+   * amount refunded on that charge (Stripe reports a running total), so this is
+   * safe to call repeatedly — it never reduces an already-higher refund.
+   */
+  async recordRefund(source: BillingSource, externalId: string, refundedTotalMinor: number) {
+    if (!externalId || refundedTotalMinor <= 0) return;
+    await this.prisma.$executeRaw`
+      UPDATE subscription_invoices
+      SET refunded_minor = GREATEST(refunded_minor, LEAST(amount_minor, ${refundedTotalMinor})),
+          status = CASE
+            WHEN GREATEST(refunded_minor, LEAST(amount_minor, ${refundedTotalMinor})) >= amount_minor
+              THEN 'refunded' ELSE 'partially_refunded' END
+      WHERE source = ${source}::billing_source AND external_id = ${externalId}`;
+  }
+
   /** Append a raw billing event for audit/reconciliation (Stripe or RevenueCat). */
   async logEvent(source: BillingSource, eventType: string, payload: unknown, userId?: string) {
     await this.prisma.$executeRaw`
