@@ -236,6 +236,20 @@ export const api = {
     return request<PracticeRoute>(`/routes/${id}/practice`);
   },
 
+  // Best-effort watch-time beacon (Phase 21). Feeds the instructor rev-share
+  // engine (currently a 0% share — data + engagement only) and is a no-op in
+  // demo mode. `keepalive` lets the final send survive a tab close / unmount.
+  recordWatch: (id: string, secondsWatched: number, source: 'playback' | 'practice') => {
+    if (demo.on || secondsWatched <= 0) return Promise.resolve();
+    return request(`/routes/${id}/watch`, {
+      method: 'POST',
+      keepalive: true,
+      body: JSON.stringify({ secondsWatched: Math.round(secondsWatched), source }),
+    }).catch(() => {
+      /* beacons are best-effort; never surface to the user */
+    });
+  },
+
   // subscription
   me: async () => {
     if (demo.on) return demoEntitlements;

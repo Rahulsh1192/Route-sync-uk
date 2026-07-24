@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { CommunityService } from '../community/community.service';
 import { FundService } from '../fund/fund.service';
+import { RevshareService } from '../revshare/revshare.service';
 import { RouteStatus, UserRole } from '@prisma/client';
 
 /**
@@ -18,6 +19,7 @@ export class AdminService {
     private storage: StorageService,
     private community: CommunityService,
     private fund: FundService,
+    private revshare: RevshareService,
   ) {}
 
   // --- review queue & moderation -------------------------------------------
@@ -239,5 +241,19 @@ export class AdminService {
   }
   runFundContribution(period?: string) {
     return this.fund.runMonthlyContribution(period);
+  }
+
+  // --- instructor rev-share (delegated to RevshareService) ------------------
+  revshareRuns() {
+    return this.revshare.runs();
+  }
+  revshareRunDetail(period: string) {
+    return this.revshare.runDetail(period);
+  }
+  revshareInstructors() {
+    return this.revshare.instructors();
+  }
+  runRevshare(period?: string) {
+    return this.revshare.runAttribution(period);
   }
 }

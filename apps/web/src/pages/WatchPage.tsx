@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import { api, ApiError } from '../api/client';
-import { PlaybackManifest } from '../api/types';
+import { PlaybackManifest, RouteDetail } from '../api/types';
 import { useMasterTimeline } from '../player/useMasterTimeline';
+import { useWatchTime } from '../player/useWatchTime';
+import { InstructorByline } from '../components/InstructorByline';
 
 type ViewMode = 'front' | 'rear' | 'split' | 'map';
 
@@ -16,6 +18,7 @@ export function WatchPage() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const [manifest, setManifest] = useState<PlaybackManifest | null>(null);
+  const [route, setRoute] = useState<RouteDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<ViewMode>('front');
 
@@ -26,9 +29,14 @@ export function WatchPage() {
         nav(`/route/${id}`);
       } else setError((e as Error).message);
     });
+    // Instructor info powers the "book a lesson" prompt (the instructor's payoff
+    // for contributing routes is this marketing exposure → bookings).
+    api.route(id!).then(setRoute).catch(() => {});
   }, [id, nav]);
 
   const t = useMasterTimeline(manifest);
+  // Report watch-time to the rev-share engine while the video is playing.
+  useWatchTime(id, 'playback', t.playing);
 
   if (error) return <div className="error">{error}</div>;
   if (!manifest) return <div className="center"><div className="spinner" /></div>;
@@ -108,6 +116,35 @@ export function WatchPage() {
           </button>
         ))}
       </div>
+
+      {route?.instructorName && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            RECORDED BY
+          </div>
+          <div className="row" style={{ alignItems: 'center' }}>
+            <InstructorByline
+              id={route.instructorId}
+              name={route.instructorName}
+              avatar={route.instructorAvatar}
+              verified={route.instructorVerified}
+            />
+            <div className="spacer" />
+            {route.instructorId && (
+              <button
+                className="btn auto"
+                onClick={() => nav(`/instructors/${route.instructorId}`)}
+              >
+                📅 Book a lesson
+              </button>
+            )}
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>
+            Preparing at this test centre? Book a lesson with the instructor who filmed
+            this exact route.
+          </p>
+        </div>
+      )}
     </>
   );
 }

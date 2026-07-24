@@ -38,6 +38,9 @@ class PayoutDto {
 class RunContributionDto {
   @IsOptional() @IsString() period?: string;
 }
+class RunRevshareDto {
+  @IsOptional() @IsString() period?: string;
+}
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -146,5 +149,27 @@ export class AdminController {
   @Roles('admin')
   runContribution(@Body() dto: RunContributionDto) {
     return this.admin.runFundContribution(dto.period);
+  }
+
+  // --- instructor rev-share (shadow reporting) ---
+  @Get('revshare/runs')
+  revshareRuns() {
+    return this.admin.revshareRuns();
+  }
+
+  @Get('revshare/instructors')
+  revshareInstructors() {
+    return this.admin.revshareInstructors();
+  }
+
+  @Get('revshare/runs/:period')
+  revshareRunDetail(@Param('period') period: string) {
+    return this.admin.revshareRunDetail(period);
+  }
+
+  @Post('revshare/run')
+  @Roles('admin')
+  runRevshare(@Body() dto: RunRevshareDto) {
+    return this.admin.runRevshare(dto.period);
   }
 }

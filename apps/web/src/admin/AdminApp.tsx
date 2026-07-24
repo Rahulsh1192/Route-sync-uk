@@ -7,11 +7,12 @@ import { Users } from './panels/Users';
 import { Instructors } from './panels/Instructors';
 import { Revenue } from './panels/Revenue';
 import { Fund } from './panels/Fund';
+import { Earnings } from './panels/Earnings';
 import { Reports } from './panels/Reports';
 import { Bookings } from './panels/Bookings';
 import './admin.css';
 
-type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'reports' | 'bookings';
+type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'earnings' | 'reports' | 'bookings';
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'queue',       label: 'Review Queue',     icon: '⏳' },
@@ -20,6 +21,7 @@ const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'bookings',    label: 'Bookings',          icon: '📅' },
   { id: 'revenue',     label: 'Revenue',           icon: '💰' },
   { id: 'fund',        label: 'Community Fund',    icon: '🏦' },
+  { id: 'earnings',    label: 'Instructor Earnings', icon: '📈' },
   { id: 'reports',     label: 'Reports',           icon: '🚩' },
 ];
 
@@ -135,6 +137,7 @@ export function AdminApp() {
             {view === 'bookings' && <Bookings />}
             {view === 'revenue' && <Revenue />}
             {view === 'fund' && <Fund />}
+            {view === 'earnings' && <Earnings />}
             {view === 'reports' && <Reports />}
           </div>
         </main>

@@ -3,7 +3,7 @@
  *
  * "Net profit" for a period is defined transparently and reproducibly as:
  *
- *     gross_revenue = active_monthly × £4.99  +  active_yearly × (£29.99 / 12)
+ *     gross_revenue = active_monthly × £4.99  +  active_yearly × (£39.99 / 12)
  *     net_profit    = gross_revenue × (1 − COST_RATIO)
  *     fund_amount   = net_profit × (ALLOCATION_PCT / 100)
  *
@@ -16,4 +16,4 @@ export const ALLOCATION_PCT = 10; // 10% of net profit
 export const COST_RATIO = 0.4; // 40% assumed cost of revenue
 
 export const PRICE_MONTHLY_MINOR = 499; // £4.99
-export const PRICE_YEARLY_MINOR = 2999; // £29.99
+export const PRICE_YEARLY_MINOR = 3999; // £39.99 (matches the checkout/paywall price)

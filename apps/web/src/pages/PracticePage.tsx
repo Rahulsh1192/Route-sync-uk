@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
-import { Instruction, PracticeRoute } from '../api/types';
+import { Instruction, PracticeRoute, RouteDetail } from '../api/types';
+import { useWatchTime } from '../player/useWatchTime';
+import { InstructorByline } from '../components/InstructorByline';
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return;
@@ -32,6 +34,7 @@ export function PracticePage() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const [route, setRoute] = useState<PracticeRoute | null>(null);
+  const [detail, setDetail] = useState<RouteDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -41,6 +44,9 @@ export function PracticePage() {
   const elapsedRef = useRef(0);
   const nextRef = useRef(0);
 
+  // Report practice time to the rev-share engine while a run is in progress.
+  useWatchTime(id, 'practice', running);
+
   useEffect(() => {
     api.practice(id!).then(setRoute).catch((e) => {
       // Deep-linked here without access: route detail runs the per-centre paywall flow.
@@ -48,6 +54,8 @@ export function PracticePage() {
         nav(`/route/${id}`);
       } else setError((e as Error).message);
     });
+    // Instructor info for the "book a lesson" prompt.
+    api.route(id!).then(setDetail).catch(() => {});
     return () => {
       if (timer.current) window.clearInterval(timer.current);
       window.speechSynthesis?.cancel();
@@ -121,6 +129,26 @@ export function PracticePage() {
           </div>
         ))}
       </div>
+
+      {detail?.instructorName && (
+        <div className="card">
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>RECORDED BY</div>
+          <div className="row" style={{ alignItems: 'center' }}>
+            <InstructorByline
+              id={detail.instructorId}
+              name={detail.instructorName}
+              avatar={detail.instructorAvatar}
+              verified={detail.instructorVerified}
+            />
+            <div className="spacer" />
+            {detail.instructorId && (
+              <button className="btn auto" onClick={() => nav(`/instructors/${detail.instructorId}`)}>
+                📅 Book a lesson
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

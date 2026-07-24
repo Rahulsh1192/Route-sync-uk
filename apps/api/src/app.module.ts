@@ -19,6 +19,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CommunityModule } from './modules/community/community.module';
 import { FundModule } from './modules/fund/fund.module';
+import { RevshareModule } from './modules/revshare/revshare.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { ProgressModule } from './modules/progress/progress.module';
 import { OfflineModule } from './modules/offline/offline.module';
@@ -49,6 +50,7 @@ import { HealthController } from './health.controller';
     AdminModule,
     CommunityModule,
     FundModule,
+    RevshareModule,
     BookingsModule,
     ProgressModule,
     OfflineModule,

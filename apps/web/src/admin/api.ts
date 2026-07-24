@@ -94,6 +94,35 @@ export interface Report {
   status: string;
   created_at: string;
 }
+export interface RevshareRun {
+  period: string;
+  status: string;
+  grossMinor: number;
+  poolMinor: number;
+  platformMinor: number;
+  createdAt: string;
+}
+export interface RevshareRunLine {
+  instructorId: string;
+  instructorName: string | null;
+  testCentreId: string | null;
+  testCentreName: string | null;
+  watchSeconds: number;
+  sharePct: string;
+  amountMinor: number;
+}
+export interface RevshareRunDetail {
+  run: RevshareRun & { id: string; config: Record<string, number> | null };
+  lines: RevshareRunLine[];
+}
+export interface RevshareInstructor {
+  instructorId: string;
+  instructorName: string | null;
+  balanceMinor: number;
+  accruedMinor: number;
+  paidMinor: number;
+  lastEntryAt: string | null;
+}
 
 export const api = {
   analytics: () => request<Analytics>('/admin/analytics'),
@@ -142,4 +171,15 @@ export const api = {
 
   adminBookings: (page = 0) =>
     request<any[]>(`/admin/bookings?page=${page}`),
+
+  // instructor rev-share (shadow reporting)
+  revshareRuns: () => request<RevshareRun[]>('/admin/revshare/runs'),
+  revshareRunDetail: (period: string) =>
+    request<RevshareRunDetail>(`/admin/revshare/runs/${encodeURIComponent(period)}`),
+  revshareInstructors: () => request<RevshareInstructor[]>('/admin/revshare/instructors'),
+  runRevshare: (period?: string) =>
+    request<{ period: string; grossMinor?: number; poolMinor?: number; skipped?: boolean }>(
+      '/admin/revshare/run',
+      { method: 'POST', body: JSON.stringify(period ? { period } : {}) },
+    ),
 };
