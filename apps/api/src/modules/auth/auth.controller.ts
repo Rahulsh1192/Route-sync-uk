@@ -24,13 +24,13 @@ export class AuthController {
   @Post('oauth/google')
   @HttpCode(200)
   google(@Body() dto: OAuthDto) {
-    return this.auth.loginWithGoogle(dto.token);
+    return this.auth.loginWithGoogle(dto.token, dto.displayName);
   }
 
   @Post('oauth/apple')
   @HttpCode(200)
   apple(@Body() dto: OAuthDto) {
-    return this.auth.loginWithApple(dto.token);
+    return this.auth.loginWithApple(dto.token, dto.displayName);
   }
 
   @Post('refresh')
