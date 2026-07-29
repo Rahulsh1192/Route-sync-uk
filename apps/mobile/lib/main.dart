@@ -35,7 +35,7 @@ class RouteSyncApp extends StatelessWidget {
         Provider<SubscriptionRepository>(create: (_) => SubscriptionRepository(api)),
         Provider<CommunityRepository>(create: (_) => CommunityRepository(api)),
         ChangeNotifierProvider<AuthController>(
-          create: (ctx) => AuthController(ctx.read<AuthRepository>(), tokens),
+          create: (ctx) => AuthController(ctx.read<AuthRepository>(), tokens, api),
         ),
       ],
       child: const _AppView(),

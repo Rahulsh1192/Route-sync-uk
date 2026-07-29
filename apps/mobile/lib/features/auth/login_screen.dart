@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -84,12 +86,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.g_mobiledata, size: 28),
                   label: const Text('Continue with Google'),
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: auth.busy ? null : _apple,
-                  icon: const Icon(Icons.apple),
-                  label: const Text('Continue with Apple'),
-                ),
+                // Sign in with Apple is required on iOS when other social logins
+                // are offered (App Store rule 4.8); show it there.
+                if (Platform.isIOS) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: auth.busy ? null : _apple,
+                    icon: const Icon(Icons.apple),
+                    label: const Text('Continue with Apple'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -107,21 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _google() async {
-    // TODO: integrate google_sign_in to obtain an idToken, then:
-    //   await context.read<AuthController>().loginWithGoogle(idToken);
-    _notImplemented('Google sign-in');
-  }
+  void _google() => context.read<AuthController>().signInWithGoogle();
 
-  Future<void> _apple() async {
-    // TODO: integrate sign_in_with_apple to obtain identityToken, then:
-    //   await context.read<AuthController>().loginWithApple(identityToken);
-    _notImplemented('Apple sign-in');
-  }
-
-  void _notImplemented(String what) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$what wiring pending — see TODO')),
-    );
-  }
+  void _apple() => context.read<AuthController>().signInWithApple();
 }

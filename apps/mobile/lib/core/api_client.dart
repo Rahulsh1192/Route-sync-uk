@@ -40,6 +40,10 @@ class ApiClient {
               final res = await _dio.fetch(opts);
               return handler.resolve(res);
             } catch (_) {/* fall through to error */}
+          } else {
+            // Refresh failed → the session is over. Tell the app so it can send
+            // the user back to login (and explain if another device took over).
+            onSessionExpired?.call(sessionInvalidated: _sessionInvalidated);
           }
         }
         handler.next(e);
@@ -50,12 +54,19 @@ class ApiClient {
   late final Dio _dio;
   final TokenStore _tokens;
   bool _refreshing = false;
+  bool _sessionInvalidated = false;
+
+  /// Called when a request could not be authorised and refresh failed. The app
+  /// (AuthController) registers this to force a logout. `sessionInvalidated` is
+  /// true when the backend reported SESSION_INVALIDATED (single-session ADI rule).
+  void Function({required bool sessionInvalidated})? onSessionExpired;
 
   bool _isAuthPath(String path) => path.contains('/auth/');
 
   Future<bool> _tryRefresh() async {
     if (_refreshing) return false;
     _refreshing = true;
+    _sessionInvalidated = false;
     try {
       final refresh = await _tokens.refreshToken;
       if (refresh == null) return false;
@@ -63,6 +74,14 @@ class ApiClient {
           .post('/auth/refresh', data: {'refreshToken': refresh});
       await _tokens.save(res.data['accessToken'], res.data['refreshToken']);
       return true;
+    } on DioException catch (e) {
+      // Distinguish "another device logged in" (single-session) from a plain
+      // expired/absent token, so the UI can show a meaningful message.
+      if (e.response?.data.toString().contains('SESSION_INVALIDATED') ?? false) {
+        _sessionInvalidated = true;
+      }
+      await _tokens.clear();
+      return false;
     } catch (_) {
       await _tokens.clear();
       return false;

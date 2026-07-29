@@ -18,13 +18,19 @@ class AuthRepository {
     await _tokens.save(res['accessToken'], res['refreshToken']);
   }
 
-  Future<void> loginWithGoogle(String idToken) async {
-    final res = await _api.post('/auth/oauth/google', body: {'token': idToken});
+  Future<void> loginWithGoogle(String idToken, {String? displayName}) async {
+    final res = await _api.post('/auth/oauth/google', body: {
+      'token': idToken,
+      if (displayName != null) 'displayName': displayName,
+    });
     await _tokens.save(res['accessToken'], res['refreshToken']);
   }
 
-  Future<void> loginWithApple(String identityToken) async {
-    final res = await _api.post('/auth/oauth/apple', body: {'token': identityToken});
+  Future<void> loginWithApple(String identityToken, {String? displayName}) async {
+    final res = await _api.post('/auth/oauth/apple', body: {
+      'token': identityToken,
+      if (displayName != null) 'displayName': displayName,
+    });
     await _tokens.save(res['accessToken'], res['refreshToken']);
   }
 
