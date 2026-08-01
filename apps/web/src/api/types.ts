@@ -56,12 +56,55 @@ export interface RouteMarker {
   label?: string | null;
 }
 
+/**
+ * One GPS position on the playback clock (Phase 24).
+ *
+ * `tMs` is VIDEO time, not wall-clock time — the worker already mapped it through the
+ * clip timeline, so the player can use it directly against the video's currentTime
+ * without knowing anything about inter-clip gaps.
+ *
+ * Positions are snapped onto the reference route (R1) by the conformance engine, so
+ * what the learner sees is the canonical route rather than the recording's GPS noise.
+ */
+export interface TrackPoint {
+  tMs: number;
+  lat: number;
+  lng: number;
+  speedMps?: number | null;
+  bearingDeg?: number | null;
+}
+
+/**
+ * Per-clip mapping between concatenated-video time and real time. Playback runs on
+ * video time, so this is only needed to display a true timestamp or reason about the
+ * recording — but it's the reason video time is trustworthy in the first place.
+ */
+export interface ClipTimelineEntry {
+  view: 'front' | 'rear';
+  clipSeq: number;
+  videoStartMs: number;
+  videoEndMs: number;
+  wallStartEpochMs: number;
+  gapBeforeMs: number;
+}
+
 export interface PlaybackManifest {
   routeId: string;
   durationS: number;
   syncConfidence?: number | null;
   streams: VideoStream[];
   markers: RouteMarker[];
+  /** Phase 24 — drives the moving map marker. Empty for routes processed pre-24. */
+  track?: TrackPoint[];
+  clipTimeline?: ClipTimelineEntry[];
+}
+
+export interface RouteTrackResponse {
+  routeId: string;
+  durationS: number | null;
+  distanceM: number | null;
+  pointCount: number;
+  track: TrackPoint[];
 }
 
 export interface Instruction {
@@ -202,16 +245,74 @@ export interface ContributorProfile {
   badges: Badge[];
 }
 
+/**
+ * What the client must do for one declared file. Exactly one of three shapes, so the
+ * client never has to infer the upload strategy from sizes or guesswork:
+ *   * `deduplicated` — identical bytes already exist server-side; upload nothing.
+ *   * `uploadUrl`    — single presigned PUT (small files).
+ *   * `multipart`    — request part URLs and PUT them in parallel (large files).
+ */
 export interface UploadTarget {
-  kind: 'front' | 'rear' | 'gpx';
+  fileId: string;
+  kind: 'front' | 'rear' | 'gps' | 'gpx';
   key: string;
-  uploadUrl: string;
+  deduplicated: boolean;
+  uploadUrl: string | null;
+  multipart?: {
+    uploadId: string;
+    partSizeBytes: number;
+    partsTotal: number;
+  };
 }
 
 export interface UploadInitResult {
   uploadId: string;
   routeId: string;
   targets: UploadTarget[];
+}
+
+/** Signed URLs for a batch of multipart parts. */
+export interface SignedPartsResult {
+  fileId: string;
+  key: string;
+  partSizeBytes: number;
+  partsTotal: number;
+  parts: Array<{ partNumber: number; uploadUrl: string }>;
+}
+
+/** A canonical examiner route (R1) an upload is checked against. */
+export interface ReferenceRoute {
+  id: string;
+  name: string;
+  startLabel?: string | null;
+  endLabel?: string | null;
+  testCentreId?: string | null;
+  lengthM: number;
+  pointCount: number;
+  createdAt?: string;
+}
+
+/**
+ * A drive the instructor recorded in the app (UC2). `attachable` is false once footage
+ * has been attached, or when the journey holds no usable GPS — surfaced rather than
+ * hidden so the picker can explain why a remembered drive isn't offered.
+ */
+export interface RecordedJourney {
+  id: string;
+  referenceRouteId: string;
+  referenceRouteName?: string | null;
+  videoSource: string;
+  status: string;
+  verdict?: string | null;
+  coveragePct?: number | null;
+  startedAt: string;
+  startedAtEpochMs?: number | null;
+  submittedAt?: string | null;
+  uploadId?: string | null;
+  videoUploadState?: string | null;
+  pointCount?: number | null;
+  durationMs?: number | null;
+  attachable: boolean;
 }
 
 export interface UploadStage {

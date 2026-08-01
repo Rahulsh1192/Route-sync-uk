@@ -222,11 +222,30 @@ review rather than silently published.
 | Journey lifecycle API (create R1 / start / live-check / submit / get) | ✅ built |
 | Live deviation warning **endpoint** (`/journeys/:id/check`) | ✅ built |
 | Demo data seeder | ✅ built (`npm run seed:journeys`) |
-| In-app recording screens (Flutter) | ⏳ next layer |
-| Worker video splice + transcode (consumes `journey_segments`) | ⏳ next layer |
-| Video↔GPS speed/audio correlation (dashcam sync) | ⏳ next layer |
-| `WatchPage` map-follows-marker on R1 | ⏳ next layer |
+| **Multi-clip dashcam upload (N front + N rear + N GPS logs)** | ✅ built (Phase 24) |
+| **Dashcam filename registry (Viofo/BlackVue/Vantrue/70mai/Nextbase + generic)** | ✅ built, runtime-extensible via `platform_config` |
+| **Multi-format GPS ingest + merge (GPX/NMEA/CSV/KML/embedded)** | ✅ built (`gps_ingest.py`) |
+| **Clip→wall-clock mapping so inter-clip gaps don't drift the marker** | ✅ built (`clip_timeline.py`, `route_clip_timeline`) |
+| **Video↔GPS duration reconciliation + wrong-camera-clock detection** | ✅ built (`reconcile.py`) |
+| **Front↔rear audio correlation** | ✅ built (`audio_sync.py`) |
+| **R1 conformance on dashcam uploads** | ✅ built (worker → `/api/internal/journeys/analyse-upload`) |
+| **`route_track_points` populated on video time** | ✅ built (Phase 24) |
+| **`WatchPage` map-follows-marker on R1** | ✅ built (front + rear + map in one container) |
+| Worker video splice to on-route spans (consumes `journey_segments`) | ⏳ next layer |
+| Video-motion (optical-flow) signal for dashcam↔GPS correlation | ⏳ next layer — UC2 aligns on timestamps + GPS speed today, and flags weak matches |
+| In-app recording screens (Flutter) | ⏳ next layer — blocks usecase 2 |
 
-The **brain** (does the GPS match R1, and where does each moment sit on R1) is
-done and verifiable today. The **video muscle** (cutting and transcoding the
-footage to that plan) is the clearly-scoped next layer.
+The **brain** (does the GPS match R1, and where does each moment sit on R1) and the
+**clock work** (getting many clips and many GPS logs onto one timeline, verifiably) are
+both done. What remains of the muscle is *cutting* the video to the kept spans — the
+footage currently plays in full with an accurate timeline over it, rather than being
+spliced.
+
+### Why the clip mapping exists (the failure it prevents)
+
+A dashcam drops 0.5–2 s between clips. Concatenate five clips from a 20-minute drive and
+the video is ~8 s shorter than the real time it covers. Drive a marker from GPS
+(wall-clock) against video time and the error accumulates: invisible at the start, ~8 s
+out by the end — that is, the marker rounds a corner the learner passed ten seconds ago.
+`route_clip_timeline` stores the exact per-clip mapping, and
+`test_dashcam_sync.py` pins the property directly ("video 120 s maps to wall +124 s").

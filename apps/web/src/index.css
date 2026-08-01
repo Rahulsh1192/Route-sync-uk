@@ -586,6 +586,40 @@ h1.page { font-size: 24px; margin: 4px 0 18px; }
 .player-stage { position: relative; width: 100%; background: #000; }
 .player-stage video { width: 100%; display: block; max-height: 60vh; object-fit: contain; }
 .player-split video { max-height: 30vh; }
+
+/* Phase 24 "All" view: front, rear and the synced map in one container. Stacked on a
+   phone, then a two-column grid once there's room — front spans the top, with rear and
+   map side by side beneath it, so the driver's view stays the largest pane. */
+.player-all { display: grid; grid-template-columns: 1fr; gap: 2px; }
+.player-all .pane-front { grid-column: 1 / -1; }
+.player-all video { max-height: 42vh; }
+.player-all .pane-map { min-height: 220px; height: 100%; }
+.player-all .pane-map .leaflet-container { height: 100%; border-radius: 0; }
+@media (min-width: 760px) {
+  .player-all { grid-template-columns: 1fr 1fr; }
+  .player-all video { max-height: 48vh; }
+  .player-all .pane-rear { max-height: 32vh; }
+  .player-all .pane-map { min-height: 32vh; }
+}
+
+.player-controls {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px 12px; flex-wrap: wrap;
+}
+.follow-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #fff; font-size: 13px; cursor: pointer;
+}
+.follow-toggle input { width: auto; margin: 0; }
+
+/* Rotatable playback marker (Leaflet has no built-in heading support). */
+.route-marker { background: none; border: none; }
+.route-marker-arrow {
+  width: 28px; height: 28px; transform-origin: 50% 50%;
+  transition: transform 120ms linear;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
+}
+
 .hud {
   display: flex; align-items: center; gap: 12px; padding: 10px 14px;
   background: #000; color: #fff; font-variant-numeric: tabular-nums;
@@ -598,6 +632,50 @@ h1.page { font-size: 24px; margin: 4px 0 18px; }
   background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font-weight: 600;
 }
 .seg button.active { background: var(--accent); border-color: var(--accent); }
+
+/* ---------- upload wizard (Phase 24) ---------- */
+.step-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.step-bar .step {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--muted);
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.step-bar .step.active { color: var(--text); border-color: var(--accent); }
+.step-bar .step.done { color: var(--green); border-color: var(--green); }
+.step-bar .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface-2); font-size: 11px; font-weight: 700;
+}
+.step-bar .step.active .step-num { background: var(--accent); color: #fff; }
+
+.radio-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 0; cursor: pointer; border-top: 1px solid var(--border);
+}
+.radio-row:first-of-type { border-top: none; }
+.radio-row input { width: auto; margin: 4px 0 0; }
+
+.clip-list { list-style: none; margin: 0; padding: 0; }
+.clip-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.clip-index {
+  flex: 0 0 24px; height: 24px; border-radius: 50%;
+  background: var(--surface-2); color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.clip-name { flex: 1; font-size: 13px; word-break: break-all; }
+.clip-actions { display: flex; gap: 4px; }
+.clip-actions button { min-height: 30px; padding: 2px 10px; }
+.clip-gap {
+  font-size: 12px; color: var(--muted);
+  padding: 4px 0 4px 34px;
+}
+.clip-gap.large { color: var(--amber); }
 
 /* practice */
 .next-banner {

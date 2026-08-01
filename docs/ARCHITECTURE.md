@@ -87,8 +87,14 @@ mode and per-request pricing is hostile at video scale.
 ```
 
 **Why this shape:** the API never blocks on media work — it enqueues a job and returns.
-Workers scale horizontally and independently of the API. Clients only ever touch the CDN
-for bytes, never the origin.
+Workers scale horizontally and independently of the API. Clients fetch media bytes straight
+from object storage, never through the API origin.
+
+Route footage is paid content, so it is not served from a public CDN origin: the player
+asks the API's signed HLS gateway (`GET /api/routes/:id/hls/:token/:view/:file`), which
+authorises the request against a playback token and redirects to a short-lived presigned
+URL. The bytes still travel storage → client. Thumbnails are the one asset class that may
+be public (`CDN_PUBLIC_ASSETS=thumbnail`), because they already appear on unpaid pages.
 
 ---
 
@@ -286,7 +292,9 @@ Any stage can set status `flagged` (needs human) without failing the whole job.
      - same params  → ffmpeg concat demuxer (stream copy, fast, lossless)
      - mixed params → concat filter with prior normalisation
 5. Re-encode delivery master:
-     H.264 (libx264, broad device support) + optional H.265 (libx265, smaller).
+     H.264 main profile (libx264) only. H.265 would be ~35% smaller, but hls.js cannot
+     decode it through Media Source Extensions on Chrome or Firefox, so it plays on
+     Safari and nowhere else. The worker overrides any other configured codec.
 6. Adaptive streaming: ffmpeg → HLS variant ladder (1080/720/480/360) + master.m3u8,
      or hand the merged master to Cloudflare Stream and let it build the ladder.
 7. Generate poster/thumbnail (-ss seek + scale) and a sprite sheet for scrubbing.

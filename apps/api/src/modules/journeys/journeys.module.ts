@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { JourneysService } from './journeys.service';
-import { JourneysController } from './journeys.controller';
+import { InternalJourneysController, JourneysController } from './journeys.controller';
 
 @Module({
-  controllers: [JourneysController],
+  controllers: [JourneysController, InternalJourneysController],
   providers: [JourneysService],
   exports: [JourneysService],
 })

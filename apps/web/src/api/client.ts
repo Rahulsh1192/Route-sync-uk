@@ -7,6 +7,9 @@ import type {
   Entitlements,
   ContributorProfile,
   InstructorStatus,
+  RecordedJourney,
+  SignedPartsResult,
+  ReferenceRoute,
   UploadInitResult,
   UploadStatus,
   TestCentre,
@@ -17,11 +20,32 @@ import type {
   Me,
 } from './types';
 
+export type GpsSource = 'camera' | 'embedded' | 'app_journey';
+
 export interface DeclaredFile {
-  kind: 'front' | 'rear' | 'gpx';
+  /** `gps` supersedes `gpx` (Phase 24): several logs per upload is the normal case. */
+  kind: 'front' | 'rear' | 'gps' | 'gpx';
   originalName: string;
   contentType: string;
   bytes: number;
+  /**
+   * The order the instructor confirmed on the review screen. Sent because neither
+   * upload order (browsers don't guarantee it) nor mtime (copying rewrites it) is
+   * trustworthy, and a human who has looked at the detected order is.
+   */
+  declaredOrdinal?: number;
+  /** Client-probed values shown on the review screen; the worker re-probes. */
+  clientStartEpochMs?: number;
+  clientDurationMs?: number;
+  /**
+   * Phase 25: SHA-256 of the file's bytes, computed before upload.
+   *
+   * Sent up-front so the server can answer "we already hold these bytes" and skip the
+   * transfer entirely — deduplication only saves anything if the decision happens before
+   * the data moves. The worker re-hashes what actually arrived, so a wrong value costs
+   * the client a real upload rather than corrupting anything.
+   */
+  sha256?: string;
 }
 
 /** PUT a File straight to a presigned storage URL (MinIO/R2), reporting progress. */
@@ -317,8 +341,61 @@ export const api = {
     testCentreId?: string;
     clockSource?: string;
     files: DeclaredFile[];
+    // ---- Phase 24 recording provenance ----
+    gpsSource?: GpsSource;
+    /** Required when `gpsSource === 'app_journey'` — the recorded drive to attach to. */
+    journeyId?: string;
+    /** The R1 this drive claims to replicate; conformance is checked against it. */
+    referenceRouteId?: string;
+    /** Correction for a dashcam with a wrong clock (timezone/DST/unset). Signed ms. */
+    cameraClockOffsetMs?: number;
+    timelineReviewed?: boolean;
   }) => request<UploadInitResult>('/uploads', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Phase 24 — the upload wizard needs the R1 list and (for UC2) the instructor's own
+  // recorded journeys to attach dashcam footage to.
+  listReferenceRoutes: (testCentreId?: string) =>
+    request<ReferenceRoute[]>(
+      `/reference-routes${testCentreId ? `?testCentreId=${encodeURIComponent(testCentreId)}` : ''}`,
+    ),
+  myJourneys: () => request<RecordedJourney[]>('/instructors/me/journeys'),
   completeUpload: (id: string) =>
     request<{ uploadId: string; status: string }>(`/uploads/${id}/complete`, { method: 'POST' }),
   uploadStatus: (id: string) => request<UploadStatus>(`/uploads/${id}`),
+
+  // ---- Phase 25: multipart upload for large files ----
+
+  /**
+   * Sign the next batch of parts. Called repeatedly during a large upload rather than
+   * once at the start: every signed URL shares the same short expiry, so signing all of
+   * a 5 GB file's parts up front would leave the later ones dead on a slow connection.
+   */
+  signUploadParts: (uploadId: string, fileId: string, partNumbers: number[]) =>
+    request<SignedPartsResult>(`/uploads/${uploadId}/parts`, {
+      method: 'POST',
+      body: JSON.stringify({ fileId, partNumbers }),
+    }),
+
+  /** Assemble the uploaded parts into the final object. */
+  completeUploadParts: (
+    uploadId: string,
+    fileId: string,
+    parts: Array<{ partNumber: number; etag: string }>,
+  ) =>
+    request<{ fileId: string; key: string; bytes: number | null }>(
+      `/uploads/${uploadId}/parts/complete`,
+      { method: 'POST', body: JSON.stringify({ fileId, parts }) },
+    ),
+
+  /**
+   * Cancel an upload and release whatever already reached the bucket.
+   *
+   * Worth calling on an explicit cancel: it reclaims the storage immediately instead of
+   * waiting for the nightly orphan sweep. Only ever removes objects nothing references.
+   */
+  abortUpload: (uploadId: string) =>
+    request<{ uploadId: string; objectsDeleted: number; bytesReclaimed: number }>(
+      `/uploads/${uploadId}`,
+      { method: 'DELETE' },
+    ),
 };

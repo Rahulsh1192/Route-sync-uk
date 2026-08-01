@@ -9,7 +9,13 @@ pydantic==2.8.2
 # Media / GPS
 gpxpy==1.6.2
 numpy==1.26.4
-# ffmpeg/ffprobe are system binaries (invoked via subprocess), not pip packages
+# Dashcam filenames carry local time with no zone marker, so Phase 24 resolves them
+# through zoneinfo. Slim container images and Windows ship no system tz database, and
+# without this the whole clock would silently fall back to UTC — an hour of drift
+# through British Summer Time.
+tzdata==2024.1
+# ffmpeg/ffprobe are system binaries (invoked via subprocess), not pip packages.
+# exiftool (optional) is used to read GPS embedded in dashcam video files.
 
 # AI (heavy — install in the worker image, optional for local dev)
 # opencv-python-headless==4.10.0.84

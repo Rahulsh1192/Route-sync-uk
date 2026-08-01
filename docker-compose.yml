@@ -103,6 +103,10 @@ services:
       JWT_REFRESH_SECRET: dev-refresh-secret-change-me
       JWT_ACCESS_TTL: "900"
       JWT_REFRESH_TTL: "2592000"
+      # Phase 24: shared secret the media worker uses to call /api/internal/*.
+      # Must match the worker's WORKER_SHARED_SECRET. When unset the internal routes
+      # return 503 rather than accepting anonymous callers.
+      WORKER_SHARED_SECRET: dev-worker-secret-change-me
     ports:
       - "3000:3000"
 
@@ -126,6 +130,13 @@ services:
       S3_BUCKET: routesync-media
       S3_ACCESS_KEY: routesync
       S3_SECRET_KEY: routesync123
+      # Phase 24: must match the API's WORKER_SHARED_SECRET — this is how the worker
+      # authenticates to /api/internal/journeys/analyse-upload for R1 conformance.
+      WORKER_SHARED_SECRET: dev-worker-secret-change-me
+      # Timezone dashcam filenames are read in (they carry local time with no zone
+      # marker). A camera set to a different zone is detected and corrected during
+      # reconciliation, so this only needs to be the usual case for your market.
+      DASHCAM_LOCAL_TZ: Europe/London
       # AI toggles (off by default for light local runs)
       ENABLE_AI_BLUR: "false"
       ENABLE_WHISPER: "false"

@@ -18,6 +18,7 @@ import {
 import { JourneysService, VideoSource } from './journeys.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { WorkerSecretGuard } from '../../common/guards/worker-secret.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -55,6 +56,18 @@ class LiveCheckDto extends LatLngDto {
 class SubmitJourneyDto {
   @IsArray() @ArrayMinSize(2) @ValidateNested({ each: true }) @Type(() => GpsFixDto)
   fixes!: GpsFixDto[];
+  @IsOptional() @IsIn(VIDEO_SOURCES) videoSource?: VideoSource;
+}
+
+/**
+ * Phase 24 internal: `fixes` is optional here (unlike the in-app submit) because
+ * UC2 uploads have no track to send — it is already stored against the journey the
+ * footage is being attached to.
+ */
+class AnalyseUploadDto {
+  @IsUUID() uploadId!: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => GpsFixDto)
+  fixes?: GpsFixDto[];
   @IsOptional() @IsIn(VIDEO_SOURCES) videoSource?: VideoSource;
 }
 
@@ -108,5 +121,42 @@ export class JourneysController {
   @Get('journeys/:id')
   getJourney(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.journeys.getJourney(user.id, user.role, id);
+  }
+
+  /**
+   * Phase 24: the instructor's own recorded journeys. The upload wizard calls this
+   * to offer the drives that dashcam footage can be attached to (UC2).
+   */
+  @Get('instructors/me/journeys')
+  @UseGuards(RolesGuard)
+  @Roles('instructor', 'admin')
+  listMyJourneys(@CurrentUser() user: AuthUser) {
+    return this.journeys.listInstructorJourneys(user.id);
+  }
+}
+
+/**
+ * Internal service-to-service surface for the media worker (Phase 24).
+ *
+ * Separate from `JourneysController` because that class requires a user JWT and
+ * the worker has no session — it authenticates with the shared worker secret
+ * instead. Keeping them apart means the internal route can never accidentally
+ * inherit (or bypass) the learner-facing auth chain.
+ */
+@ApiTags('internal')
+@UseGuards(WorkerSecretGuard)
+@Controller('internal/journeys')
+export class InternalJourneysController {
+  constructor(private readonly journeys: JourneysService) {}
+
+  /**
+   * Run R1 conformance for an upload's merged GPS track and return the verdict,
+   * the kept on-route spans and the snapped timeline. The worker posts the track it
+   * assembled from the dashcam's GPS logs (UC1), or posts nothing and lets the
+   * service read the app-recorded track back out of the journey (UC2).
+   */
+  @Post('analyse-upload')
+  analyseUpload(@Body() dto: AnalyseUploadDto) {
+    return this.journeys.analyseUploadTrack(dto.uploadId, dto.fixes, dto.videoSource);
   }
 }

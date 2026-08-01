@@ -223,6 +223,13 @@ model Route {
   deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz
   contributor     User        @relation(fields: [contributorId], references: [id])
 
+  // Phase 14 columns that exist in the database (see db/migrate_phases_13_17.sql) but
+  // were never declared here. Prisma validates arguments against THIS schema rather
+  // than the database, so writing them through the typed client without these lines
+  // throws "Unknown argument" at runtime — which is what made POST /uploads fail.
+  hasVideo            Boolean @default(true)  @map("has_video")
+  videoContributorId  String? @map("video_contributor_id") @db.Uuid
+
   @@map("routes")
 }
 
@@ -249,6 +256,16 @@ model Upload {
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Phase 24 — recording provenance, so the pipeline can pick a sync strategy.
+  // 'camera' | 'embedded' | 'app_journey' (see db/migrate_phase_24.sql).
+  gpsSource           String    @default("camera") @map("gps_source")
+  journeyId           String?   @map("journey_id") @db.Uuid
+  referenceRouteId    String?   @map("reference_route_id") @db.Uuid
+  cameraClockOffsetMs BigInt    @default(0) @map("camera_clock_offset_ms")
+  resolvedOffsetMs    BigInt?   @map("resolved_offset_ms")
+  syncConfidence      Int?      @map("sync_confidence")
+  syncConfirmedAt     DateTime? @map("sync_confirmed_at") @db.Timestamptz
 
   @@map("uploads")
 }

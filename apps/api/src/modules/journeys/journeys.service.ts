@@ -162,6 +162,26 @@ export class JourneysService {
     const opt = await this.matchOptions();
     const a = analyzeJourney(points, fixes, opt);
 
+    await this.persistAnalysis(journeyId, a, videoSource ?? j.video_source);
+
+    this.logger.log(
+      `Journey ${journeyId}: ${a.verdict} — coverage ${a.coveragePct.toFixed(1)}%, ` +
+        `maxDev ${a.maxDeviationM.toFixed(1)}m, ${a.deviationCount} deviations, conf ${a.syncConfidence}`,
+    );
+
+    return this.analysisReport(journeyId, a);
+  }
+
+  /**
+   * Writes an analysis to the journey's three tables. Shared by the in-app submit
+   * path (UC2) and the dashcam-upload path (UC1) so a journey's stored truth is
+   * produced by exactly one piece of code regardless of how the GPS arrived.
+   */
+  private async persistAnalysis(
+    journeyId: string,
+    a: ReturnType<typeof analyzeJourney>,
+    videoSource: string,
+  ) {
     // Persist the matched track (append-only truth) in one bulk insert.
     const gpsRows = a.fixes.map((f, seq) => ({
       seq,
@@ -207,7 +227,7 @@ export class JourneysService {
       UPDATE journeys SET
         status = 'submitted',
         submitted_at = now(),
-        video_source = ${videoSource ?? j.video_source},
+        video_source = ${videoSource},
         coverage_pct = ${a.coveragePct},
         max_deviation_m = ${a.maxDeviationM},
         deviation_count = ${a.deviationCount},
@@ -215,12 +235,10 @@ export class JourneysService {
         verdict = ${a.verdict},
         reject_reason = ${a.rejectReason}
       WHERE id = ${journeyId}::uuid`;
+  }
 
-    this.logger.log(
-      `Journey ${journeyId}: ${a.verdict} — coverage ${a.coveragePct.toFixed(1)}%, ` +
-        `maxDev ${a.maxDeviationM.toFixed(1)}m, ${a.deviationCount} deviations, conf ${a.syncConfidence}`,
-    );
-
+  /** The conformance report shape returned to apps, admin and the worker. */
+  private analysisReport(journeyId: string, a: ReturnType<typeof analyzeJourney>) {
     return {
       journeyId,
       verdict: a.verdict,
@@ -270,5 +288,187 @@ export class JourneysService {
     if (!rows.length) throw new NotFoundException('Journey not found');
     if (rows[0].instructor_id !== userId) throw new ForbiddenException('Not your journey');
     return rows[0];
+  }
+
+  // ---- Phase 24: dashcam uploads -------------------------------------------
+
+  /**
+   * An instructor's own recorded journeys, with enough detail for the upload
+   * wizard to offer the right ones when attaching dashcam footage (UC2). Journeys
+   * with no GPS or with footage already attached are listed but marked
+   * unattachable, so the picker can explain *why* rather than silently hiding a
+   * drive the instructor remembers recording.
+   */
+  listInstructorJourneys(userId: string) {
+    return this.prisma.$queryRaw`
+      SELECT j.id,
+             j.reference_route_id                       AS "referenceRouteId",
+             r.name                                     AS "referenceRouteName",
+             j.video_source                             AS "videoSource",
+             j.status,
+             j.verdict,
+             j.coverage_pct                             AS "coveragePct",
+             j.started_at                               AS "startedAt",
+             j.started_at_epoch_ms::float8              AS "startedAtEpochMs",
+             j.submitted_at                             AS "submittedAt",
+             j.upload_id                                AS "uploadId",
+             j.video_upload_state                       AS "videoUploadState",
+             p.point_count                              AS "pointCount",
+             p.duration_ms                              AS "durationMs",
+             (j.upload_id IS NULL AND COALESCE(p.point_count, 0) >= 2) AS "attachable"
+        FROM journeys j
+        LEFT JOIN reference_routes r ON r.id = j.reference_route_id
+        LEFT JOIN (
+          SELECT journey_id,
+                 COUNT(*)::int                          AS point_count,
+                 (MAX(t_ms) - MIN(t_ms))::float8        AS duration_ms
+            FROM journey_gps_points GROUP BY journey_id
+        ) p ON p.journey_id = j.id
+       WHERE j.instructor_id = ${userId}::uuid
+       ORDER BY j.started_at DESC
+       LIMIT 100`;
+  }
+
+  /**
+   * Internal (worker-only): run R1 conformance for a dashcam upload.
+   *
+   * Phase 24 decision — uploaded dashcam GPS is conformance-checked, it does not
+   * become published geometry on its own. Rather than porting the matching engine
+   * into Python, the worker posts its merged track here so `matching.ts` stays the
+   * single source of truth for what "on route" means.
+   *
+   * Handles both usecases:
+   *  * UC1 — `fixes` supplied (merged from the camera's GPS logs). A journey row is
+   *    created for the upload if it doesn't have one yet, then analysed.
+   *  * UC2 — `fixes` omitted. The track already lives in the upload's journey from
+   *    the in-app recording, so it is re-analysed to regenerate the timeline. The
+   *    engine is deterministic, so this reproduces the original verdict exactly.
+   *
+   * Returns the snapped timeline as well as the verdict, because that timeline is
+   * what the worker turns into `route_track_points` — the data the moving map
+   * marker is driven from.
+   */
+  async analyseUploadTrack(
+    uploadId: string,
+    fixes?: GpsFix[],
+    videoSource?: VideoSource,
+  ) {
+    const uploads = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        user_id: string;
+        route_id: string | null;
+        journey_id: string | null;
+        reference_route_id: string | null;
+      }>
+    >`
+      SELECT id, user_id, route_id, journey_id, reference_route_id
+        FROM uploads WHERE id = ${uploadId}::uuid`;
+    if (!uploads.length) throw new NotFoundException('Upload not found');
+    const up = uploads[0];
+
+    let journeyId = up.journey_id;
+    let referenceRouteId = up.reference_route_id;
+
+    // A journey created in-app already knows its R1; an upload may not have been
+    // given one. Fall back to the journey's before giving up.
+    if (!referenceRouteId && journeyId) {
+      const rows = await this.prisma.$queryRaw<Array<{ reference_route_id: string }>>`
+        SELECT reference_route_id FROM journeys WHERE id = ${journeyId}::uuid`;
+      referenceRouteId = rows[0]?.reference_route_id ?? null;
+    }
+    if (!referenceRouteId) {
+      throw new BadRequestException(
+        'This upload has no reference route (R1) to be checked against',
+      );
+    }
+
+    // UC2: no fixes posted — read the app-recorded track back out of the journey.
+    let track = fixes;
+    if (!track?.length) {
+      if (!journeyId) {
+        throw new BadRequestException('No GPS track supplied and no recorded journey to read');
+      }
+      const rows = await this.prisma.$queryRaw<
+        Array<{ t_ms: number; lat: number; lng: number; accuracy_m: number | null; speed_mps: number | null }>
+      >`
+        SELECT t_ms::float8 AS t_ms, lat, lng, accuracy_m, speed_mps
+          FROM journey_gps_points WHERE journey_id = ${journeyId}::uuid ORDER BY seq`;
+      track = rows.map((r) => ({
+        tMs: r.t_ms,
+        lat: r.lat,
+        lng: r.lng,
+        accuracyM: r.accuracy_m ?? undefined,
+        speedMps: r.speed_mps ?? undefined,
+      }));
+    }
+    if (!track || track.length < 2) {
+      throw new BadRequestException('GPS track has too few points to analyse');
+    }
+    if (track.length > 200_000) throw new BadRequestException('GPS track is too large');
+
+    // UC1: give the upload a journey so its conformance result is stored in the
+    // same place as an in-app recording's, and admin sees one consistent view.
+    if (!journeyId) {
+      const created = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO journeys (
+          reference_route_id, instructor_id, route_id, upload_id,
+          video_source, status, video_upload_state
+        )
+        VALUES (
+          ${referenceRouteId}::uuid, ${up.user_id}::uuid, ${up.route_id}::uuid, ${uploadId}::uuid,
+          ${videoSource ?? 'dashcam'}, 'recording', 'processing'
+        )
+        RETURNING id`;
+      journeyId = created[0].id;
+    }
+
+    const { points } = await this.loadReference(referenceRouteId);
+    const opt = await this.matchOptions();
+    const a = analyzeJourney(points, track, opt);
+    await this.persistAnalysis(journeyId, a, videoSource ?? 'dashcam');
+
+    // Keep the journey pointed at the route the upload is building, so an admin
+    // reviewing the route can pivot straight to its conformance numbers.
+    await this.prisma.$executeRaw`
+      UPDATE journeys
+         SET upload_id = ${uploadId}::uuid,
+             route_id  = COALESCE(route_id, ${up.route_id ?? null}::uuid)
+       WHERE id = ${journeyId}::uuid`;
+
+    this.logger.log(
+      `Upload ${uploadId} → journey ${journeyId}: ${a.verdict} ` +
+        `(coverage ${a.coveragePct.toFixed(1)}%, ${a.deviationCount} deviations)`,
+    );
+
+    return {
+      ...this.analysisReport(journeyId, a),
+      referenceRouteId,
+      // The kept spans tell the worker which footage to keep; the timeline tells it
+      // where the car was at each instant. Both are needed downstream, so both are
+      // returned in full rather than as counts.
+      segments: a.keptSegments.map((s) => ({
+        startTMs: Math.round(s.startTMs),
+        endTMs: Math.round(s.endTMs),
+        startArcM: s.startArcM,
+        endArcM: s.endArcM,
+      })),
+      timeline: a.timeline.map((t) => ({
+        tMs: Math.round(t.tMs),
+        lat: t.lat,
+        lng: t.lng,
+        arcM: t.arcM,
+      })),
+      matchedFixes: a.fixes.map((f) => ({
+        tMs: Math.round(f.tMs),
+        lat: f.lat,
+        lng: f.lng,
+        speedMps: f.speedMps ?? null,
+        accuracyM: f.accuracyM ?? null,
+        arcM: f.arcM,
+        crossTrackM: f.crossTrackM,
+        onRoute: f.onRoute,
+      })),
+    };
   }
 }

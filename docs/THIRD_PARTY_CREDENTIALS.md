@@ -69,6 +69,9 @@
 | **Valhalla** (map-matching / routing) | self-host (Docker) or a hosted routing API | `VALHALLA_URL` | Used by the worker for road-network matching + turn instructions | self-host = infra only | ☐ |
 | AI blur / transcription toggles | — | `ENABLE_AI_BLUR`, `ENABLE_WHISPER`, `YOLO_MODEL` | feature flags + local model path, **not** credentials | free | ☐ |
 | Worker → API callback | — | `API_BASE_URL` | worker posts processing status back | — | ☐ |
+| **Worker → API internal auth** (Phase 24) | — (self-generated) | `WORKER_SHARED_SECRET` **on both** the API and the worker | How the worker calls `/api/internal/journeys/analyse-upload` to run R1 conformance. Generated automatically by `render.yaml`; copy the same value onto the worker. **Until both match, dashcam uploads skip conformance and the route is flagged.** | free | ☐ |
+| **exiftool** (optional) | system package (`apt install libimage-exiftool-perl`) | none | Reads GPS embedded inside dashcam video files (the "embedded" GPS source, the most accurate one). Without it, embedded-GPS uploads fall back to sidecar logs. | free | ☐ |
+| **tzdata** | pip (`tzdata`, pinned in requirements) | none | Dashcam filenames carry local time with no zone; without a tz database the worker reads them as UTC — an hour of drift through British Summer Time | free | ☑ |
 
 ---
 
@@ -78,6 +81,7 @@
 |---|---|---|---|---|:--:|
 | **postcodes.io** (UK postcode → lat/lng) | — | **none** | Free, keyless, already integrated for test-centre geocoding | free | ☑ |
 | **Map tiles** (OpenStreetMap) | — (or MapTiler/Stadia for production) | none now; key if you move to a paid tile host | Currently hitting `tile.openstreetmap.org` directly — fine for dev, get a proper tile provider for production traffic | free → paid | ☐ |
+| **Google Maps JavaScript API** (Phase 24, *deferred*) | console.cloud.google.com | `VITE_MAP_PROVIDER=google` + `VITE_GOOGLE_MAPS_API_KEY` (web build env) | The switch is already built — see [`apps/web/.env.example`](../apps/web/.env.example). Needs a Cloud project with **billing enabled** and Maps JavaScript API on. **Restrict the key by HTTP referrer**: an unrestricted key on a public site is billable by anyone who finds it. Setting the provider without a key falls back to Leaflet. | ~$7/1,000 map loads after the monthly free credit | ☐ |
 
 ---
 
