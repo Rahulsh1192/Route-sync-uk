@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { api, tokens } from '../api/client';
 import { demo } from '../api/demo';
-import type { Me } from '../api/types';
+import type { ContactDetailsInput, Me } from '../api/types';
 import { isStaffRole } from '../api/types';
 
 interface AuthState {
@@ -11,7 +11,12 @@ interface AuthState {
   user: Me | null;
   isStaff: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    contact?: ContactDetailsInput,
+  ) => Promise<void>;
   logout: () => void;
 }
 
@@ -56,8 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthed(true);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
-    const r = await api.register(email, password, name);
+  const register = useCallback(async (
+    email: string,
+    password: string,
+    name: string,
+    contact?: ContactDetailsInput,
+  ) => {
+    const r = await api.register(email, password, name, contact);
     tokens.save(r.accessToken, r.refreshToken);
     setAuthed(true);
   }, []);

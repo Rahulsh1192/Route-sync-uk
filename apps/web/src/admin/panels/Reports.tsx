@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, Report } from '../api';
+import { formatInstantDate } from '../../lib/datetime';
 
 export function Reports() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -64,7 +65,7 @@ export function Reports() {
               <td>
                 <span className="pill warn">{r.status}</span>
               </td>
-              <td className="meta">{new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+              <td className="meta">{formatInstantDate(r.created_at)}</td>
             </tr>
           ))}
         </tbody>

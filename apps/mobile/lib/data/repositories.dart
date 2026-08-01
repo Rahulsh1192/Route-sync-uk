@@ -105,9 +105,18 @@ class CommunityRepository {
 
   Future<void> acceptAgreement() => _api.post('/contributors/agreement');
 
-  Future<void> submitInstructor(String adiNumber, String? evidenceUrl) =>
-      _api.post('/instructors/verify',
-          body: {'adiNumber': adiNumber, if (evidenceUrl != null) 'evidenceUrl': evidenceUrl});
+  /// [adiExpiry] is `YYYY-MM-DD` and required by the API: a DVSA certificate is
+  /// time-limited, so a verification without one could never be re-checked.
+  Future<void> submitInstructor(
+    String adiNumber,
+    String adiExpiry,
+    String? evidenceUrl,
+  ) =>
+      _api.post('/instructors/verify', body: {
+        'adiNumber': adiNumber,
+        'adiExpiry': adiExpiry,
+        if (evidenceUrl != null) 'evidenceUrl': evidenceUrl,
+      });
 
   Future<Map<String, dynamic>> instructorStatus() async =>
       (await _api.get('/instructors/me/status')) as Map<String, dynamic>;

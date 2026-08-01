@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, FormEvent } from 'react';
 import { api, FundSummary } from '../api';
+import { formatInstantDate } from '../../lib/datetime';
 
 function pounds(minor: string | number): string {
   return `£${(Number(minor) / 100).toFixed(2)}`;
@@ -228,7 +229,7 @@ export function Fund() {
                 </td>
                 <td className="meta">{t.period ?? '—'}</td>
                 <td className="meta">{t.description ?? '—'}</td>
-                <td className="meta">{new Date(t.created_at).toLocaleDateString('en-GB')}</td>
+                <td className="meta">{formatInstantDate(t.created_at)}</td>
               </tr>
             ))}
           </tbody>

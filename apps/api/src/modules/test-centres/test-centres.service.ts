@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface TestCentreInput {
@@ -10,36 +16,133 @@ export interface TestCentreInput {
   description?: string;
 }
 
+/** What a postcode resolves to — coordinates plus the administrative area. */
+export interface PostcodeLookup {
+  postcode: string;
+  lat: number;
+  lng: number;
+  town: string | null;
+  region: string | null;
+  country: string | null;
+  /** True when only a postcode district was given, so the point is the district centroid. */
+  approximate: boolean;
+}
+
 @Injectable()
 export class TestCentresService {
+  private readonly logger = new Logger(TestCentresService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Geocode a UK postcode to lat/lng via postcodes.io (free, no API key).
-   * Throws a 400 if the postcode can't be resolved so the client can show a
-   * helpful message on the create/edit form.
+   * Normalise a UK postcode to the canonical `OUTCODE INCODE` form.
+   *
+   * Users type `nw71rb`, `NW7  1RB`, or paste one with a trailing space, and all of those
+   * are the same postcode. The inward code is always the last three characters, so the
+   * space goes before them regardless of whether the outward code is 2, 3 or 4 long.
    */
-  private async geocode(postcode: string): Promise<{ lat: number; lng: number }> {
-    const pc = postcode.trim();
+  private static normalisePostcode(raw: string): string {
+    const compact = raw.toUpperCase().replace(/\s+/g, '');
+    return compact.length > 3
+      ? `${compact.slice(0, -3)} ${compact.slice(-3)}`
+      : compact;
+  }
+
+  /** True for a postcode district on its own (`NW7`, `SW1A`) rather than a full postcode. */
+  private static isOutcode(compact: string): boolean {
+    return /^[A-Z]{1,2}\d[A-Z\d]?$/.test(compact.replace(/\s+/g, ''));
+  }
+
+  /**
+   * Resolve a UK postcode to coordinates and its administrative area via postcodes.io
+   * (free, no API key).
+   *
+   * Handles the three ways this used to fail on a postcode that was actually fine:
+   *
+   *  - **A district-only code** (`NW7`). `/postcodes/NW7` returns 404 "Invalid postcode",
+   *    because a district is not a postcode — it needs the `/outcodes` endpoint instead.
+   *    That answer was indistinguishable from a genuine typo.
+   *  - **Formatting.** Now normalised before the request rather than sent as typed.
+   *  - **An unreachable lookup service.** A network-restricted host made every single
+   *    create fail with no way to proceed. The caller can now choose to continue without
+   *    coordinates instead of being blocked (see `lookupPostcode` / `create`).
+   *
+   * Returns `null` when the service could not be reached, and throws only when the
+   * postcode itself is genuinely not a real place.
+   */
+  private async geocode(postcode: string): Promise<PostcodeLookup | null> {
+    const pc = TestCentresService.normalisePostcode(postcode ?? '');
     if (!pc) throw new BadRequestException('Postcode is required');
+
+    const compact = pc.replace(/\s+/g, '');
+    const outcodeOnly = TestCentresService.isOutcode(compact);
+    const url = outcodeOnly
+      ? `https://api.postcodes.io/outcodes/${encodeURIComponent(compact)}`
+      : `https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`;
+
+    let res: Response;
     let body: any;
     try {
-      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
+      // Bounded: postcodes.io is a third party and a create request should not hang on it.
+      res = await fetch(url, { signal: AbortSignal.timeout(8000) });
       body = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new BadRequestException(
-          body?.error ?? `Could not look up postcode "${pc}"`,
-        );
-      }
-    } catch (e) {
-      if (e instanceof BadRequestException) throw e;
-      throw new BadRequestException('Postcode lookup service is unavailable, please try again');
+    } catch {
+      // Unreachable / timed out — not the user's fault and not a verdict on the postcode.
+      this.logger.warn(`Postcode lookup unavailable for "${pc}"`);
+      return null;
     }
+
+    if (res.status === 404) {
+      throw new BadRequestException(
+        outcodeOnly
+          ? `"${compact}" is not a recognised UK postcode district`
+          : `"${pc}" is not a recognised UK postcode. Enter the full postcode, e.g. NW7 1RB.`,
+      );
+    }
+    if (!res.ok) {
+      this.logger.warn(`Postcode lookup failed for "${pc}": HTTP ${res.status}`);
+      return null;
+    }
+
     const r = body?.result;
     if (r?.latitude == null || r?.longitude == null) {
-      throw new BadRequestException(`Postcode "${pc}" was not found`);
+      throw new BadRequestException(`"${pc}" could not be located`);
     }
-    return { lat: r.latitude, lng: r.longitude };
+
+    // Field names differ between the two endpoints: a postcode result carries the
+    // district directly, an outcode result returns arrays covering the whole district.
+    const town: string | null =
+      r.admin_district ?? r.admin_ward ?? r.parish ?? r.admin_districts?.[0] ?? null;
+    const region: string | null =
+      r.region ?? r.european_electoral_region ?? r.regions?.[0] ?? r.country ?? null;
+
+    return {
+      postcode: outcodeOnly ? compact : (r.postcode ?? pc),
+      lat: r.latitude,
+      lng: r.longitude,
+      town,
+      region,
+      country: r.country ?? r.countries?.[0] ?? null,
+      approximate: outcodeOnly,
+    };
+  }
+
+  /**
+   * Postcode → town/region/coordinates, for the create form to fill itself in.
+   *
+   * Exposed as its own endpoint so the form can validate and populate as soon as the
+   * postcode is typed, instead of the contributor discovering on submit that the value
+   * they entered can't be resolved.
+   */
+  async lookupPostcode(postcode: string): Promise<PostcodeLookup> {
+    const found = await this.geocode(postcode);
+    if (!found) {
+      throw new ServiceUnavailableException(
+        'Postcode lookup is temporarily unavailable. You can still save the centre and ' +
+          'fill in the town and region yourself.',
+      );
+    }
+    return found;
   }
 
   /** List test centres (optionally filtered) with a published-route count each. */
@@ -95,12 +198,28 @@ export class TestCentresService {
   }
 
   async create(input: TestCentreInput) {
-    const { lat, lng } = await this.geocode(input.postcode);
+    const postcode = TestCentresService.normalisePostcode(input.postcode ?? '');
+    // Throws for a postcode that genuinely isn't real; returns null only if the lookup
+    // service was unreachable, which must not block an admin from saving a centre.
+    const found = await this.geocode(postcode);
+    if (!found) {
+      throw new ServiceUnavailableException(
+        'Could not reach the postcode lookup service, so this centre has no map location ' +
+          'yet. Please try again in a moment.',
+      );
+    }
+
+    // The postcode is authoritative for town/region; anything the admin typed wins, since
+    // a centre's local name ("Mill Hill") is often not the administrative district
+    // ("Barnet") that the lookup returns.
+    const town = input.town?.trim() || found.town;
+    const region = input.region?.trim() || found.region;
+
     const rows = await this.prisma.$queryRaw<any[]>`
       INSERT INTO test_centres (name, town, postcode, region, address, description, location)
-      VALUES (${input.name}, ${input.town ?? null}, ${input.postcode},
-              ${input.region ?? null}, ${input.address ?? null}, ${input.description ?? null},
-              ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography)
+      VALUES (${input.name}, ${town ?? null}, ${found.postcode},
+              ${region ?? null}, ${input.address ?? null}, ${input.description ?? null},
+              ST_SetSRID(ST_MakePoint(${found.lng}, ${found.lat}), 4326)::geography)
       RETURNING id, name, town, postcode, region, address, description,
                 ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
     `;
@@ -109,11 +228,23 @@ export class TestCentresService {
 
   async update(id: string, input: Partial<TestCentreInput>) {
     const existing = await this.findOne(id);
-    // Re-geocode only when the postcode changes.
+    // Re-geocode only when the postcode actually changes — compared after normalisation,
+    // so re-saving the form with the same postcode typed differently doesn't call out to a
+    // third-party service (and can't fail because that service is down).
     let lat = existing.lat as number;
     let lng = existing.lng as number;
-    if (input.postcode && input.postcode.trim() !== existing.postcode) {
-      ({ lat, lng } = await this.geocode(input.postcode));
+    const wanted = input.postcode ? TestCentresService.normalisePostcode(input.postcode) : null;
+    if (wanted && wanted !== TestCentresService.normalisePostcode(existing.postcode ?? '')) {
+      const found = await this.geocode(wanted);
+      if (!found) {
+        throw new ServiceUnavailableException(
+          'Could not reach the postcode lookup service to relocate this centre. ' +
+            'Please try again in a moment.',
+        );
+      }
+      lat = found.lat;
+      lng = found.lng;
+      input = { ...input, postcode: found.postcode };
     }
     const rows = await this.prisma.$queryRaw<any[]>`
       UPDATE test_centres SET

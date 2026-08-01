@@ -48,7 +48,7 @@ export function Users() {
           </svg>
           <input
             type="search"
-            placeholder="Search by name or email…"
+            placeholder="Search by name, email or phone…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && load(q)}
@@ -73,6 +73,7 @@ export function Users() {
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Email</th>
+              <th scope="col">Contact</th>
               <th scope="col">Role</th>
               <th scope="col">Status</th>
               <th scope="col"><span className="sr-only">Actions</span></th>
@@ -83,6 +84,23 @@ export function Users() {
               <tr key={u.id}>
                 <td style={{ fontWeight: 'var(--weight-medium)' }}>{u.displayName}</td>
                 <td className="meta">{u.email ?? '—'}</td>
+                <td className="meta">
+                  {u.phone ? (
+                    // tel: link so a staff member on a laptop with a softphone, or on a
+                    // tablet, can dial straight from the table.
+                    <a href={`tel:${u.phone.replace(/\s+/g, '')}`}>{u.phone}</a>
+                  ) : (
+                    '—'
+                  )}
+                  {u.emergencyContactPhone && (
+                    <div style={{ fontSize: 11, opacity: 0.75 }}>
+                      ICE: {u.emergencyContactName ?? 'contact'} ·{' '}
+                      <a href={`tel:${u.emergencyContactPhone.replace(/\s+/g, '')}`}>
+                        {u.emergencyContactPhone}
+                      </a>
+                    </div>
+                  )}
+                </td>
                 <td>
                   <select
                     value={u.role}

@@ -10,11 +10,19 @@ import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
+import { normalisePhone } from '../../common/validation/phone';
 import { AuthProvider } from '@prisma/client';
 
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+}
+
+/** Phase 26 — optional contact details collected at sign-up. */
+export interface ContactDetails {
+  phone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
 }
 
 interface AppleJwk {
@@ -42,7 +50,12 @@ export class AuthService {
     if (googleClientId) this.google = new OAuth2Client(googleClientId);
   }
 
-  async register(email: string, password: string, displayName: string): Promise<TokenPair> {
+  async register(
+    email: string,
+    password: string,
+    displayName: string,
+    contact?: ContactDetails,
+  ): Promise<TokenPair> {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException('Email already registered');
 
@@ -56,7 +69,35 @@ export class AuthService {
         subscriptions: { create: {} }, // free plan by default
       },
     });
+
+    // Written separately, in raw SQL, because the Phase 26 contact columns are not in the
+    // generated Prisma client. Passing them to `user.create` would throw
+    // "Unknown argument" — Prisma validates against its own schema, not the database.
+    await this.writeContactDetails(user.id, contact);
+
     return this.issueTokens(user.id, user.role, user.email ?? undefined);
+  }
+
+  /**
+   * Store optional contact details for a user.
+   *
+   * A no-op when nothing was supplied, so OAuth sign-ups (which never carry a phone
+   * number) take the same path as email sign-ups without a special case.
+   */
+  private async writeContactDetails(userId: string, contact?: ContactDetails): Promise<void> {
+    if (!contact) return;
+    const phone = normalisePhone(contact.phone);
+    const name = contact.emergencyContactName?.trim() || null;
+    const emergency = normalisePhone(contact.emergencyContactPhone);
+    if (!phone && !name && !emergency) return;
+
+    await this.prisma.$executeRaw`
+      UPDATE users SET
+        phone                   = COALESCE(${phone}, phone),
+        emergency_contact_name  = COALESCE(${name}, emergency_contact_name),
+        emergency_contact_phone = COALESCE(${emergency}, emergency_contact_phone),
+        updated_at              = now()
+      WHERE id = ${userId}::uuid`;
   }
 
   async login(email: string, password: string): Promise<TokenPair> {

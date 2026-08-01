@@ -10,15 +10,18 @@ import { Fund } from './panels/Fund';
 import { Earnings } from './panels/Earnings';
 import { Reports } from './panels/Reports';
 import { Bookings } from './panels/Bookings';
+import { ReferenceRoutes } from './panels/ReferenceRoutes';
 import './admin.css';
 
-type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'earnings' | 'reports' | 'bookings';
+type View = 'queue' | 'users' | 'instructors' | 'revenue' | 'fund' | 'earnings' | 'reports'
+  | 'bookings' | 'refroutes';
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'queue',       label: 'Review Queue',     icon: '⏳' },
   { id: 'users',       label: 'Users',             icon: '👥' },
   { id: 'instructors', label: 'Instructors',       icon: '🎓' },
   { id: 'bookings',    label: 'Bookings',          icon: '📅' },
+  { id: 'refroutes',   label: 'Reference Routes',  icon: '🗺️' },
   { id: 'revenue',     label: 'Revenue',           icon: '💰' },
   { id: 'fund',        label: 'Community Fund',    icon: '🏦' },
   { id: 'earnings',    label: 'Instructor Earnings', icon: '📈' },
@@ -135,6 +138,7 @@ export function AdminApp() {
             {view === 'users' && <Users />}
             {view === 'instructors' && <Instructors />}
             {view === 'bookings' && <Bookings />}
+            {view === 'refroutes' && <ReferenceRoutes />}
             {view === 'revenue' && <Revenue />}
             {view === 'fund' && <Fund />}
             {view === 'earnings' && <Earnings />}

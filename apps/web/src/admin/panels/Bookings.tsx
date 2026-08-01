@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { formatSlot } from '../../lib/datetime';
 
 interface Booking {
   id: string; status: string;
+  // Postgres `date` and `time` columns. Prisma serialises them as full ISO strings
+  // (`2026-08-14T00:00:00.000Z`, `1970-01-01T10:00:00.000Z`), which is why they need
+  // formatting rather than printing — and why they must not be timezone-converted.
   slot_date: string; start_time: string;
   learner_name: string; instructor_name: string;
   amount_minor?: number; platform_fee_minor?: number; payment_status?: string;
@@ -45,7 +49,7 @@ export function Bookings() {
           {bookings.map((b) => (
             <tr key={b.id}>
               <td style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {b.slot_date} {b.start_time}
+                {formatSlot(b.slot_date, b.start_time)}
               </td>
               <td style={{ fontWeight: 'var(--weight-medium)' }}>{b.learner_name}</td>
               <td>{b.instructor_name}</td>

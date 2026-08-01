@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import { formatInstantDate } from '../lib/datetime';
 
 interface Progress {
   total_routes_watched: number;
@@ -88,7 +89,7 @@ export function ProgressPage() {
                 </div>
                 {h.last_watched_at && (
                   <div className="muted" style={{ fontSize: 11 }}>
-                    Last: {new Date(h.last_watched_at).toLocaleDateString('en-GB')}
+                    Last: {formatInstantDate(h.last_watched_at)}
                   </div>
                 )}
               </div>

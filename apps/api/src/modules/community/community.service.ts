@@ -1,4 +1,11 @@
-import { Injectable, OnModuleInit, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 import {
@@ -78,26 +85,95 @@ export class CommunityService implements OnModuleInit {
   }
 
   // --- instructor verification (contributor submission side) ---------------
-  async submitInstructorVerification(userId: string, adiNumber: string, evidenceUrl?: string) {
+  /**
+   * Submit an ADI badge for verification.
+   *
+   * `adiExpiry` is required (Phase 26). A DVSA ADI certificate is valid for four years, so
+   * a verification with no expiry can never be re-checked — the badge would keep reading
+   * as "verified" indefinitely, including years after it lapsed. Collecting it at
+   * submission is the only point where the instructor has the certificate in front of them.
+   */
+  async submitInstructorVerification(
+    userId: string,
+    adiNumber: string,
+    adiExpiry: string,
+    evidenceUrl?: string,
+  ) {
     const existing = await this.prisma.$queryRaw<any[]>`
       SELECT 1 FROM instructor_verifications
       WHERE user_id = ${userId}::uuid AND status = 'pending' LIMIT 1`;
     if (existing.length) throw new ConflictException('A verification request is already pending');
 
-    await this.prisma.$executeRaw`
-      INSERT INTO instructor_verifications (id, user_id, adi_number, evidence_url, status)
-      VALUES (gen_random_uuid(), ${userId}::uuid, ${adiNumber}, ${evidenceUrl ?? null}, 'pending')`;
+    // Someone else already claiming this badge number is checked explicitly, because the
+    // database enforces it with a unique index on (adi_number, status) and a raw insert
+    // that trips it surfaces as a 500 — the applicant is told "internal server error" for
+    // what is actually a meaningful answer. Two people claiming one ADI number is the
+    // impersonation case the index exists to catch, so it deserves a real message.
+    const claimed = await this.prisma.$queryRaw<any[]>`
+      SELECT status FROM instructor_verifications
+      WHERE adi_number = ${adiNumber} AND user_id <> ${userId}::uuid
+        AND status IN ('pending', 'verified')
+      LIMIT 1`;
+    if (claimed.length) {
+      throw new ConflictException(
+        `ADI number ${adiNumber} is already registered to another account. ` +
+          'If this is your badge, contact support so we can look into it.',
+      );
+    }
+
+    // Rejected here rather than left for a moderator to spot: an expired badge is not a
+    // judgement call, and the instructor can act on it immediately (renew, then resubmit)
+    // whereas a rejection days later tells them nothing they can use.
+    const expiry = new Date(`${adiExpiry}T00:00:00Z`);
+    if (Number.isNaN(expiry.getTime())) {
+      throw new BadRequestException('Enter the ADI badge expiry date as YYYY-MM-DD');
+    }
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    if (expiry < today) {
+      throw new BadRequestException(
+        `That ADI badge expired on ${adiExpiry}. Renew it with the DVSA, then submit the new expiry date.`,
+      );
+    }
+
+    try {
+      await this.prisma.$executeRaw`
+        INSERT INTO instructor_verifications
+          (id, user_id, adi_number, adi_expiry, evidence_url, status)
+        VALUES (gen_random_uuid(), ${userId}::uuid, ${adiNumber}, ${adiExpiry}::date,
+                ${evidenceUrl ?? null}, 'pending')`;
+    } catch (e) {
+      // The check above closes the common case; this closes the race between two
+      // simultaneous submissions, where the index is the only thing that can decide.
+      // 23505 is Postgres' unique_violation.
+      if ((e as { meta?: { code?: string } })?.meta?.code === '23505'
+          || /23505|duplicate key/i.test(String((e as Error)?.message))) {
+        throw new ConflictException(
+          `ADI number ${adiNumber} is already registered to another account. ` +
+            'If this is your badge, contact support so we can look into it.',
+        );
+      }
+      throw e;
+    }
     // ensure a contributors row exists and reflects the pending state
     await this.prisma.$executeRaw`
-      INSERT INTO contributors (user_id, instructor_status, adi_number)
-      VALUES (${userId}::uuid, 'pending', ${adiNumber})
-      ON CONFLICT (user_id) DO UPDATE SET instructor_status = 'pending', adi_number = EXCLUDED.adi_number`;
+      INSERT INTO contributors (user_id, instructor_status, adi_number, adi_expiry)
+      VALUES (${userId}::uuid, 'pending', ${adiNumber}, ${adiExpiry}::date)
+      ON CONFLICT (user_id) DO UPDATE SET instructor_status = 'pending',
+        adi_number = EXCLUDED.adi_number, adi_expiry = EXCLUDED.adi_expiry`;
     return { status: 'pending' };
   }
 
   async instructorStatus(userId: string) {
     const rows = await this.prisma.$queryRaw<any[]>`
-      SELECT instructor_status, adi_number, verified_at FROM contributors
+      SELECT instructor_status, adi_number, adi_expiry, verified_at,
+             -- Surfaced so the UI can prompt a renewal before the badge lapses rather
+             -- than after, when the instructor would already be unbookable.
+             (adi_expiry IS NOT NULL AND adi_expiry < CURRENT_DATE) AS "adiExpired",
+             (adi_expiry IS NOT NULL
+              AND adi_expiry BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days')
+               AS "adiExpiringSoon"
+      FROM contributors
       WHERE user_id = ${userId}::uuid`;
     return rows[0] ?? { instructor_status: 'none' };
   }

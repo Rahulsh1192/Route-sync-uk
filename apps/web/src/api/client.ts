@@ -15,6 +15,8 @@ import type {
   TestCentre,
   TestCentreDetail,
   TestCentreInput,
+  PostcodeLookup,
+  ContactDetailsInput,
   TestDetails,
   TestDetailRecord,
   Me,
@@ -178,11 +180,23 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  register: (email: string, password: string, displayName: string) =>
+  register: (
+    email: string,
+    password: string,
+    displayName: string,
+    contact?: ContactDetailsInput,
+  ) =>
     request<{ accessToken: string; refreshToken: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, displayName }),
+      // Spread rather than always sending the keys: the API treats an absent field as
+      // "leave alone" and an empty string as "clear", so sending '' at signup would be a
+      // pointless instruction to clear something that was never set.
+      body: JSON.stringify({ email, password, displayName, ...(contact ?? {}) }),
     }),
+
+  /** Update the signed-in user's own profile / contact details. */
+  updateMe: (patch: ContactDetailsInput & { displayName?: string; avatarUrl?: string }) =>
+    request<Me>('/users/me', { method: 'PATCH', body: JSON.stringify(patch) }),
 
   // current user (includes role, for UI gating)
   meUser: async (): Promise<Me | null> => {
@@ -224,6 +238,11 @@ export const api = {
     return request<TestCentre[]>(`/test-centres${qs}`);
   },
   testCentre: (id: string) => request<TestCentreDetail>(`/test-centres/${id}`),
+  /** Postcode → town / region / coordinates, so the centre form can fill itself in. */
+  lookupPostcode: (postcode: string) =>
+    request<PostcodeLookup>(
+      `/test-centres/lookup/postcode?postcode=${encodeURIComponent(postcode)}`,
+    ),
   createTestCentre: (input: TestCentreInput) =>
     request<TestCentre>('/test-centres', { method: 'POST', body: JSON.stringify(input) }),
   updateTestCentre: (id: string, input: Partial<TestCentreInput>) =>
@@ -329,10 +348,10 @@ export const api = {
   profile: () => request<ContributorProfile>('/contributors/me/profile'),
   acceptAgreement: () => request<{ version: string }>('/contributors/agreement', { method: 'POST' }),
   instructorStatus: () => request<InstructorStatus>('/instructors/me/status'),
-  submitInstructor: (adiNumber: string, evidenceUrl?: string) =>
+  submitInstructor: (adiNumber: string, adiExpiry: string, evidenceUrl?: string) =>
     request<{ status: string }>('/instructors/verify', {
       method: 'POST',
-      body: JSON.stringify({ adiNumber, evidenceUrl }),
+      body: JSON.stringify({ adiNumber, adiExpiry, evidenceUrl }),
     }),
 
   initUpload: (payload: {

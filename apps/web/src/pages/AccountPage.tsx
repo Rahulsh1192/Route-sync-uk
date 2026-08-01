@@ -10,6 +10,39 @@ export function AccountPage() {
   const [ent, setEnt] = useState<Entitlements | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [installing, setInstalling] = useState(false);
+  // Held as strings, never null, so an emptied input round-trips as '' — which the API
+  // reads as "clear this field" rather than "leave it alone".
+  const [contact, setContact] = useState({
+    phone: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+  });
+  const [savingContact, setSavingContact] = useState(false);
+  const [contactSaved, setContactSaved] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    setContact({
+      phone: user.phone ?? '',
+      emergencyContactName: user.emergencyContactName ?? '',
+      emergencyContactPhone: user.emergencyContactPhone ?? '',
+    });
+  }, [user]);
+
+  async function saveContact() {
+    setSavingContact(true);
+    setContactError(null);
+    setContactSaved(false);
+    try {
+      await api.updateMe(contact);
+      setContactSaved(true);
+    } catch (e) {
+      setContactError((e as Error).message);
+    } finally {
+      setSavingContact(false);
+    }
+  }
 
   useEffect(() => {
     api.me().then(setEnt).catch(() => {});
@@ -60,6 +93,54 @@ export function AccountPage() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Contact details (Phase 26). Editable here rather than only at signup, because
+          that is where existing accounts and Google/Apple sign-ins can supply them — none
+          of those went through a form that asked. */}
+      <div className="card">
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact details</div>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+          Optional. Used by staff to reach you about a lesson or a booking. Clear a field
+          and save to remove it.
+        </div>
+
+        <label>Mobile number</label>
+        <input
+          type="tel"
+          value={contact.phone}
+          onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+          placeholder="e.g. 07700 900123"
+          autoComplete="tel"
+        />
+
+        <label>Emergency contact name</label>
+        <input
+          value={contact.emergencyContactName}
+          onChange={(e) => setContact({ ...contact, emergencyContactName: e.target.value })}
+        />
+
+        <label>Emergency contact number</label>
+        <input
+          type="tel"
+          value={contact.emergencyContactPhone}
+          onChange={(e) => setContact({ ...contact, emergencyContactPhone: e.target.value })}
+        />
+
+        {contactError && <div className="error" style={{ marginTop: 8 }}>{contactError}</div>}
+        {contactSaved && (
+          <div style={{ color: 'var(--color-green)', fontSize: 13, marginTop: 8 }}>
+            Contact details saved.
+          </div>
+        )}
+        <button
+          className="btn"
+          style={{ marginTop: 10 }}
+          disabled={savingContact}
+          onClick={saveContact}
+        >
+          {savingContact ? 'Saving…' : 'Save contact details'}
+        </button>
       </div>
 
       <div className="card">

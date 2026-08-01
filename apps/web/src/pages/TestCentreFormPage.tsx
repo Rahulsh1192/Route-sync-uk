@@ -21,6 +21,8 @@ export function TestCentreFormPage({ mode }: { mode: 'create' | 'edit' }) {
   const [loading, setLoading] = useState(mode === 'edit');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lookupState, setLookupState] = useState<'idle' | 'busy' | 'ok' | 'error'>('idle');
+  const [lookupNote, setLookupNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (mode === 'edit' && id) {
@@ -43,6 +45,42 @@ export function TestCentreFormPage({ mode }: { mode: 'create' | 'edit' }) {
 
   function set<K extends keyof TestCentreInput>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  /**
+   * Resolve the postcode and fill in town / region.
+   *
+   * Runs on blur rather than on every keystroke: a postcode is only meaningful once it's
+   * complete, and one request per character would be both useless and rude to a free
+   * third-party service.
+   *
+   * Anything already typed is left alone — a centre's local name ("Mill Hill") is usually
+   * not the administrative district the lookup returns ("Barnet"), so the admin's own
+   * wording wins and the lookup only fills blanks.
+   */
+  async function lookup() {
+    const pc = form.postcode.trim();
+    if (!pc) return;
+    setLookupState('busy');
+    setLookupNote(null);
+    try {
+      const found = await api.lookupPostcode(pc);
+      setForm((f) => ({
+        ...f,
+        postcode: found.postcode,
+        town: f.town.trim() || found.town || '',
+        region: f.region.trim() || found.region || '',
+      }));
+      setLookupState('ok');
+      setLookupNote(
+        found.approximate
+          ? `Located ${found.postcode} approximately — that's a postcode district, so the pin is its centre. Enter the full postcode for an exact location.`
+          : `Located ${found.postcode}${found.town ? ` · ${found.town}` : ''}`,
+      );
+    } catch (e) {
+      setLookupState('error');
+      setLookupNote((e as Error).message);
+    }
   }
 
   async function submit(e: FormEvent) {
@@ -76,19 +114,40 @@ export function TestCentreFormPage({ mode }: { mode: 'create' | 'edit' }) {
         <label>Name *</label>
         <input value={form.name} onChange={(e) => set('name', e.target.value)} required />
 
-        <label>Postcode * (used to locate the centre on the map)</label>
+        <label>Postcode * (locates the centre and fills in the town and region)</label>
         <input
           value={form.postcode}
           onChange={(e) => set('postcode', e.target.value)}
+          onBlur={lookup}
           placeholder="e.g. NW7 1RB"
           required
         />
+        {lookupState === 'busy' && (
+          <div className="muted" style={{ fontSize: 12, marginTop: -6 }}>Looking up postcode…</div>
+        )}
+        {lookupNote && (
+          <div
+            className={lookupState === 'error' ? 'error' : 'muted'}
+            style={{ fontSize: 12, marginTop: lookupState === 'error' ? 6 : -6 }}
+          >
+            {lookupNote}
+          </div>
+        )}
 
-        <label>City / Town</label>
-        <input value={form.town} onChange={(e) => set('town', e.target.value)} />
+        <label>City / Town *</label>
+        <input
+          value={form.town}
+          onChange={(e) => set('town', e.target.value)}
+          placeholder="Filled in from the postcode — edit if the local name differs"
+          required
+        />
 
-        <label>Region</label>
-        <input value={form.region} onChange={(e) => set('region', e.target.value)} />
+        <label>Region *</label>
+        <input
+          value={form.region}
+          onChange={(e) => set('region', e.target.value)}
+          required
+        />
 
         <label>Address</label>
         <input value={form.address} onChange={(e) => set('address', e.target.value)} />

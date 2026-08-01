@@ -9,6 +9,9 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [iceName, setIceName] = useState('');
+  const [icePhone, setIcePhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -17,8 +20,15 @@ export function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      if (isRegister) await register(email.trim(), password, name.trim());
-      else await login(email.trim(), password);
+      if (isRegister) {
+        // Only send fields the user actually filled: the API treats an empty string as
+        // "clear this", which is a meaningless instruction on a brand-new account.
+        await register(email.trim(), password, name.trim(), {
+          ...(phone.trim() ? { phone: phone.trim() } : {}),
+          ...(iceName.trim() ? { emergencyContactName: iceName.trim() } : {}),
+          ...(icePhone.trim() ? { emergencyContactPhone: icePhone.trim() } : {}),
+        });
+      } else await login(email.trim(), password);
       // Role-based landing (admins → console, everyone else → Test Centres).
       nav('/');
     } catch (err) {
@@ -84,6 +94,35 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {isRegister && (
+              <>
+                {/* Optional, and stated as such. Contact details are useful to have but
+                    asking for them as a requirement at signup costs conversions, and
+                    Google/Apple sign-ins can't supply a phone number anyway — so they can
+                    always be added later from the account page. */}
+                <label>Mobile number <span className="muted">(optional)</span></label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. 07700 900123"
+                  autoComplete="tel"
+                />
+                <label>Emergency contact name <span className="muted">(optional)</span></label>
+                <input
+                  value={iceName}
+                  onChange={(e) => setIceName(e.target.value)}
+                  placeholder="Who should we call in an emergency?"
+                />
+                <label>Emergency contact number <span className="muted">(optional)</span></label>
+                <input
+                  type="tel"
+                  value={icePhone}
+                  onChange={(e) => setIcePhone(e.target.value)}
+                  placeholder="e.g. 07700 900456"
+                />
+              </>
+            )}
             {error && <div className="error">{error}</div>}
             <button className="btn" disabled={busy} type="submit" style={{ marginTop: 12 }}>
               {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}

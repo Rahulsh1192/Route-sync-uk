@@ -30,6 +30,10 @@ export interface Me {
   role: string;
   locale?: string;
   createdAt?: string;
+  /** Phase 26. Null for accounts created before contact details were collected. */
+  phone?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
 }
 
 /** True for staff who can manage test centres / upload routes (matches the API's
@@ -208,10 +212,35 @@ export interface TestCentreDetail {
 export interface TestCentreInput {
   name: string;
   postcode: string;
-  town?: string;
-  region?: string;
+  /** Required by the API: learners search and filter centres by town. */
+  town: string;
+  region: string;
   address?: string;
   description?: string;
+}
+
+/**
+ * Contact details, all optional.
+ *
+ * Omitting a field leaves it unchanged; sending an empty string clears it. That
+ * distinction is what lets a partial form submit avoid wiping fields it never displayed.
+ */
+export interface ContactDetailsInput {
+  phone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+}
+
+/** Result of a postcode lookup — what the centre form pre-fills itself from. */
+export interface PostcodeLookup {
+  postcode: string;
+  lat: number;
+  lng: number;
+  town: string | null;
+  region: string | null;
+  country: string | null;
+  /** True when only a district was given, so the point is the district centroid. */
+  approximate: boolean;
 }
 
 export interface TestDetailRecord {

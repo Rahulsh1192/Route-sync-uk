@@ -7,6 +7,7 @@ export function InstructorVerifyPage() {
   const nav = useNavigate();
   const [status, setStatus] = useState<InstructorStatus | null>(null);
   const [adi, setAdi] = useState('');
+  const [expiry, setExpiry] = useState('');
   const [evidence, setEvidence] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export function InstructorVerifyPage() {
     setError(null);
     setMsg(null);
     try {
-      await api.submitInstructor(adi.trim(), evidence.trim() || undefined);
+      await api.submitInstructor(adi.trim(), expiry, evidence.trim() || undefined);
       setMsg('Submitted — a moderator will review your ADI evidence.');
       setStatus({ instructor_status: 'pending' });
     } catch (e) {
@@ -60,11 +61,32 @@ export function InstructorVerifyPage() {
         <div className="card">
           <label>DVSA ADI number</label>
           <input value={adi} onChange={(e) => setAdi(e.target.value)} placeholder="e.g. 123456" />
+          <label>Badge expiry date *</label>
+          <input
+            type="date"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+            // A badge cannot expire in the past, and the browser enforcing that beats a
+            // round-trip to be told so. The API re-checks — this is convenience, not
+            // validation.
+            min={new Date().toISOString().slice(0, 10)}
+            required
+          />
+          <div className="muted" style={{ fontSize: 12, marginTop: -4 }}>
+            The expiry printed on your DVSA ADI certificate. We use it to prompt you to
+            re-verify before it lapses.
+          </div>
+
           <label>Evidence URL (badge photo / certificate)</label>
           <input value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder="https://…" />
           {error && <div className="error">{error}</div>}
           {msg && <div style={{ color: 'var(--green)', fontSize: 14, margin: '8px 0' }}>{msg}</div>}
-          <button className="btn" disabled={busy || adi.trim().length < 3} onClick={submit} style={{ marginTop: 10 }}>
+          <button
+            className="btn"
+            disabled={busy || adi.trim().length < 3 || !expiry}
+            onClick={submit}
+            style={{ marginTop: 10 }}
+          >
             {busy ? 'Submitting…' : 'Submit for verification'}
           </button>
         </div>

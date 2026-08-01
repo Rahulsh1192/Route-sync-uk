@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, PendingInstructor } from '../api';
+import { formatInstantDate } from '../../lib/datetime';
 
 export function Instructors() {
   const [pending, setPending] = useState<PendingInstructor[]>([]);
@@ -67,6 +68,7 @@ export function Instructors() {
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col">ADI Number</th>
+            <th scope="col">Badge expiry</th>
             <th scope="col">Evidence</th>
             <th scope="col"><span className="sr-only">Actions</span></th>
           </tr>
@@ -78,6 +80,19 @@ export function Instructors() {
               <td className="meta">{p.email ?? '—'}</td>
               <td>
                 <code style={{ fontSize: 'var(--text-xs)' }}>{p.adi_number}</code>
+              </td>
+              <td>
+                {/* Flagged rather than shown raw: an expired badge must not be approved,
+                    and submissions predating Phase 26 carry no expiry at all — which is
+                    itself something the moderator needs to see, not a blank cell. */}
+                {p.adi_expiry ? (
+                  <>
+                    {formatInstantDate(p.adi_expiry)}
+                    {p.adiExpired && <span className="pill bad" style={{ marginLeft: 6 }}>expired</span>}
+                  </>
+                ) : (
+                  <span className="pill warn">not supplied</span>
+                )}
               </td>
               <td>
                 {p.evidence_url ? (

@@ -46,14 +46,42 @@ export interface AdminUser {
   role: string;
   isSuspended: boolean;
   createdAt: string;
+  // Phase 26 contact details. Nullable: existing accounts and OAuth sign-ins predate them.
+  phone: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+}
+
+/** A test centre, for the reference-route panel's picker. */
+export interface AdminTestCentre {
+  id: string;
+  name: string;
+  town: string | null;
+  postcode: string | null;
+}
+
+/** An examiner's canonical route (R1) that contributed drives are checked against. */
+export interface AdminReferenceRoute {
+  id: string;
+  name: string;
+  startLabel: string | null;
+  endLabel: string | null;
+  testCentreId: string | null;
+  lengthM: number | null;
+  pointCount: number | null;
+  createdAt?: string;
 }
 export interface PendingInstructor {
   id: string;
   user_id: string;
   adi_number: string;
+  /** Phase 26. Null on submissions made before the expiry was collected. */
+  adi_expiry: string | null;
+  adiExpired: boolean;
   evidence_url: string | null;
   display_name: string;
   email: string | null;
+  phone: string | null;
   created_at: string;
 }
 export interface Revenue {
@@ -172,6 +200,27 @@ export const api = {
 
   adminBookings: (page = 0) =>
     request<any[]>(`/admin/bookings?page=${page}`),
+
+  // --- reference routes (R1) ---
+  // Reuses the existing public/instructor endpoints rather than adding admin-only
+  // duplicates: the same data, and `POST /reference-routes` is already role-guarded to
+  // instructor+admin.
+  testCentres: () => request<AdminTestCentre[]>('/test-centres'),
+  referenceRoutes: (testCentreId?: string) =>
+    request<AdminReferenceRoute[]>(
+      `/reference-routes${testCentreId ? `?testCentreId=${encodeURIComponent(testCentreId)}` : ''}`,
+    ),
+  createReferenceRoute: (input: {
+    testCentreId?: string;
+    name: string;
+    startLabel?: string;
+    endLabel?: string;
+    points: Array<{ lat: number; lng: number }>;
+  }) =>
+    request<AdminReferenceRoute>('/reference-routes', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
 
   // instructor rev-share (shadow reporting)
   revshareRuns: () => request<RevshareRun[]>('/admin/revshare/runs'),

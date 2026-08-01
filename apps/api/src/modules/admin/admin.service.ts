@@ -141,18 +141,31 @@ export class AdminService {
   }
 
   // --- user management -----------------------------------------------------
+  /**
+   * Admin user search, now including contact details (Phase 26).
+   *
+   * Raw SQL because the contact columns are not in the generated Prisma client. The phone
+   * match strips non-digits from both sides, so a staff member searching `07700900123`
+   * finds a number stored as `07700 900123` — an exact-string match on a field people
+   * format inconsistently would find almost nothing.
+   */
   users(q?: string) {
-    return this.prisma.user.findMany({
-      where: {
-        deletedAt: null,
-        ...(q ? { OR: [{ email: { contains: q } }, { displayName: { contains: q, mode: 'insensitive' } }] } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true, email: true, displayName: true, role: true, isSuspended: true, createdAt: true,
-      },
-    });
+    const term = q?.trim() || null;
+    const digits = term ? term.replace(/\D/g, '') : '';
+    return this.prisma.$queryRaw`
+      SELECT id, email, display_name AS "displayName", role,
+             is_suspended AS "isSuspended", created_at AS "createdAt",
+             phone, emergency_contact_name AS "emergencyContactName",
+             emergency_contact_phone AS "emergencyContactPhone"
+      FROM users
+      WHERE deleted_at IS NULL
+        AND (${term}::text IS NULL
+             OR email ILIKE '%' || ${term ?? ''} || '%'
+             OR display_name ILIKE '%' || ${term ?? ''} || '%'
+             OR (${digits} <> '' AND regexp_replace(COALESCE(phone, ''), '\\D', '', 'g')
+                   LIKE '%' || ${digits} || '%'))
+      ORDER BY created_at DESC
+      LIMIT 50`;
   }
 
   async updateUser(actorId: string, userId: string, data: { role?: UserRole; isSuspended?: boolean }) {
@@ -173,8 +186,13 @@ export class AdminService {
   // --- instructor verification ---------------------------------------------
   pendingInstructors() {
     return this.prisma.$queryRaw`
-      SELECT iv.id, iv.user_id, iv.adi_number, iv.evidence_url, iv.status, iv.created_at,
-             u.display_name, u.email
+      SELECT iv.id, iv.user_id, iv.adi_number, iv.adi_expiry, iv.evidence_url,
+             iv.status, iv.created_at,
+             u.display_name, u.email, u.phone,
+             -- A moderator should not have to work out whether a badge is still current
+             -- from a raw date; submissions predating Phase 26 have no expiry at all,
+             -- which is itself worth showing rather than rendering as valid.
+             (iv.adi_expiry IS NOT NULL AND iv.adi_expiry < CURRENT_DATE) AS "adiExpired"
       FROM instructor_verifications iv
       JOIN users u ON u.id = iv.user_id
       WHERE iv.status = 'pending'
@@ -183,10 +201,13 @@ export class AdminService {
 
   async verifyInstructor(actorId: string, verificationId: string,
                          decision: 'verified' | 'rejected', notes?: string) {
-    const rows = await this.prisma.$queryRaw<Array<{ user_id: string }>>`
-      SELECT user_id FROM instructor_verifications WHERE id = ${verificationId}::uuid`;
+    const rows = await this.prisma.$queryRaw<
+      Array<{ user_id: string; adi_number: string | null; adi_expiry: Date | null }>
+    >`
+      SELECT user_id, adi_number, adi_expiry
+      FROM instructor_verifications WHERE id = ${verificationId}::uuid`;
     if (!rows[0]) throw new NotFoundException('Verification not found');
-    const userId = rows[0].user_id;
+    const { user_id: userId, adi_number: adiNumber, adi_expiry: adiExpiry } = rows[0];
 
     await this.prisma.$transaction([
       this.prisma.$executeRaw`
@@ -194,13 +215,20 @@ export class AdminService {
         SET status = ${decision}::instructor_status, reviewed_by = ${actorId}::uuid,
             review_notes = ${notes ?? null}, reviewed_at = now()
         WHERE id = ${verificationId}::uuid`,
+      // The approved badge and its expiry are copied onto `contributors` so the badge shown
+      // next to an instructor can be checked for currency without joining the verification
+      // history. COALESCE on update: a rejection must not erase details from an earlier
+      // approval that is still valid.
       this.prisma.$executeRaw`
-        INSERT INTO contributors (user_id, instructor_status, verified_at)
+        INSERT INTO contributors (user_id, instructor_status, verified_at, adi_number, adi_expiry)
         VALUES (${userId}::uuid, ${decision}::instructor_status,
-                CASE WHEN ${decision} = 'verified' THEN now() ELSE NULL END)
+                CASE WHEN ${decision} = 'verified' THEN now() ELSE NULL END,
+                ${adiNumber}, ${adiExpiry})
         ON CONFLICT (user_id) DO UPDATE
         SET instructor_status = EXCLUDED.instructor_status,
-            verified_at = CASE WHEN ${decision} = 'verified' THEN now() ELSE NULL END`,
+            verified_at = CASE WHEN ${decision} = 'verified' THEN now() ELSE NULL END,
+            adi_number  = COALESCE(EXCLUDED.adi_number, contributors.adi_number),
+            adi_expiry  = COALESCE(EXCLUDED.adi_expiry, contributors.adi_expiry)`,
     ]);
 
     if (decision === 'verified') {

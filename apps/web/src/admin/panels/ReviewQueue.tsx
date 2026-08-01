@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ReviewRoute } from '../api';
 import { RouteDetail } from './RouteDetail';
+import { formatInstantDate } from '../../lib/datetime';
 
 function qualityClass(score: number | null): string {
   if (score == null) return '';
@@ -90,7 +91,7 @@ export function ReviewQueue() {
                     {r.isInstructor && <span className="pill instructor">Instructor</span>}
                     {(r as any).status === 'map_only' && <span className="pill warn" style={{ marginLeft: 4 }}>Map only</span>}
                   </td>
-                  <td className="meta">{new Date(r.createdAt).toLocaleDateString('en-GB')}</td>
+                  <td className="meta">{formatInstantDate(r.createdAt)}</td>
                   <td>
                     <button
                       className="btn-ghost btn-sm"

@@ -1,33 +1,60 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { normalisePhone } from '../../common/validation/phone';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async me(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        avatarUrl: true,
-        role: true,
-        locale: true,
-        createdAt: true,
-      },
-    });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+    // Raw SQL rather than the typed client: the Phase 26 contact columns are not in the
+    // generated Prisma client, and selecting them through it would fail validation.
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT id, email, display_name AS "displayName", avatar_url AS "avatarUrl",
+             role, locale, created_at AS "createdAt",
+             phone, emergency_contact_name AS "emergencyContactName",
+             emergency_contact_phone AS "emergencyContactPhone"
+      FROM users WHERE id = ${userId}::uuid AND deleted_at IS NULL`;
+    if (!rows.length) throw new NotFoundException('User not found');
+    return rows[0];
   }
 
-  async updateProfile(userId: string, data: { displayName?: string; avatarUrl?: string }) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data,
-      select: { id: true, displayName: true, avatarUrl: true },
-    });
+  async updateProfile(
+    userId: string,
+    data: {
+      displayName?: string;
+      avatarUrl?: string;
+      phone?: string;
+      emergencyContactName?: string;
+      emergencyContactPhone?: string;
+    },
+  ) {
+    // Three distinct cases per contact field, and they must stay distinct:
+    //   absent from the payload → leave the column alone
+    //   present as ''          → clear it (the only way a user can withdraw a number)
+    //   present with a value   → store it
+    // A plain COALESCE cannot express this: it collapses "absent" and "cleared" into the
+    // same NULL, so a partial form submit would silently wipe fields it never displayed.
+    // Hence an explicit provided-flag alongside each value.
+    const phoneGiven = data.phone !== undefined;
+    const nameGiven = data.emergencyContactName !== undefined;
+    const emergencyGiven = data.emergencyContactPhone !== undefined;
+
+    await this.prisma.$executeRaw`
+      UPDATE users SET
+        display_name            = COALESCE(${data.displayName ?? null}, display_name),
+        avatar_url              = COALESCE(${data.avatarUrl ?? null}, avatar_url),
+        phone                   = CASE WHEN ${phoneGiven}
+                                    THEN ${normalisePhone(data.phone)} ELSE phone END,
+        emergency_contact_name  = CASE WHEN ${nameGiven}
+                                    THEN ${data.emergencyContactName?.trim() || null}
+                                    ELSE emergency_contact_name END,
+        emergency_contact_phone = CASE WHEN ${emergencyGiven}
+                                    THEN ${normalisePhone(data.emergencyContactPhone)}
+                                    ELSE emergency_contact_phone END,
+        updated_at              = now()
+      WHERE id = ${userId}::uuid`;
+    return this.me(userId);
   }
 
   // ---------------------------------------------------------------------------

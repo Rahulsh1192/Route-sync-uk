@@ -108,6 +108,13 @@ model User {
   role          UserRole  @default(user)
   locale        String    @default("en-GB")
   isSuspended   Boolean   @default(false) @map("is_suspended")
+
+  // Phase 26 contact details (db/migrate_phase_26.sql). All nullable: existing accounts
+  // and every Google/Apple sign-in predate them, and a phone number is optional by design.
+  phone                 String? @map("phone")
+  emergencyContactName  String? @map("emergency_contact_name")
+  emergencyContactPhone String? @map("emergency_contact_phone")
+
   lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz

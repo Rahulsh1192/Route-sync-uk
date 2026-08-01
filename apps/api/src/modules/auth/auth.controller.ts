@@ -12,7 +12,11 @@ export class AuthController {
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto.email, dto.password, dto.displayName);
+    return this.auth.register(dto.email, dto.password, dto.displayName, {
+      phone: dto.phone,
+      emergencyContactName: dto.emergencyContactName,
+      emergencyContactPhone: dto.emergencyContactPhone,
+    });
   }
 
   @Post('login')
