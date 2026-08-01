@@ -14,10 +14,16 @@ class Config:
     # both R2 and MinIO (local dev). `R2_*` is the preferred spelling and falls back to
     # the `S3_*` names this project has always used, so existing deployments and
     # docker-compose keep working unchanged.
-    S3_ENDPOINT = os.getenv("S3_ENDPOINT") or (
+    #
+    # R2_* wins when both are set, matching the API (see applyR2Aliases). Hosting
+    # blueprints ship placeholder S3_* values so a service can boot before storage is
+    # configured; if those placeholders took precedence, adding real R2 credentials would
+    # appear to work and change nothing — and the worker would end up writing to a
+    # different bucket than the API reads from.
+    S3_ENDPOINT = (
         f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com"
         if os.getenv("R2_ACCOUNT_ID")
-        else "http://localhost:9000"
+        else os.getenv("S3_ENDPOINT") or "http://localhost:9000"
     )
     S3_REGION = os.getenv("S3_REGION", "auto")
     S3_BUCKET = os.getenv("R2_BUCKET") or os.getenv("S3_BUCKET", "routesync-media")

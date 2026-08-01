@@ -13,6 +13,21 @@ import { z } from 'zod';
  */
 export const PUBLICLY_SERVABLE_ASSETS = ['thumbnail'];
 
+/**
+ * Boolean from an environment string, by value rather than truthiness.
+ *
+ * `z.coerce.boolean()` cannot be used for env vars: it applies JS truthiness, so the
+ * string `'false'` — the obvious way to disable a flag — coerces to `true` and the flag
+ * can never be turned off. Accepts the spellings people actually write.
+ */
+const booleanFromEnv = z.preprocess((v) => {
+  if (typeof v !== 'string') return v;
+  const s = v.trim().toLowerCase();
+  if (['false', '0', 'no', 'off', ''].includes(s)) return false;
+  if (['true', '1', 'yes', 'on'].includes(s)) return true;
+  return v;
+}, z.boolean());
+
 const schema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3000),
@@ -48,7 +63,17 @@ const schema = z.object({
   S3_BUCKET: z.string(),
   S3_ACCESS_KEY: z.string(),
   S3_SECRET_KEY: z.string(),
-  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(true),
+  /**
+   * Path-style addressing (`endpoint/bucket/key`) rather than virtual-hosted
+   * (`bucket.endpoint/key`). MinIO requires it; R2 accepts either, and path style is the
+   * form Cloudflare's own S3-API examples use — so `true` is correct for both and keeps
+   * dev and production on the same code path.
+   *
+   * Parsed explicitly instead of with `z.coerce.boolean()`, which applies JS truthiness:
+   * the string `'false'` is a non-empty string and would coerce to `true`, silently making
+   * the flag impossible to turn off.
+   */
+  S3_FORCE_PATH_STYLE: booleanFromEnv.default(true),
   SIGNED_URL_TTL: z.coerce.number().default(3600),
 
   /**
@@ -126,8 +151,14 @@ export type AppConfig = z.infer<typeof schema>;
  * R2 is S3-compatible, so the client is identical — only the names differ. Rather than
  * rename the existing variables (which would break every deployed environment,
  * `render.yaml`, `docker-compose.yml` and the Python worker at once), `R2_*` is
- * accepted as the preferred spelling and translated here. `S3_*` remains a valid
- * fallback, and an explicitly-set `S3_*` wins so a mixed environment stays predictable.
+ * accepted as the preferred spelling and translated here, with `S3_*` still valid.
+ *
+ * **`R2_*` wins when both are set.** It has to: hosting blueprints ship placeholder
+ * `S3_*` values so the service can boot before storage is configured, and if those
+ * placeholders took precedence, adding real R2 credentials in a dashboard would appear to
+ * work while changing nothing. Deferring to the more specific, deliberately-set name is
+ * also what the Python worker does, so the two services can't end up disagreeing about
+ * which bucket they're using.
  *
  * `R2_ACCOUNT_ID` is expanded into R2's standard endpoint, which is the one value that
  * genuinely can't be derived the other way round.
@@ -142,25 +173,21 @@ function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
   const accountId = take('R2_ACCOUNT_ID');
   const alias = (from: string, to: string) => {
     const value = take(from);
-    if (value !== undefined && take(to) === undefined) out[to] = value;
+    if (value !== undefined) out[to] = value;
   };
 
   alias('R2_ACCESS_KEY', 'S3_ACCESS_KEY');
   alias('R2_SECRET_KEY', 'S3_SECRET_KEY');
   alias('R2_BUCKET', 'S3_BUCKET');
 
-  if (accountId && take('S3_ENDPOINT') === undefined) {
+  if (accountId) {
     out.S3_ENDPOINT = `https://${accountId}.r2.cloudflarestorage.com`;
   }
 
-  // R2 is virtual-hosted style and rejects path-style addressing; MinIO (local dev)
-  // requires path style. Infer from which backend is configured rather than making
-  // every environment remember the flag.
-  const endpoint = take('S3_ENDPOINT');
-  if (endpoint?.includes('r2.cloudflarestorage.com') && take('S3_FORCE_PATH_STYLE') === undefined) {
-    out.S3_FORCE_PATH_STYLE = 'false';
-  }
-
+  // Addressing style is deliberately NOT inferred from the endpoint. R2 accepts both
+  // path-style and virtual-hosted requests, so there is nothing to correct for, and
+  // quietly overriding an operator's explicit choice would only make a real
+  // misconfiguration harder to see.
   return out;
 }
 

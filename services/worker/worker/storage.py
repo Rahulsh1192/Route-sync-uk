@@ -9,7 +9,10 @@ _s3 = boto3.client(
     region_name=config.S3_REGION,
     aws_access_key_id=config.S3_ACCESS_KEY,
     aws_secret_access_key=config.S3_SECRET_KEY,
-    config=BotoConfig(s3={"addressing_style": "path"}),  # MinIO needs path style
+    # Path style: required by MinIO, and accepted by R2 (it is the form Cloudflare's own
+    # S3-API examples use). One setting that works against both keeps dev and production
+    # on the same request shape.
+    config=BotoConfig(s3={"addressing_style": "path"}),
 )
 
 

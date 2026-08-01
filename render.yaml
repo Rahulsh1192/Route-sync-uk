@@ -49,10 +49,13 @@ services:
         generateValue: true
       # Object storage. NOTE: the API validates these at startup and WON'T BOOT if any
       # are missing — so we give placeholders here. They let the app start; real
-      # uploads/video won't work until you replace them with genuine Cloudflare R2
-      # (or S3) credentials. Browsing seeded routes doesn't need them.
-      # Either naming works: setting R2_ACCOUNT_ID / R2_ACCESS_KEY / R2_SECRET_KEY /
-      # R2_BUCKET in the Render dashboard overrides these and derives the endpoint.
+      # uploads/video won't work until storage is configured. Browsing seeded routes
+      # doesn't need them.
+      #
+      # To go live, add these four in the Render dashboard — they take precedence over the
+      # placeholders below and derive the endpoint, so you don't edit this file:
+      #   R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET
+      # Set the same four on the worker so both services use the same bucket.
       - key: S3_ENDPOINT
         value: https://placeholder.r2.cloudflarestorage.com
       - key: S3_REGION
@@ -66,8 +69,9 @@ services:
       - key: S3_SECRET_KEY
         value: placeholder
       - key: S3_FORCE_PATH_STYLE
-        # R2 is virtual-hosted style; path style is a MinIO requirement only.
-        value: "false"
+        # R2 accepts path-style as well as virtual-hosted, and MinIO requires it, so the
+        # same value is correct in dev and production.
+        value: "true"
       # A signed PUT is a write capability, so upload URLs expire far sooner than
       # playback URLs (15 minutes vs 1 hour).
       - key: UPLOAD_SIGNED_URL_TTL
