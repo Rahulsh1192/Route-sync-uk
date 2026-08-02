@@ -111,22 +111,25 @@ res = r.brpop([config.MEDIA_JOBS_KEY], timeout=5)
 ```
 
 `BRPOP` means "**b**locking **r**ight **pop**" — take the next item off the list, and if
-the list is empty, wait up to 5 seconds rather than returning immediately. Waiting is
-better than asking repeatedly, because it means a job gets picked up the instant it
-arrives instead of up to 5 seconds later.
+the list is empty, wait rather than returning immediately. The waiting happens *on the
+Redis server*, so a job pushed mid-wait is delivered the instant it arrives. One wait,
+however long, is one billable command.
 
-**How the free tier works.** Upstash charges per *command* (per operation). Free tiers are
-generous for bursty use, but this worker is not bursty — it asks every 5 seconds forever.
+**How the free tier works.** Upstash charges per *command*. Free tiers are generous for
+bursty traffic, but an idle worker is not bursty — it re-asks on a fixed cycle forever.
 
-> ⚠️ **This is a real cost trap.** One command every 5 seconds = 12/minute = **17,280 per
-> day ≈ 518,000 per month, while completely idle**. That is the same order of magnitude as
-> a typical free monthly allowance, consumed before a single upload happens. Check your
-> current plan's limit; if it's tight, raise the `timeout=5` to `timeout=30` — that drops
-> it to ~86,000/month, at the cost of a job possibly waiting up to 30 seconds before the
-> worker notices. For a video that takes minutes to process, that delay is irrelevant.
+> ⚠️ **This was a real cost trap.** At the original 5-second timeout: 12 commands/minute =
+> **17,280/day ≈ 518,000/month while completely idle** — the same order as a typical free
+> monthly allowance, spent before a single upload. `MEDIA_POLL_TIMEOUT_S` now defaults to
+> **30**, which is ~86,000/month.
+>
+> **This costs nothing in responsiveness.** Because BRPOP blocks server-side, a queued job
+> still comes back in 0 seconds; the timeout only governs how long an *empty* wait lasts.
+> (Measured: a job pushed onto the list was returned immediately, while an empty queue
+> blocked for the full window as a single command.) Set `MEDIA_POLL_TIMEOUT_S=2` locally
+> if you prefer a tighter loop while developing.
 
-**Recommended:** Upstash free with the timeout raised to 30. Redis is the cheapest part of
-this stack either way.
+**Recommended:** Upstash free. Redis is the cheapest part of this stack either way.
 
 ---
 

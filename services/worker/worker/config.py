@@ -54,5 +54,19 @@ class Config:
 
     MEDIA_JOBS_KEY = "media:jobs"
 
+    # How long each blocking pop waits before the loop goes round again.
+    #
+    # This is a *billing* setting, not a latency one. BRPOP blocks on the Redis server, so
+    # a job pushed mid-wait is delivered the instant it arrives — the timeout only decides
+    # how long an *empty* wait lasts, and that entire wait costs one command. Hosted Redis
+    # is priced per command, so a short timeout means the worker pays to ask "anything
+    # yet?" over and over while nothing is happening: at 5s that is ~518,000 commands a
+    # month completely idle, enough to exhaust a typical free allowance before a single
+    # upload. At 30s it is ~86,000, with no meaningful change to how fast jobs start.
+    #
+    # Raising it further has diminishing returns and slows down noticing a dropped
+    # connection, since that is only detected when the call returns.
+    MEDIA_POLL_TIMEOUT_S = int(os.getenv("MEDIA_POLL_TIMEOUT_S", "30"))
+
 
 config = Config()

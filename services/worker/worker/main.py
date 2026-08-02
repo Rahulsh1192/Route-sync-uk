@@ -18,10 +18,13 @@ def run():
     # no socket_timeout so blocking BRPOP doesn't raise; we still use a finite BRPOP
     # timeout and loop so the worker stays responsive and reconnects cleanly.
     r = redis.from_url(config.REDIS_URL, socket_timeout=None, socket_keepalive=True)
-    log.info("RouteSync media worker started; waiting on %s", config.MEDIA_JOBS_KEY)
+    log.info(
+        "RouteSync media worker started; waiting on %s (poll %ss)",
+        config.MEDIA_JOBS_KEY, config.MEDIA_POLL_TIMEOUT_S,
+    )
     while True:
         try:
-            res = r.brpop([config.MEDIA_JOBS_KEY], timeout=5)
+            res = r.brpop([config.MEDIA_JOBS_KEY], timeout=config.MEDIA_POLL_TIMEOUT_S)
         except redis.exceptions.RedisError as e:
             log.warning("redis error, retrying: %s", e)
             continue
