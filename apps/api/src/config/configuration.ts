@@ -132,8 +132,8 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_MONTHLY: z.string().optional(),
   STRIPE_PRICE_YEARLY: z.string().optional(),
-  CHECKOUT_SUCCESS_URL: z.string().default('http://localhost:5173/billing/success'),
-  CHECKOUT_CANCEL_URL: z.string().default('http://localhost:5173/billing/cancel'),
+  CHECKOUT_SUCCESS_URL: z.string().default('http://localhost:5174/billing/success'),
+  CHECKOUT_CANCEL_URL: z.string().default('http://localhost:5174/billing/cancel'),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
 
   SENTRY_DSN: z.string().optional(),

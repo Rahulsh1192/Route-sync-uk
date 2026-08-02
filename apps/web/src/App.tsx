@@ -7,6 +7,7 @@ import { DiscoverPage } from './pages/DiscoverPage';
 import { RouteDetailPage } from './pages/RouteDetailPage';
 import { AccountPage } from './pages/AccountPage';
 import { PaywallPage } from './pages/PaywallPage';
+import { BillingSuccessPage, BillingCancelPage } from './pages/BillingResultPage';
 import { ContributePage } from './pages/contribute/ContributePage';
 import { UploadPage } from './pages/contribute/UploadPage';
 import { UploadStatusPage } from './pages/contribute/UploadStatusPage';
@@ -88,6 +89,9 @@ export function App() {
       <Route path="/discover" element={<Protected><DiscoverPage /></Protected>} />
       <Route path="/account" element={<Protected><AccountPage /></Protected>} />
       <Route path="/paywall" element={<Protected><PaywallPage /></Protected>} />
+      {/* Where Stripe Checkout returns the browser (CHECKOUT_SUCCESS_URL / CANCEL_URL). */}
+      <Route path="/billing/success" element={<Protected><BillingSuccessPage /></Protected>} />
+      <Route path="/billing/cancel" element={<Protected><BillingCancelPage /></Protected>} />
       <Route path="/contribute" element={<Protected><ContributePage /></Protected>} />
       <Route path="/contribute/upload" element={<Protected><UploadPage /></Protected>} />
       <Route path="/contribute/uploads/:id" element={<Protected><UploadStatusPage /></Protected>} />
