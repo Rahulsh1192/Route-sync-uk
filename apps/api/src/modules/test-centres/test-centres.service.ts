@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { PostcodeService, PostcodeLookup } from '../geo/postcode.service';
 
 export interface TestCentreInput {
   name: string;
@@ -16,116 +18,21 @@ export interface TestCentreInput {
   description?: string;
 }
 
-/** What a postcode resolves to — coordinates plus the administrative area. */
-export interface PostcodeLookup {
-  postcode: string;
-  lat: number;
-  lng: number;
-  town: string | null;
-  region: string | null;
-  country: string | null;
-  /** True when only a postcode district was given, so the point is the district centroid. */
-  approximate: boolean;
-}
+// Re-exported so existing importers of this symbol keep working now that the
+// implementation lives in the shared geo module.
+export type { PostcodeLookup } from '../geo/postcode.service';
 
 @Injectable()
 export class TestCentresService {
   private readonly logger = new Logger(TestCentresService.name);
 
-  constructor(private prisma: PrismaService) {}
+  /** Row cap for `list()`. Comfortably above the ~350 centres in the DVSA network. */
+  private static readonly LIST_LIMIT = 1000;
 
-  /**
-   * Normalise a UK postcode to the canonical `OUTCODE INCODE` form.
-   *
-   * Users type `nw71rb`, `NW7  1RB`, or paste one with a trailing space, and all of those
-   * are the same postcode. The inward code is always the last three characters, so the
-   * space goes before them regardless of whether the outward code is 2, 3 or 4 long.
-   */
-  private static normalisePostcode(raw: string): string {
-    const compact = raw.toUpperCase().replace(/\s+/g, '');
-    return compact.length > 3
-      ? `${compact.slice(0, -3)} ${compact.slice(-3)}`
-      : compact;
-  }
-
-  /** True for a postcode district on its own (`NW7`, `SW1A`) rather than a full postcode. */
-  private static isOutcode(compact: string): boolean {
-    return /^[A-Z]{1,2}\d[A-Z\d]?$/.test(compact.replace(/\s+/g, ''));
-  }
-
-  /**
-   * Resolve a UK postcode to coordinates and its administrative area via postcodes.io
-   * (free, no API key).
-   *
-   * Handles the three ways this used to fail on a postcode that was actually fine:
-   *
-   *  - **A district-only code** (`NW7`). `/postcodes/NW7` returns 404 "Invalid postcode",
-   *    because a district is not a postcode — it needs the `/outcodes` endpoint instead.
-   *    That answer was indistinguishable from a genuine typo.
-   *  - **Formatting.** Now normalised before the request rather than sent as typed.
-   *  - **An unreachable lookup service.** A network-restricted host made every single
-   *    create fail with no way to proceed. The caller can now choose to continue without
-   *    coordinates instead of being blocked (see `lookupPostcode` / `create`).
-   *
-   * Returns `null` when the service could not be reached, and throws only when the
-   * postcode itself is genuinely not a real place.
-   */
-  private async geocode(postcode: string): Promise<PostcodeLookup | null> {
-    const pc = TestCentresService.normalisePostcode(postcode ?? '');
-    if (!pc) throw new BadRequestException('Postcode is required');
-
-    const compact = pc.replace(/\s+/g, '');
-    const outcodeOnly = TestCentresService.isOutcode(compact);
-    const url = outcodeOnly
-      ? `https://api.postcodes.io/outcodes/${encodeURIComponent(compact)}`
-      : `https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`;
-
-    let res: Response;
-    let body: any;
-    try {
-      // Bounded: postcodes.io is a third party and a create request should not hang on it.
-      res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      body = await res.json().catch(() => null);
-    } catch {
-      // Unreachable / timed out — not the user's fault and not a verdict on the postcode.
-      this.logger.warn(`Postcode lookup unavailable for "${pc}"`);
-      return null;
-    }
-
-    if (res.status === 404) {
-      throw new BadRequestException(
-        outcodeOnly
-          ? `"${compact}" is not a recognised UK postcode district`
-          : `"${pc}" is not a recognised UK postcode. Enter the full postcode, e.g. NW7 1RB.`,
-      );
-    }
-    if (!res.ok) {
-      this.logger.warn(`Postcode lookup failed for "${pc}": HTTP ${res.status}`);
-      return null;
-    }
-
-    const r = body?.result;
-    if (r?.latitude == null || r?.longitude == null) {
-      throw new BadRequestException(`"${pc}" could not be located`);
-    }
-
-    // Field names differ between the two endpoints: a postcode result carries the
-    // district directly, an outcode result returns arrays covering the whole district.
-    const town: string | null =
-      r.admin_district ?? r.admin_ward ?? r.parish ?? r.admin_districts?.[0] ?? null;
-    const region: string | null =
-      r.region ?? r.european_electoral_region ?? r.regions?.[0] ?? r.country ?? null;
-
-    return {
-      postcode: outcodeOnly ? compact : (r.postcode ?? pc),
-      lat: r.latitude,
-      lng: r.longitude,
-      town,
-      region,
-      country: r.country ?? r.countries?.[0] ?? null,
-      approximate: outcodeOnly,
-    };
-  }
+  constructor(
+    private prisma: PrismaService,
+    private postcodes: PostcodeService,
+  ) {}
 
   /**
    * Postcode → town/region/coordinates, for the create form to fill itself in.
@@ -135,7 +42,7 @@ export class TestCentresService {
    * they entered can't be resolved.
    */
   async lookupPostcode(postcode: string): Promise<PostcodeLookup> {
-    const found = await this.geocode(postcode);
+    const found = await this.postcodes.geocode(postcode);
     if (!found) {
       throw new ServiceUnavailableException(
         'Postcode lookup is temporarily unavailable. You can still save the centre and ' +
@@ -145,12 +52,20 @@ export class TestCentresService {
     return found;
   }
 
-  /** List test centres (optionally filtered) with a published-route count each. */
+  /**
+   * List test centres (optionally filtered) with a published-route count each.
+   *
+   * The cap is deliberately well above the size of the DVSA network (~350 centres
+   * nationally). It used to be 200, which was under that: once the full list was loaded,
+   * everything after the 200th name alphabetically vanished from both the centre list and
+   * the upload wizard's "which test centre?" dropdown, with nothing to indicate anything
+   * was missing. A centre you cannot select is a centre you cannot upload a route for.
+   */
   async list(q?: string) {
     const term = q?.trim();
     // NOTE: COUNT() is int8/bigint; cast to int so it deserialises to a JS number
     // (a raw bigint breaks JSON serialisation of the response).
-    return this.prisma.$queryRaw<any[]>`
+    const rows = await this.prisma.$queryRaw<any[]>`
       SELECT tc.id, tc.name, tc.town, tc.postcode, tc.region, tc.address, tc.description,
              ST_Y(tc.location::geometry) AS lat,
              ST_X(tc.location::geometry) AS lng,
@@ -163,8 +78,18 @@ export class TestCentresService {
              OR tc.postcode ILIKE ${term ?? ''} || '%')
       GROUP BY tc.id
       ORDER BY tc.name
-      LIMIT 200
+      LIMIT ${TestCentresService.LIST_LIMIT}
     `;
+    // If this ever fires the list is being truncated again, which is the failure that is
+    // invisible from the client's side — so it is logged rather than left to be rediscovered
+    // by someone wondering why their centre isn't in the dropdown.
+    if (rows.length === TestCentresService.LIST_LIMIT) {
+      this.logger.warn(
+        `Test-centre list hit the ${TestCentresService.LIST_LIMIT}-row cap — results are ` +
+          'truncated. Raise LIST_LIMIT or add pagination.',
+      );
+    }
+    return rows;
   }
 
   private async findOne(id: string) {
@@ -198,10 +123,18 @@ export class TestCentresService {
   }
 
   async create(input: TestCentreInput) {
-    const postcode = TestCentresService.normalisePostcode(input.postcode ?? '');
+    const postcode = PostcodeService.normalise(input.postcode ?? '');
+
+    // Before the geocoder, not after: this is a local index lookup and it is decisive. When
+    // it ran second, adding a centre that already existed reported whatever the third-party
+    // lookup happened to say — "postcode lookup unavailable" on a restricted network —
+    // instead of "this centre already exists", and spent a pointless external request to get
+    // there. A duplicate name cannot be saved whatever the geocoder answers.
+    await this.assertNameFree(input.name);
+
     // Throws for a postcode that genuinely isn't real; returns null only if the lookup
     // service was unreachable, which must not block an admin from saving a centre.
-    const found = await this.geocode(postcode);
+    const found = await this.postcodes.geocode(postcode);
     if (!found) {
       throw new ServiceUnavailableException(
         'Could not reach the postcode lookup service, so this centre has no map location ' +
@@ -215,27 +148,81 @@ export class TestCentresService {
     const town = input.town?.trim() || found.town;
     const region = input.region?.trim() || found.region;
 
-    const rows = await this.prisma.$queryRaw<any[]>`
-      INSERT INTO test_centres (name, town, postcode, region, address, description, location)
-      VALUES (${input.name}, ${town ?? null}, ${found.postcode},
-              ${region ?? null}, ${input.address ?? null}, ${input.description ?? null},
-              ST_SetSRID(ST_MakePoint(${found.lng}, ${found.lat}), 4326)::geography)
-      RETURNING id, name, town, postcode, region, address, description,
-                ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+    try {
+      const rows = await this.prisma.$queryRaw<any[]>`
+        INSERT INTO test_centres (name, town, postcode, region, address, description, location)
+        VALUES (${input.name}, ${town ?? null}, ${found.postcode},
+                ${region ?? null}, ${input.address ?? null}, ${input.description ?? null},
+                ST_SetSRID(ST_MakePoint(${found.lng}, ${found.lat}), 4326)::geography)
+        RETURNING id, name, town, postcode, region, address, description,
+                  ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+      `;
+      return rows[0];
+    } catch (e) {
+      throw TestCentresService.asDuplicateError(e, input.name);
+    }
+  }
+
+  /**
+   * Reject a name that an existing centre already uses, before attempting the insert.
+   *
+   * The database has enforced this since Phase 27, but a raw insert that trips a unique
+   * index surfaces as a 500 "internal server error" — which tells an admin nothing about
+   * what to do. Duplicate centres were a real problem reported from testing (the same
+   * centre appearing several times in the list), so the answer "this one already exists"
+   * is worth stating properly.
+   */
+  private async assertNameFree(name: string, excludeId?: string) {
+    const clash = await this.prisma.$queryRaw<Array<{ id: string; name: string }>>`
+      SELECT id, name FROM test_centres
+      WHERE tc_norm_name(name) = tc_norm_name(${name})
+        AND (${excludeId ?? null}::uuid IS NULL OR id <> ${excludeId ?? null}::uuid)
+      LIMIT 1
     `;
-    return rows[0];
+    if (clash.length) {
+      // No worked example here: it would sometimes quote the very name being rejected
+      // ("...already exists. Use a name that distinguishes them, e.g. Birmingham (South
+      // Yardley)"), which reads as nonsense. The convention is stated instead.
+      throw new ConflictException(
+        `A test centre called "${clash[0].name}" already exists. If yours is a different ` +
+          'centre, include its locality in the name the way DVSA does — town first, then the ' +
+          'area in brackets.',
+      );
+    }
+  }
+
+  /**
+   * Turn a unique-violation into the same conflict the pre-check raises.
+   *
+   * Closes the race the pre-check cannot: two admins adding the same centre at once, where
+   * the index is the only thing that can decide. 23505 is Postgres' unique_violation.
+   */
+  private static asDuplicateError(e: unknown, name: string): unknown {
+    const code = (e as { meta?: { code?: string } })?.meta?.code;
+    if (code === '23505' || /23505|duplicate key/i.test(String((e as Error)?.message))) {
+      return new ConflictException(`A test centre called "${name}" already exists.`);
+    }
+    return e;
   }
 
   async update(id: string, input: Partial<TestCentreInput>) {
     const existing = await this.findOne(id);
+
+    // Checked first, for the same reason as in `create`: a rename onto an existing name is
+    // refused whatever the geocoder says, so there is no point asking it. Excludes this row,
+    // so re-saving the form unchanged isn't reported as a clash with itself.
+    if (input.name && input.name !== existing.name) {
+      await this.assertNameFree(input.name, id);
+    }
+
     // Re-geocode only when the postcode actually changes — compared after normalisation,
     // so re-saving the form with the same postcode typed differently doesn't call out to a
     // third-party service (and can't fail because that service is down).
     let lat = existing.lat as number;
     let lng = existing.lng as number;
-    const wanted = input.postcode ? TestCentresService.normalisePostcode(input.postcode) : null;
-    if (wanted && wanted !== TestCentresService.normalisePostcode(existing.postcode ?? '')) {
-      const found = await this.geocode(wanted);
+    const wanted = input.postcode ? PostcodeService.normalise(input.postcode) : null;
+    if (wanted && wanted !== PostcodeService.normalise(existing.postcode ?? '')) {
+      const found = await this.postcodes.geocode(wanted);
       if (!found) {
         throw new ServiceUnavailableException(
           'Could not reach the postcode lookup service to relocate this centre. ' +
@@ -246,20 +233,24 @@ export class TestCentresService {
       lng = found.lng;
       input = { ...input, postcode: found.postcode };
     }
-    const rows = await this.prisma.$queryRaw<any[]>`
-      UPDATE test_centres SET
-        name        = ${input.name ?? existing.name},
-        town        = ${input.town ?? existing.town},
-        postcode    = ${input.postcode ?? existing.postcode},
-        region      = ${input.region ?? existing.region},
-        address     = ${input.address ?? existing.address},
-        description = ${input.description ?? existing.description},
-        location    = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-      WHERE id = ${id}::uuid
-      RETURNING id, name, town, postcode, region, address, description,
-                ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
-    `;
-    return rows[0];
+    try {
+      const rows = await this.prisma.$queryRaw<any[]>`
+        UPDATE test_centres SET
+          name        = ${input.name ?? existing.name},
+          town        = ${input.town ?? existing.town},
+          postcode    = ${input.postcode ?? existing.postcode},
+          region      = ${input.region ?? existing.region},
+          address     = ${input.address ?? existing.address},
+          description = ${input.description ?? existing.description},
+          location    = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+        WHERE id = ${id}::uuid
+        RETURNING id, name, town, postcode, region, address, description,
+                  ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+      `;
+      return rows[0];
+    } catch (e) {
+      throw TestCentresService.asDuplicateError(e, input.name ?? existing.name);
+    }
   }
 
   async remove(id: string) {
