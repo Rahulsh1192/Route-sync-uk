@@ -1,5 +1,15 @@
 name: Docker Build & Push
 
+# Publishes images to GHCR. Nothing deploys from them: the API is deployed by the Render
+# blueprint in render.yaml, which builds from source on push, and the worker is run with
+# `docker compose … --build`. So treat this as a build check plus a published artifact to
+# pull or roll back to — not as a release step.
+#
+# There used to be a Deploy workflow chained to this one via `workflow_run`, which SSH'd
+# into a host and ran `docker compose` in /app. That host was never configured, so it failed
+# on every push for as long as it existed. Removed rather than left skipping forever; if a
+# CI-driven deploy is wanted again, trigger the Render deploy hook instead of reviving SSH.
+
 on:
   push:
     branches: [master, main]
