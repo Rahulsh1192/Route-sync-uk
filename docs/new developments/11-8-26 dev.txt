@@ -1,0 +1,47 @@
+✅ Your App Issues (Summarised Clearly)
+1️⃣ Instructor badge photo upload
+No option to upload badge photo from device library
+
+No option to capture photo using camera
+
+2️⃣ Instructor verification workflow
+Instructor adds details
+
+But no notification appears on admin page
+
+Admin cannot see pending verification requests
+
+3️⃣ Test centre list problems
+Missing centres (e.g., Birmingham South Yardley)
+
+Duplicate names
+
+Needs a clean, corrected list without repeats
+
+4️⃣ Test route video upload
+No option to upload video for specific test centres
+
+Missing centres in the dropdown list
+
+5️⃣ GPS route upload
+Option exists to upload GPS file
+
+But no option to record GPX/KML
+
+No option to upload GPX/KML files
+
+6️⃣ Student profile issue
+Students currently see “Contribute”
+
+They should NOT see this unless they become verified instructors
+
+Instead they should see “Book a Driving Instructor”
+
+7️⃣ Instructor booking system
+Students should enter postcode/location
+
+System should show instructors available nearby
+
+If none available → show instructors from other areas
+
+Instructor sets their own price
