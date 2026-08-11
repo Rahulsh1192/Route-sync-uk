@@ -331,10 +331,21 @@ export function UploadPage() {
             <div className="card">
               <div style={{ fontWeight: 600, marginBottom: 8 }}>Which recorded drive? *</div>
               {journeys.length === 0 ? (
-                <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                  You have no recorded drives yet. Record one in the app first, then come
-                  back to attach the footage.
-                </p>
+                // Previously this told the instructor to "record one in the app first" with
+                // no way to do that anywhere — there was no recorder. Now it links to one.
+                <>
+                  <p className="muted" style={{ fontSize: 13, margin: '0 0 8px' }}>
+                    You have no recorded drives yet. Record the GPS while you drive the route,
+                    then come back and attach the footage to it.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn secondary auto"
+                    onClick={() => nav('/contribute/record')}
+                  >
+                    📍 Record a drive
+                  </button>
+                </>
               ) : (
                 <select value={journeyId} onChange={(e) => setJourneyId(e.target.value)}>
                   <option value="">Select the drive this footage belongs to…</option>
@@ -416,30 +427,27 @@ export function UploadPage() {
             files={rearFiles}
             onChange={setRearFiles}
           />
-          {gpsSource === 'camera' && (
-            <FilePicker
-              label="GPS log files *"
-              hint="Every log for this drive: .gpx, .nmea, .gps, .log, .csv or .kml. Several files is normal — we merge them."
-              accept=".gpx,.nmea,.gps,.log,.csv,.tsv,.kml,application/gpx+xml,text/plain,text/csv"
-              multiple
-              files={gpsFiles}
-              onChange={setGpsFiles}
-            />
-          )}
-          {gpsSource === 'embedded' && (
-            <div className="card">
-              <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                No GPS files needed — we'll read the positions out of the video itself.
-              </p>
-            </div>
-          )}
-          {gpsSource === 'app_journey' && (
-            <div className="card">
-              <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                No GPS files needed — we'll use the drive you recorded in the app.
-              </p>
-            </div>
-          )}
+          {/* Always shown, not just for `camera`. It used to appear only after the "my
+              dashcam wrote separate log files" radio was chosen at step 1, which made GPX
+              and KML upload look absent — it was reported from testing as "no option to
+              upload GPX/KML files" when the option existed but was conditionally hidden.
+              Required for `camera`, accepted as a bonus for the other two: a GPS log is
+              never unwelcome, and someone who has one should not have to go back a step and
+              change an unrelated answer to attach it. */}
+          <FilePicker
+            label={`GPS log files${gpsSource === 'camera' ? ' *' : ' (optional)'}`}
+            hint={
+              gpsSource === 'camera'
+                ? 'Every log for this drive: .gpx, .nmea, .gps, .log, .csv or .kml. Several files is normal — we merge them.'
+                : gpsSource === 'embedded'
+                  ? "Not needed — we'll read positions from the video itself. Attach .gpx / .kml logs anyway if you have them and we'll use them to cross-check."
+                  : "Not needed — we'll use the drive you recorded in the app. Attach .gpx / .kml logs anyway if you also have them."
+            }
+            accept=".gpx,.nmea,.gps,.log,.csv,.tsv,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,text/plain,text/csv"
+            multiple
+            files={gpsFiles}
+            onChange={setGpsFiles}
+          />
 
           <button className="btn" disabled={!step2Valid || analysing} onClick={goToReview}>
             {analysing ? 'Reading clip details…' : 'Next: review the timeline'}

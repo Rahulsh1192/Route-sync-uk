@@ -364,6 +364,130 @@ export interface InstructorStatus {
   verified_at?: string | null;
 }
 
+// --- booking a driving instructor (Phase 27) --------------------------------
+// snake_case on these matches what the bookings module returns: it builds them with raw SQL
+// and does not alias the columns, unlike the routes module.
+
+/** A bookable instructor, as returned by instructor search. */
+export interface InstructorListing {
+  id: string;
+  display_name: string;
+  avatar_url?: string | null;
+  reputation?: number | null;
+  routes_published?: number | null;
+  adi_number?: string | null;
+  bio?: string | null;
+  lesson_price_minor?: number | null;
+  currency?: string | null;
+  years_experience?: number | null;
+  is_accepting_bookings?: boolean | null;
+  base_postcode?: string | null;
+  /** Straight-line km from the searched postcode. Null when the instructor has no location. */
+  distanceKm?: number | null;
+  /** Whether they cover the searched postcode, per their own stated travel radius. */
+  isNearby?: boolean;
+}
+
+export interface InstructorSearchResult {
+  /** Where the search was measured from. Null when no postcode was given. */
+  origin: {
+    postcode: string;
+    lat: number;
+    lng: number;
+    town: string | null;
+    approximate: boolean;
+  } | null;
+  nearby: InstructorListing[];
+  /** Only populated when `nearby` is empty — instructors who cover other areas. */
+  elsewhere: InstructorListing[];
+  searchedRadiusKm: number | null;
+}
+
+/** An instructor's own bookable profile — the fields they control. */
+export interface InstructorBookingProfile {
+  user_id: string;
+  display_name?: string | null;
+  bio?: string | null;
+  contributor_bio?: string | null;
+  years_experience?: number | null;
+  lesson_price_minor?: number | null;
+  currency?: string | null;
+  is_accepting_bookings?: boolean | null;
+  stripe_onboarded?: boolean | null;
+  base_postcode?: string | null;
+  travel_radius_km?: number | string | null;
+  reputation?: number | null;
+  routes_published?: number | null;
+  adi_number?: string | null;
+  verified_at?: string | null;
+}
+
+export interface AvailabilitySlot {
+  id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  is_booked?: boolean;
+}
+
+export interface InstructorBooking {
+  id: string;
+  status: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  learner_name?: string | null;
+  lesson_notes?: string | null;
+  amount_minor?: number | null;
+  lesson_fee_minor?: number | null;
+  platform_fee_minor?: number | null;
+  payment_status?: string | null;
+}
+
+// --- recording a drive in the browser (Phase 27) -----------------------------
+
+/** One GPS sample, as the journeys API expects it. `tMs` is elapsed time from the start. */
+export interface GpsFixInput {
+  lat: number;
+  lng: number;
+  tMs: number;
+  accuracyM?: number;
+  speedMps?: number;
+}
+
+export interface StartedJourney {
+  journeyId: string;
+  videoSource: string;
+  referenceRoute: {
+    id?: string;
+    name?: string;
+    points: Array<{ lat: number; lng: number }>;
+    lengthM?: number | null;
+  };
+}
+
+/** The conformance verdict for a submitted drive. */
+export interface JourneyReport {
+  journeyId?: string;
+  verdict?: string;
+  coveragePct?: number;
+  maxDeviationM?: number;
+  deviationCount?: number;
+  syncConfidence?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+/** Pence → "£35.00". Prices are stored in minor units throughout. */
+export function priceLabel(minor?: number | null, fallbackMinor = 3500): string {
+  return `£${((minor ?? fallbackMinor) / 100).toFixed(2)}`;
+}
+
+/** Straight-line distance, in the miles a UK learner thinks in. */
+export function distanceKmLabel(km?: number | null): string {
+  return km == null ? '—' : `${(km * 0.621371).toFixed(1)} mi`;
+}
+
 /** Distance shown in miles (Phase 20 — UK convention). */
 export function distanceLabel(m?: number | null): string {
   return m == null ? '—' : `${(m / 1609.344).toFixed(1)} mi`;

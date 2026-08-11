@@ -20,6 +20,13 @@ import type {
   TestDetails,
   TestDetailRecord,
   Me,
+  InstructorSearchResult,
+  InstructorBookingProfile,
+  AvailabilitySlot,
+  InstructorBooking,
+  GpsFixInput,
+  StartedJourney,
+  JourneyReport,
 } from './types';
 
 export type GpsSource = 'camera' | 'embedded' | 'app_journey';
@@ -348,11 +355,71 @@ export const api = {
   profile: () => request<ContributorProfile>('/contributors/me/profile'),
   acceptAgreement: () => request<{ version: string }>('/contributors/agreement', { method: 'POST' }),
   instructorStatus: () => request<InstructorStatus>('/instructors/me/status'),
-  submitInstructor: (adiNumber: string, adiExpiry: string, evidenceUrl?: string) =>
+  submitInstructor: (
+    adiNumber: string,
+    adiExpiry: string,
+    evidenceUrl?: string,
+    evidenceKey?: string,
+  ) =>
     request<{ status: string }>('/instructors/verify', {
       method: 'POST',
-      body: JSON.stringify({ adiNumber, adiExpiry, evidenceUrl }),
+      body: JSON.stringify({ adiNumber, adiExpiry, evidenceUrl, evidenceKey }),
     }),
+
+  /**
+   * Ask for somewhere to put a photo of an ADI badge. Returns a presigned PUT that the
+   * browser uploads to directly, so the image never passes through the API.
+   */
+  badgeEvidenceUpload: (contentType: string, bytes: number) =>
+    request<{ key: string; uploadUrl: string; contentType: string }>(
+      '/instructors/verify/evidence-upload',
+      { method: 'POST', body: JSON.stringify({ contentType, bytes }) },
+    ),
+
+  // --- booking a driving instructor (Phase 27) ---
+
+  /**
+   * Instructors a learner can book. `nearby` is within the instructor's stated travel
+   * radius of the postcode; `elsewhere` is only populated when there is nothing local, so
+   * an area with no coverage yet still has something to show.
+   */
+  searchInstructors: (params: { postcode?: string; maxPriceMinor?: number; page?: number }) => {
+    const qs = new URLSearchParams();
+    if (params.postcode?.trim()) qs.set('postcode', params.postcode.trim());
+    if (params.maxPriceMinor != null) qs.set('maxPrice', String(params.maxPriceMinor));
+    if (params.page) qs.set('page', String(params.page));
+    const q = qs.toString();
+    return request<InstructorSearchResult>(`/instructors${q ? `?${q}` : ''}`);
+  },
+
+  /** The signed-in instructor's own bookable profile (price, bio, base postcode). */
+  myInstructorProfile: (userId: string) =>
+    request<InstructorBookingProfile>(`/instructors/${userId}/profile`),
+  updateMyInstructorProfile: (patch: {
+    bio?: string;
+    lessonPriceMinor?: number;
+    yearsExperience?: number;
+    isAcceptingBookings?: boolean;
+    basePostcode?: string;
+    travelRadiusKm?: number;
+  }) =>
+    request<InstructorBookingProfile>('/instructors/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    }),
+
+  myAvailability: (from?: string) =>
+    request<AvailabilitySlot[]>(
+      `/instructors/me/slots${from ? `?from=${encodeURIComponent(from)}` : ''}`,
+    ),
+  addAvailability: (slotDate: string, startTime: string, endTime: string) =>
+    request<{ ok: boolean }>('/instructors/me/slots', {
+      method: 'POST',
+      body: JSON.stringify({ slotDate, startTime, endTime }),
+    }),
+  deleteAvailability: (slotId: string) =>
+    request<{ ok: boolean }>(`/instructors/me/slots/${slotId}`, { method: 'DELETE' }),
+  myInstructorBookings: () => request<InstructorBooking[]>('/instructors/me/bookings'),
 
   initUpload: (payload: {
     title: string;
@@ -378,6 +445,27 @@ export const api = {
       `/reference-routes${testCentreId ? `?testCentreId=${encodeURIComponent(testCentreId)}` : ''}`,
     ),
   myJourneys: () => request<RecordedJourney[]>('/instructors/me/journeys'),
+
+  // --- recording a drive in the browser (Phase 27) ---
+  // A journey is always recorded against a reference route (R1): conformance is checked
+  // against it, so there is nothing to record without one.
+
+  startJourney: (referenceRouteId: string, videoSource: 'phone' | 'dashcam' = 'dashcam') =>
+    request<StartedJourney>('/journeys', {
+      method: 'POST',
+      body: JSON.stringify({ referenceRouteId, videoSource }),
+    }),
+
+  /**
+   * Submit the recorded track. The server runs the conformance analysis and returns the
+   * verdict, so the instructor learns whether the drive is usable before they spend an hour
+   * uploading footage for it.
+   */
+  submitJourney: (journeyId: string, fixes: GpsFixInput[], videoSource?: 'phone' | 'dashcam') =>
+    request<JourneyReport>(`/journeys/${journeyId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ fixes, videoSource }),
+    }),
   completeUpload: (id: string) =>
     request<{ uploadId: string; status: string }>(`/uploads/${id}/complete`, { method: 'POST' }),
   uploadStatus: (id: string) => request<UploadStatus>(`/uploads/${id}`),

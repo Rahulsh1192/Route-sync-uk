@@ -67,10 +67,20 @@ export function ContributePage() {
           <button className="btn" onClick={() => nav('/contribute/upload')} style={{ marginBottom: 12 }}>
             ⬆️ Upload a new route
           </button>
+          {/* The other half of the upload flow: a dashcam with no GPS needs a drive recorded
+              here first, which until Phase 27 there was no way to do. */}
+          <button
+            className="btn secondary"
+            onClick={() => nav('/contribute/record')}
+            style={{ marginBottom: 12 }}
+          >
+            📍 Record a drive's GPS
+          </button>
           <div className="card" style={{ marginTop: 4 }}>
             <div className="muted" style={{ fontSize: 13 }}>
               Every published route earns credits and builds your reputation. Uploads must be
-              attached to a test centre.
+              attached to a test centre. If your dashcam has no GPS, record the drive here
+              first and attach the footage to it afterwards.
             </div>
           </div>
         </>

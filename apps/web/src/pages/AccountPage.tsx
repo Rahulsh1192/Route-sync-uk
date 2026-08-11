@@ -153,8 +153,10 @@ export function AccountPage() {
             </p>
           </div>
           <div className="spacer" />
-          <button className="btn secondary auto" onClick={() => nav('/discover')}>
-            Browse routes
+          {/* Went to /discover — a list of practice videos, not instructors — so the one
+              place in the app that advertised booking an ADI could not lead you to one. */}
+          <button className="btn secondary auto" onClick={() => nav('/instructors/find')}>
+            Find instructors
           </button>
         </div>
       </div>
@@ -178,16 +180,28 @@ export function AccountPage() {
       {/* Instructors/admins get the contributor tools; normal users get a clear
           path to apply as an instructor (approved by an admin). */}
       {isStaff ? (
-        <div className="card">
-          <strong>Contribute a route</strong>
-          <p className="muted" style={{ fontSize: 14 }}>
-            Recording front + rear dashcam clips and a GPX track? Upload them, track processing,
-            and earn credits &amp; badges.
-          </p>
-          <button className="btn secondary" onClick={() => nav('/contribute')}>
-            Open contributor tools
-          </button>
-        </div>
+        <>
+          <div className="card">
+            <strong>My lessons</strong>
+            <p className="muted" style={{ fontSize: 14 }}>
+              Set your own lesson price, the postcode you work from, and the times you're
+              available for learners to book.
+            </p>
+            <button className="btn secondary" onClick={() => nav('/instructors/me')}>
+              Manage lessons &amp; availability
+            </button>
+          </div>
+          <div className="card">
+            <strong>Contribute a route</strong>
+            <p className="muted" style={{ fontSize: 14 }}>
+              Recording front + rear dashcam clips and a GPX track? Upload them, track processing,
+              and earn credits &amp; badges.
+            </p>
+            <button className="btn secondary" onClick={() => nav('/contribute')}>
+              Open contributor tools
+            </button>
+          </div>
+        </>
       ) : canApplyAsInstructor(user?.role) ? (
         <div className="card" style={{ borderColor: 'var(--color-accent)' }}>
           <div className="row">

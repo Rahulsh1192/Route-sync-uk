@@ -24,6 +24,8 @@ export interface Analytics {
   publishedRoutes: number;
   premiumSubscribers: number;
   pendingReview: number;
+  /** Phase 27: ADI applications awaiting a decision, for the Instructors tab badge. */
+  pendingInstructors: number;
 }
 export interface Stage {
   stage: string;
@@ -79,6 +81,11 @@ export interface PendingInstructor {
   adi_expiry: string | null;
   adiExpired: boolean;
   evidence_url: string | null;
+  /**
+   * Phase 27: whether a badge photo was uploaded. The key itself is deliberately not sent —
+   * viewing it requires asking for a short-lived signed URL (`instructorEvidenceUrl`).
+   */
+  hasEvidenceFile: boolean;
   display_name: string;
   email: string | null;
   phone: string | null;
@@ -168,6 +175,9 @@ export const api = {
     request<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   pendingInstructors: () => request<PendingInstructor[]>('/admin/instructors'),
+  /** Signed, short-lived link to an applicant's uploaded badge photo. */
+  instructorEvidenceUrl: (id: string) =>
+    request<{ url: string }>(`/admin/instructors/${id}/evidence`),
   verifyInstructor: (id: string, decision: 'verified' | 'rejected', notes?: string) =>
     request<{ id: string; status: string }>(`/admin/instructors/${id}/verify`, {
       method: 'POST',

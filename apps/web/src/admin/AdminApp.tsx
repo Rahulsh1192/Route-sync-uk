@@ -28,6 +28,16 @@ const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'reports',     label: 'Reports',           icon: '🚩' },
 ];
 
+/**
+ * How often the console re-checks the counts behind the nav badges.
+ *
+ * Polling rather than push: an admin needs to notice an ADI application without having to
+ * click into the Instructors panel to find out, but a moderation console does not warrant a
+ * websocket for it. A minute is well inside the time it takes anyone to act on an
+ * application, and it is one small aggregate query.
+ */
+const STATS_POLL_MS = 60_000;
+
 export function AdminApp() {
   const nav = useNavigate();
   const { logout } = useAuth();
@@ -35,7 +45,23 @@ export function AdminApp() {
   const [stats, setStats] = useState<Analytics | null>(null);
 
   useEffect(() => {
-    api.analytics().then(setStats).catch(() => {});
+    let cancelled = false;
+    const load = () => {
+      api
+        .analytics()
+        .then((s) => {
+          // Guard against a response landing after unmount, and against an in-flight
+          // request from a previous view overwriting a newer one.
+          if (!cancelled) setStats(s);
+        })
+        .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, STATS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, [view]);
 
   const currentLabel = NAV.find((n) => n.id === view)?.label ?? '';
@@ -68,9 +94,22 @@ export function AdminApp() {
                 <span aria-hidden="true" style={{ fontSize: '0.875rem' }}>{n.icon}</span>
                 {n.label}
               </span>
+              {/* A count per queue that can actually hold work. The Instructors badge is
+                  the point of the Phase 27 change: an ADI application used to be invisible
+                  unless someone opened that panel speculatively. */}
               {n.id === 'queue' && stats && stats.pendingReview > 0 && (
-                <span className="count" aria-label={`${stats.pendingReview} pending`}>
+                <span className="count" aria-label={`${stats.pendingReview} routes pending review`}>
                   {stats.pendingReview}
+                </span>
+              )}
+              {n.id === 'instructors' && stats && stats.pendingInstructors > 0 && (
+                <span
+                  className="count"
+                  aria-label={`${stats.pendingInstructors} instructor application${
+                    stats.pendingInstructors === 1 ? '' : 's'
+                  } awaiting verification`}
+                >
+                  {stats.pendingInstructors}
                 </span>
               )}
             </div>

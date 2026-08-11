@@ -12,7 +12,10 @@ import { ContributePage } from './pages/contribute/ContributePage';
 import { UploadPage } from './pages/contribute/UploadPage';
 import { UploadStatusPage } from './pages/contribute/UploadStatusPage';
 import { InstructorVerifyPage } from './pages/contribute/InstructorVerifyPage';
+import { RecordDrivePage } from './pages/contribute/RecordDrivePage';
 import { InstructorProfilePage } from './pages/InstructorProfilePage';
+import { FindInstructorsPage } from './pages/FindInstructorsPage';
+import { InstructorDashboardPage } from './pages/InstructorDashboardPage';
 import { BookingsPage } from './pages/BookingsPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { TestCentresPage } from './pages/TestCentresPage';
@@ -96,7 +99,14 @@ export function App() {
       <Route path="/contribute/upload" element={<Protected><UploadPage /></Protected>} />
       <Route path="/contribute/uploads/:id" element={<Protected><UploadStatusPage /></Protected>} />
       <Route path="/contribute/instructor" element={<Protected><InstructorVerifyPage /></Protected>} />
+      <Route path="/contribute/record" element={<Protected><RecordDrivePage /></Protected>} />
       <Route path="/route/:id" element={<Protected><RouteDetailPage /></Protected>} />
+
+      {/* Booking a lesson. `find` and `me` are declared before `:id` — React Router v6 ranks
+          static segments above dynamic ones, but keeping them adjacent makes the intent
+          obvious to the next reader. */}
+      <Route path="/instructors/find" element={<Protected><FindInstructorsPage /></Protected>} />
+      <Route path="/instructors/me" element={<Protected><InstructorDashboardPage /></Protected>} />
       <Route path="/instructors/:id" element={<Protected><InstructorProfilePage /></Protected>} />
       <Route path="/bookings" element={<Protected><BookingsPage /></Protected>} />
       <Route path="/account/progress" element={<Protected><ProgressPage /></Protected>} />

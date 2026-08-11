@@ -3,6 +3,9 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { RouteSummary, TestCentre } from '../api/types';
 import { RouteCard } from '../components/RouteCard';
+// Slot dates/times are wall-clock values, not instants — rendering them raw printed
+// "1970-01-01T10:00:00.000Z" on every availability button. See lib/datetime.ts.
+import { formatSlotDate, formatSlotTime } from '../lib/datetime';
 
 interface Slot { id: string; slot_date: string; start_time: string; end_time: string; }
 interface Profile {
@@ -126,7 +129,8 @@ export function InstructorProfilePage() {
               style={{ fontSize: 13 }}
               onClick={() => setSelectedSlot(s.id)}
             >
-              {s.slot_date} · {s.start_time}–{s.end_time}
+              {formatSlotDate(s.slot_date)} · {formatSlotTime(s.start_time)}–
+              {formatSlotTime(s.end_time)}
             </button>
           ))}
         </div>

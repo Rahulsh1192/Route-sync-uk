@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+// A lesson's date/time are wall-clock values from Postgres `date`/`time` columns, which
+// serialise as UTC-pinned Dates — shown raw they read "1970-01-01T10:00:00.000Z".
+import { formatSlotDate, formatSlotTime } from '../lib/datetime';
 
 interface Booking {
   id: string; status: string;
@@ -62,7 +65,8 @@ export function BookingsPage() {
                   {b.instructor_name ?? b.learner_name ?? 'Lesson'}
                 </div>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  {b.slot_date} · {b.start_time}–{b.end_time}
+                  {formatSlotDate(b.slot_date)} · {formatSlotTime(b.start_time)}–
+                  {formatSlotTime(b.end_time)}
                 </div>
                 {b.lesson_notes && <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>"{b.lesson_notes}"</div>}
                 {b.cancel_reason && <div style={{ color: '#ef4444', fontSize: 12 }}>Reason: {b.cancel_reason}</div>}
