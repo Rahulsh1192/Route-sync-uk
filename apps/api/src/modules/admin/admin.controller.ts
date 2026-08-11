@@ -96,6 +96,18 @@ export class AdminController {
     return this.admin.pendingInstructors();
   }
 
+  /**
+   * Signed link to an applicant's uploaded badge photo, valid for a few minutes.
+   *
+   * Fetched on demand instead of being embedded in the pending-applications list: the list
+   * is a page a moderator may leave open, and a URL that grants access to someone's identity
+   * document should not outlive the moment it is looked at.
+   */
+  @Get('instructors/:id/evidence')
+  instructorEvidence(@Param('id') id: string) {
+    return this.admin.instructorEvidenceUrl(id);
+  }
+
   @Post('instructors/:id/verify')
   verifyInstructor(
     @CurrentUser() user: AuthUser,

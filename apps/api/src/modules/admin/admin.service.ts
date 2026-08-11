@@ -106,15 +106,28 @@ export class AdminService {
 
   // --- analytics & revenue -------------------------------------------------
   async analytics() {
-    const [users, publishedRoutes, premium, pendingReview] = await Promise.all([
+    const [users, publishedRoutes, premium, pendingReview, pendingInstructors] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.route.count({ where: { status: RouteStatus.published } }),
       this.prisma.subscription.count({
         where: { plan: { in: ['premium_monthly', 'premium_yearly'] }, status: 'active' },
       }),
       this.prisma.route.count({ where: { status: { in: ['in_review', 'flagged'] } } }),
+      // Counted here so the console can badge the Instructors tab. Without it an ADI
+      // application was invisible unless a moderator happened to open that panel and look —
+      // reported from testing as "the admin never sees the verification request". Raw SQL
+      // because instructor_verifications is not in the Prisma schema.
+      this.prisma.$queryRaw<[{ count: number }]>`
+        SELECT COUNT(*)::int AS count FROM instructor_verifications WHERE status = 'pending'
+      `,
     ]);
-    return { users, publishedRoutes, premiumSubscribers: premium, pendingReview };
+    return {
+      users,
+      publishedRoutes,
+      premiumSubscribers: premium,
+      pendingReview,
+      pendingInstructors: pendingInstructors[0]?.count ?? 0,
+    };
   }
 
   async revenue() {
@@ -187,6 +200,9 @@ export class AdminService {
   pendingInstructors() {
     return this.prisma.$queryRaw`
       SELECT iv.id, iv.user_id, iv.adi_number, iv.adi_expiry, iv.evidence_url,
+             -- Only whether a photo exists; the key itself is not useful to the client,
+             -- which has to ask for a signed URL to see it (see evidenceUrl below).
+             (iv.evidence_key IS NOT NULL) AS "hasEvidenceFile",
              iv.status, iv.created_at,
              u.display_name, u.email, u.phone,
              -- A moderator should not have to work out whether a badge is still current
@@ -197,6 +213,24 @@ export class AdminService {
       JOIN users u ON u.id = iv.user_id
       WHERE iv.status = 'pending'
       ORDER BY iv.created_at ASC`;
+  }
+
+  /**
+   * Short-lived signed URL for an uploaded badge photo.
+   *
+   * The bucket is private and badge evidence is an identity document, so it is never served
+   * from a public URL. A moderator asks for a link at the moment they want to look, and it
+   * expires shortly after — rather than the alternative of a permanent URL sitting in an
+   * admin page that anyone with the link could later replay.
+   */
+  async instructorEvidenceUrl(verificationId: string) {
+    const rows = await this.prisma.$queryRaw<Array<{ evidence_key: string | null }>>`
+      SELECT evidence_key FROM instructor_verifications WHERE id = ${verificationId}::uuid`;
+    if (!rows[0]) throw new NotFoundException('Verification not found');
+    if (!rows[0].evidence_key) {
+      throw new NotFoundException('This application has no uploaded badge photo');
+    }
+    return { url: await this.storage.presignDownload(rows[0].evidence_key, 300) };
   }
 
   async verifyInstructor(actorId: string, verificationId: string,

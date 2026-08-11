@@ -7,7 +7,9 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import {
   BADGES,
   CREDITS_PER_ROUTE,
@@ -17,6 +19,15 @@ import {
   HIGH_QUALITY_BONUS,
   HIGH_QUALITY_THRESHOLD,
 } from './community.constants';
+
+/** File extension per accepted evidence type, so stored keys stay recognisable. */
+const EVIDENCE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'application/pdf': 'pdf',
+};
 
 /**
  * Contributor community: profiles, reputation, credits, badges, leaderboards,
@@ -30,7 +41,79 @@ import {
 export class CommunityService implements OnModuleInit {
   private readonly logger = new Logger(CommunityService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
+
+  /** What a badge photo may be. A DVSA certificate is photographed or scanned. */
+  private static readonly EVIDENCE_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'application/pdf',
+  ];
+
+  /** 15 MB — comfortably above a phone photo, far below anything worth worrying about. */
+  private static readonly EVIDENCE_MAX_BYTES = 15 * 1024 * 1024;
+
+  /**
+   * Presigned PUT so an applicant can upload a photo of their ADI badge from their phone
+   * or computer.
+   *
+   * Direct-to-storage, like every other upload in the system — the bytes never pass through
+   * the API. The key is derived from the user id server-side rather than accepted from the
+   * client, so one applicant cannot write into another's prefix or overwrite their evidence.
+   */
+  async createEvidenceUpload(userId: string, contentType: string, bytes?: number) {
+    if (!CommunityService.EVIDENCE_TYPES.includes(contentType)) {
+      throw new BadRequestException(
+        `A badge photo must be a JPEG, PNG, WebP, HEIC or PDF — not "${contentType}".`,
+      );
+    }
+    if (bytes != null && bytes > CommunityService.EVIDENCE_MAX_BYTES) {
+      throw new BadRequestException(
+        `That file is ${(bytes / 1024 / 1024).toFixed(1)} MB. Please keep it under ` +
+          `${CommunityService.EVIDENCE_MAX_BYTES / 1024 / 1024} MB.`,
+      );
+    }
+
+    const ext = EVIDENCE_EXTENSIONS[contentType] ?? 'bin';
+    // A random component, so re-uploading after a rejection doesn't overwrite the evidence
+    // attached to the earlier decision — the audit trail has to stay intact.
+    const key = `instructor-evidence/${userId}/${randomUUID()}.${ext}`;
+    const uploadUrl = await this.storage.presignUpload(key, contentType);
+    return { key, uploadUrl, contentType };
+  }
+
+  /**
+   * Confirm an uploaded evidence object is real, ours, and the right size.
+   *
+   * The presigned PUT happens out of band, so at submission time all we have is a key the
+   * client claims it uploaded to. Three things are checked, in this order: the key is inside
+   * this user's own prefix (so a guessed key belonging to someone else is refused), the
+   * object actually exists, and it is within the size limit — which cannot be enforced by
+   * the signature itself.
+   */
+  private async verifyEvidenceKey(userId: string, key: string): Promise<string> {
+    const prefix = `instructor-evidence/${userId}/`;
+    if (!key.startsWith(prefix) || key.includes('..')) {
+      throw new BadRequestException('That evidence upload does not belong to this account.');
+    }
+    const meta = await this.storage.objectMetadata(key);
+    if (!meta) {
+      throw new BadRequestException(
+        'We could not find the badge photo you uploaded. Please attach it again.',
+      );
+    }
+    if (meta.size != null && meta.size > CommunityService.EVIDENCE_MAX_BYTES) {
+      throw new BadRequestException(
+        `That badge photo is too large (${(meta.size / 1024 / 1024).toFixed(1)} MB).`,
+      );
+    }
+    return key;
+  }
 
   /** Seed the badge catalogue idempotently so contributor_badges FKs resolve. */
   async onModuleInit() {
@@ -98,6 +181,7 @@ export class CommunityService implements OnModuleInit {
     adiNumber: string,
     adiExpiry: string,
     evidenceUrl?: string,
+    evidenceKey?: string,
   ) {
     const existing = await this.prisma.$queryRaw<any[]>`
       SELECT 1 FROM instructor_verifications
@@ -136,12 +220,16 @@ export class CommunityService implements OnModuleInit {
       );
     }
 
+    // Checked before the insert so a bad key is reported as such, rather than stored and
+    // discovered later by a moderator staring at a broken image.
+    const verifiedKey = evidenceKey ? await this.verifyEvidenceKey(userId, evidenceKey) : null;
+
     try {
       await this.prisma.$executeRaw`
         INSERT INTO instructor_verifications
-          (id, user_id, adi_number, adi_expiry, evidence_url, status)
+          (id, user_id, adi_number, adi_expiry, evidence_url, evidence_key, status)
         VALUES (gen_random_uuid(), ${userId}::uuid, ${adiNumber}, ${adiExpiry}::date,
-                ${evidenceUrl ?? null}, 'pending')`;
+                ${evidenceUrl ?? null}, ${verifiedKey}, 'pending')`;
     } catch (e) {
       // The check above closes the common case; this closes the race between two
       // simultaneous submissions, where the index is the only thing that can decide.
