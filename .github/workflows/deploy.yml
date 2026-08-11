@@ -17,7 +17,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # IMAGE_NAME is set in the job below, lowercased — same constraint as docker-build.yml:
+  # GHCR rejects a mixed-case reference and `github.repository` is "Rahulsh1192/Route-sync-uk".
 
 jobs:
   deploy:
@@ -29,6 +30,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve the image namespace (GHCR requires lowercase)
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       # docker-build tags images with the branch name (type=ref,event=branch),
       # so the deployable tag is the branch that triggered the build.
