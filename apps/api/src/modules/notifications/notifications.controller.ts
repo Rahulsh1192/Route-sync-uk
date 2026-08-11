@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -9,11 +10,11 @@ export class NotificationsController {
 
   @Post('register')
   registerDevice(
-    @Request() req: any,
+    @CurrentUser() user: AuthUser,
     @Body('platform') platform: 'ios' | 'android',
     @Body('token') token: string,
   ) {
-    return this.svc.registerDevice(req.user.sub, platform, token);
+    return this.svc.registerDevice(user.id, platform, token);
   }
 
   @Delete('register/:token')
@@ -22,12 +23,12 @@ export class NotificationsController {
   }
 
   @Get()
-  getNotifications(@Request() req: any) {
-    return this.svc.getNotifications(req.user.sub);
+  getNotifications(@CurrentUser() user: AuthUser) {
+    return this.svc.getNotifications(user.id);
   }
 
   @Patch(':id/read')
-  markRead(@Request() req: any, @Param('id') id: string) {
-    return this.svc.markRead(req.user.sub, id);
+  markRead(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.svc.markRead(user.id, id);
   }
 }

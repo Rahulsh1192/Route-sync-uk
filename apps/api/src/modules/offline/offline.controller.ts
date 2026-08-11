@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Delete, Param, Query, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { OfflineService } from './offline.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -9,25 +10,25 @@ export class OfflineController {
 
   @Post('routes/:id/offline')
   requestPackage(
-    @Request() req: any,
+    @CurrentUser() user: AuthUser,
     @Param('id') routeId: string,
     @Body('deviceId') deviceId: string,
   ) {
-    return this.svc.requestPackage(req.user.sub, routeId, deviceId ?? 'default');
+    return this.svc.requestPackage(user.id, routeId, deviceId ?? 'default');
   }
 
   @Get('routes/:id/offline')
-  getPackageUrl(@Request() req: any, @Param('id') routeId: string) {
-    return this.svc.getPackageUrl(req.user.sub, routeId);
+  getPackageUrl(@CurrentUser() user: AuthUser, @Param('id') routeId: string) {
+    return this.svc.getPackageUrl(user.id, routeId);
   }
 
   @Delete('routes/:id/offline')
-  revokePackage(@Request() req: any, @Param('id') routeId: string) {
-    return this.svc.revokePackage(req.user.sub, routeId);
+  revokePackage(@CurrentUser() user: AuthUser, @Param('id') routeId: string) {
+    return this.svc.revokePackage(user.id, routeId);
   }
 
   @Get('users/me/offline')
-  listPackages(@Request() req: any) {
-    return this.svc.listPackages(req.user.sub);
+  listPackages(@CurrentUser() user: AuthUser) {
+    return this.svc.listPackages(user.id);
   }
 }
