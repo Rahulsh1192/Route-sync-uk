@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
-    "seed:journeys": "ts-node scripts/seed-journeys.ts"
+    "seed:journeys": "ts-node scripts/seed-journeys.ts",
+    "import:test-centres": "ts-node scripts/import-test-centres.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.620.0",

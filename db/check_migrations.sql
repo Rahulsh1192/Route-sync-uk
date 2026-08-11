@@ -31,7 +31,13 @@ WITH expected(phase, migration, kind, obj, detail) AS (
     ('26', 'db/migrate_phase_26.sql', 'column', 'users',                    'phone'),
     ('26', 'db/migrate_phase_26.sql', 'column', 'users',                    'emergency_contact_phone'),
     ('26', 'db/migrate_phase_26.sql', 'column', 'instructor_verifications', 'adi_expiry'),
-    ('26', 'db/migrate_phase_26.sql', 'column', 'contributors',             'adi_expiry')
+    ('26', 'db/migrate_phase_26.sql', 'column', 'contributors',             'adi_expiry'),
+    -- Phase 27 — test-centre de-duplication, instructor locations, badge photos
+    ('27', 'db/migrate_phase_27.sql', 'index',  'idx_test_centres_name_unique',  NULL),
+    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'base_location'),
+    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'base_postcode'),
+    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'travel_radius_km'),
+    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_verifications', 'evidence_key')
 )
 SELECT
   e.phase,
@@ -49,6 +55,10 @@ CROSS JOIN LATERAL (
     -- platform_config is a key/value table, so these are rows rather than schema.
     WHEN 'config' THEN EXISTS (
       SELECT 1 FROM platform_config WHERE key = e.obj)
+    -- Phase 27's headline fix is a unique index, not a table or column: without it the
+    -- seeds' ON CONFLICT clauses match nothing and re-running one duplicates every centre.
+    WHEN 'index' THEN EXISTS (
+      SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = e.obj)
   END AS found
 ) f
 ORDER BY e.phase, checked;

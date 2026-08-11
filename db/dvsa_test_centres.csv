@@ -1,0 +1,282 @@
+# DVSA practical car test centres — import source for scripts/import-test-centres.ts
+#
+# Columns: name,postcode,town,region
+#
+# ⚠ NEEDS VERIFICATION AGAINST GOV.UK. This list was compiled from knowledge of the DVSA
+# centre network, not exported from an official feed. Names and postcodes are believed
+# correct but have not been checked against
+# https://www.gov.uk/find-driving-test-centre — treat a row as provisional until it has.
+#
+# The importer does NOT trust the postcodes here blindly:
+#   * every postcode is resolved through postcodes.io, so an invalid one is rejected rather
+#     than stored, and coordinates are never invented — they come from the geocoder;
+#   * the `town` below is compared with the administrative district the geocoder returns,
+#     and any disagreement is printed as a MISMATCH for review. That is the check that
+#     catches a postcode which is real but belongs to the wrong place.
+#
+# Run `npm run import:test-centres -- --dry-run` in apps/api to see the report without
+# writing anything.
+#
+name,postcode,town,region
+# --- London ---------------------------------------------------------------------
+Barking,IG11 8AX,Barking,London
+Barnet (Borehamwood),WD6 1GG,Borehamwood,London
+Belvedere,DA17 6JR,Belvedere,London
+Bexleyheath,DA6 7EY,Bexleyheath,London
+Brentford,TW8 0HJ,Brentford,London
+Chertsey,KT16 9AT,Chertsey,London
+Chingford,E4 8SP,Chingford,London
+Chiswick,W4 5NR,Chiswick,London
+Croydon,CR0 4XL,Croydon,London
+Enfield,EN3 7XA,Enfield,London
+Erith,DA8 1QN,Erith,London
+Feltham,TW14 0AA,Feltham,London
+Goodmayes,IG3 9SN,Goodmayes,London
+Greenford,UB6 8UH,Greenford,London
+Hayes (Yeading),UB4 0LT,Hayes,London
+Hendon,NW9 5FD,Hendon,London
+Hither Green,SE13 6QB,London,London
+Hornchurch,RM11 1NA,Hornchurch,London
+Isleworth,TW7 6QP,Isleworth,London
+Mill Hill,NW7 1RB,Mill Hill,London
+Mitcham,CR4 4HY,Mitcham,London
+Morden,SM4 5PJ,Morden,London
+Pinner,HA5 5PL,Pinner,London
+Sidcup,DA14 6JZ,Sidcup,London
+Southall,UB2 4NB,Southall,London
+South Norwood,SE25 5AL,London,London
+Sutton,SM1 4RF,Sutton,London
+Tolworth,KT6 7EL,Tolworth,London
+Tottenham,N17 0XA,Tottenham,London
+Uxbridge,UB8 1QU,Uxbridge,London
+Wanstead,E11 3AA,Wanstead,London
+West Wickham,BR4 0LT,West Wickham,London
+Wood Green,N22 6SA,Wood Green,London
+Yeading,UB4 9LA,Hayes,London
+# --- South East -----------------------------------------------------------------
+Ashford (Kent),TN23 1BB,Ashford,South East
+Aylesbury,HP19 8DA,Aylesbury,South East
+Banbury,OX16 4RZ,Banbury,South East
+Basingstoke,RG21 6XS,Basingstoke,South East
+Bletchley,MK1 1QB,Milton Keynes,South East
+Brighton (Lewes Road),BN2 3QA,Brighton,South East
+Burgess Hill,RH15 9NQ,Burgess Hill,South East
+Canterbury,CT1 3RG,Canterbury,South East
+Chatham,ME5 9SD,Chatham,South East
+Chichester,PO19 8EZ,Chichester,South East
+Crawley,RH10 9SF,Crawley,South East
+Eastbourne,BN23 6QE,Eastbourne,South East
+Farnborough,GU14 7QP,Farnborough,South East
+Folkestone,CT19 4AY,Folkestone,South East
+Gillingham,ME7 1AR,Gillingham,South East
+Guildford,GU1 1SW,Guildford,South East
+Hastings,TN34 1BA,Hastings,South East
+High Wycombe,HP12 3PR,High Wycombe,South East
+Lee On The Solent,PO13 9NY,Lee-on-the-Solent,South East
+Maidstone,ME15 9YF,Maidstone,South East
+Oxford (Cowley),OX4 2RD,Oxford,South East
+Portsmouth,PO3 5NB,Portsmouth,South East
+Reading,RG2 0RP,Reading,South East
+Redhill,RH1 1NN,Redhill,South East
+Reigate,RH2 7LG,Reigate,South East
+Slough,SL1 4RB,Slough,South East
+Southampton (Maybush),SO16 4GX,Southampton,South East
+Tunbridge Wells,TN2 3EN,Tunbridge Wells,South East
+Winchester,SO23 7RS,Winchester,South East
+Worthing,BN14 8FA,Worthing,South East
+# --- South West -----------------------------------------------------------------
+Barnstaple,EX31 2AT,Barnstaple,South West
+Bath,BA2 3EF,Bath,South West
+Bodmin,PL31 1EU,Bodmin,South West
+Bournemouth,BH8 0AS,Bournemouth,South West
+Bristol (Avonmouth),BS11 8AZ,Bristol,South West
+Bristol (Brislington),BS4 5NF,Bristol,South West
+Bristol (Kingswood),BS15 8NX,Bristol,South West
+Camborne,TR14 8PY,Camborne,South West
+Cheltenham,GL51 9LT,Cheltenham,South West
+Chippenham,SN15 1BN,Chippenham,South West
+Exeter,EX2 8PZ,Exeter,South West
+Gloucester,GL2 5DL,Gloucester,South West
+Launceston,PL15 7HG,Launceston,South West
+Newton Abbot,TQ12 4PS,Newton Abbot,South West
+Penzance,TR18 3RN,Penzance,South West
+Plymouth,PL6 8LX,Plymouth,South West
+Poole,BH15 3TB,Poole,South West
+Salisbury,SP2 7NB,Salisbury,South West
+Swindon,SN3 3RB,Swindon,South West
+Taunton,TA1 2PX,Taunton,South West
+Torquay,TQ2 7AA,Torquay,South West
+Trowbridge,BA14 0AS,Trowbridge,South West
+Truro,TR1 2XN,Truro,South West
+Weston Super Mare,BS23 3YS,Weston-super-Mare,South West
+Weymouth,DT4 9TF,Weymouth,South West
+Yeovil,BA20 2FH,Yeovil,South West
+# --- West Midlands --------------------------------------------------------------
+Birmingham (Garretts Green),B33 0SL,Birmingham,West Midlands
+Birmingham (Kings Heath),B14 7NT,Birmingham,West Midlands
+Birmingham (Kingstanding),B44 9EH,Birmingham,West Midlands
+Birmingham (Shirley),B90 3DP,Solihull,West Midlands
+Birmingham (South Yardley),B25 8JS,Birmingham,West Midlands
+Birmingham (Sutton Coldfield),B72 1DY,Sutton Coldfield,West Midlands
+Birmingham (Wyndley),B73 6EU,Sutton Coldfield,West Midlands
+Burton On Trent,DE14 2WF,Burton upon Trent,West Midlands
+Cannock,WS11 8XP,Cannock,West Midlands
+Coventry,CV6 5NX,Coventry,West Midlands
+Dudley,DY2 8SD,Dudley,West Midlands
+Hereford,HR4 9SX,Hereford,West Midlands
+Kidderminster,DY11 7QU,Kidderminster,West Midlands
+Lichfield,WS13 6RY,Lichfield,West Midlands
+Nuneaton,CV11 6RX,Nuneaton,West Midlands
+Redditch,B98 0RE,Redditch,West Midlands
+Shrewsbury,SY1 3AF,Shrewsbury,West Midlands
+Stoke On Trent (Cobridge),ST6 2JS,Stoke-on-Trent,West Midlands
+Stourbridge,DY8 4YN,Stourbridge,West Midlands
+Telford,TF3 4JG,Telford,West Midlands
+Wednesbury,WS10 7DE,Wednesbury,West Midlands
+Wolverhampton,WV10 0QW,Wolverhampton,West Midlands
+Worcester,WR3 8BP,Worcester,West Midlands
+# --- East Midlands --------------------------------------------------------------
+Boston,PE21 7TL,Boston,East Midlands
+Buxton,SK17 9RY,Buxton,East Midlands
+Chesterfield,S41 9AT,Chesterfield,East Midlands
+Derby (Alvaston),DE24 0AN,Derby,East Midlands
+Grantham,NG31 7XT,Grantham,East Midlands
+Grimsby,DN31 2SR,Grimsby,East Midlands
+Kettering,NN16 8UN,Kettering,East Midlands
+Leicester (Cannock Street),LE4 9HR,Leicester,East Midlands
+Leicester (Wigston),LE18 4ZL,Wigston,East Midlands
+Lincoln,LN6 3QP,Lincoln,East Midlands
+Loughborough,LE11 5QQ,Loughborough,East Midlands
+Mansfield,NG18 1BE,Mansfield,East Midlands
+Melton Mowbray,LE13 1JY,Melton Mowbray,East Midlands
+Northampton,NN3 6BL,Northampton,East Midlands
+Nottingham (Beeston),NG9 6DQ,Beeston,East Midlands
+Nottingham (Chalfont Drive),NG8 3LT,Nottingham,East Midlands
+Nottingham (Colwick),NG4 2JT,Nottingham,East Midlands
+Skegness,PE25 3SB,Skegness,East Midlands
+# --- East of England ------------------------------------------------------------
+Basildon,SS14 3AR,Basildon,East of England
+Bedford,MK42 7SG,Bedford,East of England
+Bury St Edmunds,IP32 7BQ,Bury St Edmunds,East of England
+Cambridge (Brookmount Court),CB1 3NL,Cambridge,East of England
+Chelmsford,CM2 5PB,Chelmsford,East of England
+Clacton On Sea,CO15 4AD,Clacton-on-Sea,East of England
+Colchester,CO4 9QX,Colchester,East of England
+Ipswich,IP1 5PB,Ipswich,East of England
+Kings Lynn,PE30 4NE,King's Lynn,East of England
+Letchworth,SG6 1LA,Letchworth Garden City,East of England
+Lowestoft,NR32 2NZ,Lowestoft,East of England
+Luton,LU4 8EL,Luton,East of England
+Norwich (Jupiter Road),NR6 6SS,Norwich,East of England
+Peterborough,PE1 5XG,Peterborough,East of England
+Southend On Sea,SS2 6UP,Southend-on-Sea,East of England
+St Albans,AL1 5HE,St Albans,East of England
+Stevenage,SG1 2ST,Stevenage,East of England
+Watford,WD24 7RP,Watford,East of England
+# --- Yorkshire and the Humber ---------------------------------------------------
+Barnsley,S71 1HL,Barnsley,Yorkshire and The Humber
+Beverley,HU17 0LR,Beverley,Yorkshire and The Humber
+Bradford (Heaton),BD9 4RY,Bradford,Yorkshire and The Humber
+Bradford (Thornbury),BD3 8HN,Bradford,Yorkshire and The Humber
+Doncaster,DN4 5JJ,Doncaster,Yorkshire and The Humber
+Halifax,HX1 4NP,Halifax,Yorkshire and The Humber
+Harrogate,HG2 7SA,Harrogate,Yorkshire and The Humber
+Huddersfield,HD1 6PT,Huddersfield,Yorkshire and The Humber
+Hull,HU3 4SA,Hull,Yorkshire and The Humber
+Leeds (Harehills),LS9 6DX,Leeds,Yorkshire and The Humber
+Leeds (Horsforth),LS18 4RQ,Leeds,Yorkshire and The Humber
+Malton,YO17 6YB,Malton,Yorkshire and The Humber
+Middlesbrough,TS4 2RS,Middlesbrough,Yorkshire and The Humber
+Pontefract,WF8 2LA,Pontefract,Yorkshire and The Humber
+Rotherham,S60 1TA,Rotherham,Yorkshire and The Humber
+Scarborough,YO11 3HA,Scarborough,Yorkshire and The Humber
+Scunthorpe,DN15 8QT,Scunthorpe,Yorkshire and The Humber
+Sheffield (Handsworth),S13 9BH,Sheffield,Yorkshire and The Humber
+Sheffield (Middlewood Road),S6 1TD,Sheffield,Yorkshire and The Humber
+Skipton,BD23 2TZ,Skipton,Yorkshire and The Humber
+Wakefield,WF2 7AS,Wakefield,Yorkshire and The Humber
+York,YO30 4XT,York,Yorkshire and The Humber
+# --- North West -----------------------------------------------------------------
+Accrington,BB5 4AA,Accrington,North West
+Barrow In Furness,LA14 2NS,Barrow-in-Furness,North West
+Blackburn,BB1 2EE,Blackburn,North West
+Blackpool,FY4 4QA,Blackpool,North West
+Bolton,BL3 6BX,Bolton,North West
+Burnley,BB11 5UH,Burnley,North West
+Bury,BL9 6BU,Bury,North West
+Carlisle,CA1 3AJ,Carlisle,North West
+Chester,CH1 4LT,Chester,North West
+Crewe,CW1 6EA,Crewe,North West
+Kendal,LA9 6NZ,Kendal,North West
+Liverpool (Garston),L19 2PA,Liverpool,North West
+Liverpool (Norris Green),L11 1DE,Liverpool,North West
+Liverpool (Speke),L24 9HP,Liverpool,North West
+Macclesfield,SK10 2BE,Macclesfield,North West
+Manchester (Cheetham Hill),M8 0PW,Manchester,North West
+Manchester (Sale),M33 2AA,Sale,North West
+Manchester (West Didsbury),M20 2WD,Manchester,North West
+Oldham,OL9 6EB,Oldham,North West
+Preston,PR2 5BQ,Preston,North West
+Rochdale,OL11 2JS,Rochdale,North West
+Southport,PR8 6LJ,Southport,North West
+St Helens,WA9 1LT,St Helens,North West
+Stockport,SK4 1TQ,Stockport,North West
+Warrington,WA2 8TX,Warrington,North West
+Wigan,WN5 0UH,Wigan,North West
+Workington,CA14 3YR,Workington,North West
+# --- North East -----------------------------------------------------------------
+Berwick Upon Tweed,TD15 1NF,Berwick-upon-Tweed,North East
+Blyth,NE24 4RJ,Blyth,North East
+Darlington,DL1 4RD,Darlington,North East
+Durham,DH1 2RW,Durham,North East
+Gateshead,NE8 3DX,Gateshead,North East
+Hartlepool,TS25 1UD,Hartlepool,North East
+Hexham,NE46 1XA,Hexham,North East
+Newcastle Upon Tyne (Gosforth),NE3 3XT,Newcastle upon Tyne,North East
+Sunderland,SR5 3RN,Sunderland,North East
+# --- Wales ----------------------------------------------------------------------
+Aberystwyth,SY23 3AH,Aberystwyth,Wales
+Bangor,LL57 4SU,Bangor,Wales
+Barry,CF63 3RN,Barry,Wales
+Brecon,LD3 8DL,Brecon,Wales
+Bridgend,CF31 3TP,Bridgend,Wales
+Caernarfon,LL55 1TP,Caernarfon,Wales
+Cardiff (Llanishen),CF14 5GJ,Cardiff,Wales
+Carmarthen,SA31 1PZ,Carmarthen,Wales
+Haverfordwest,SA61 1QP,Haverfordwest,Wales
+Llandrindod Wells,LD1 6AA,Llandrindod Wells,Wales
+Merthyr Tydfil,CF47 8YR,Merthyr Tydfil,Wales
+Newport,NP19 4TT,Newport,Wales
+Pwllheli,LL53 5RS,Pwllheli,Wales
+Rhyl,LL18 2RY,Rhyl,Wales
+Swansea (Clase),SA6 7JB,Swansea,Wales
+Wrexham,LL13 9JL,Wrexham,Wales
+# --- Scotland -------------------------------------------------------------------
+Aberdeen (Cove),AB12 3LG,Aberdeen,Scotland
+Airdrie,ML6 6JA,Airdrie,Scotland
+Arbroath,DD11 3RG,Arbroath,Scotland
+Ayr,KA8 9RS,Ayr,Scotland
+Dumfries,DG1 3PH,Dumfries,Scotland
+Dundee,DD2 4TE,Dundee,Scotland
+Dunfermline,KY11 3BZ,Dunfermline,Scotland
+East Kilbride,G74 5PB,East Kilbride,Scotland
+Edinburgh (Currie),EH14 5RB,Edinburgh,Scotland
+Edinburgh (Musselburgh),EH21 7PQ,Musselburgh,Scotland
+Elgin,IV30 1RY,Elgin,Scotland
+Falkirk,FK2 7YZ,Falkirk,Scotland
+Fort William,PH33 6RQ,Fort William,Scotland
+Glasgow (Anniesland),G13 1EU,Glasgow,Scotland
+Glasgow (Baillieston),G69 6GA,Glasgow,Scotland
+Glasgow (Shieldhall),G51 4RS,Glasgow,Scotland
+Greenock,PA15 2TH,Greenock,Scotland
+Hamilton,ML3 0QA,Hamilton,Scotland
+Inverness,IV2 7GD,Inverness,Scotland
+Kilmarnock,KA1 2LS,Kilmarnock,Scotland
+Kirkcaldy,KY1 3NA,Kirkcaldy,Scotland
+Livingston,EH54 6AX,Livingston,Scotland
+Paisley,PA3 4EA,Paisley,Scotland
+Perth,PH1 3AF,Perth,Scotland
+Peterhead,AB42 3AZ,Peterhead,Scotland
+Stirling,FK7 7XE,Stirling,Scotland
+Stranraer,DG9 7RQ,Stranraer,Scotland
+Wick,KW1 5LA,Wick,Scotland

@@ -37,7 +37,10 @@ INSERT INTO test_centres (id, name, town, postcode, region, location) VALUES
   (gen_random_uuid(), 'Norbury',                                'Norbury',          'SW16 4SH', 'London', ST_GeogFromText('SRID=4326;POINT(-0.1200 51.4100)')),
   (gen_random_uuid(), 'Tolworth',                               'Tolworth',         'KT6 7EL', 'London', ST_GeogFromText('SRID=4326;POINT(-0.2800 51.3800)')),
   (gen_random_uuid(), 'Twickenham',                             'Twickenham',       'TW2 6LZ', 'London', ST_GeogFromText('SRID=4326;POINT(-0.3390 51.4500)'))
-ON CONFLICT (id) DO NOTHING;
+-- Untargeted, so it also catches the unique name constraint added in Phase 27 rather than
+-- only the primary key. Just Mill Hill has a fixed id here; every other row gets a fresh
+-- uuid, so a PK-only clause skipped nothing and a re-run aborted on the duplicate name.
+ON CONFLICT DO NOTHING;
 
 -- South East England
 INSERT INTO test_centres (name, town, postcode, region, location) VALUES
