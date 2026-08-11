@@ -28,6 +28,15 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
 
+    # Lifted to job level so the steps below can test them in `if:` conditions. The
+    # `secrets` context is not available in an `if:`, but `env` is — which is what makes
+    # "deploy only when a target is actually configured" expressible at all.
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -47,11 +56,36 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Deploying tag: $TAG"
 
+      # Without this guard the job failed on every successful build: with no DEPLOY_* secrets
+      # set, `ssh-keyscan -H ""` and then `ssh @` exit non-zero, and the run went red for a
+      # deployment that was never configured rather than one that went wrong. A pipeline that
+      # is always red tells you nothing on the day something real breaks.
+      - name: Check whether a deploy target is configured
+        id: target
+        run: |
+          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] && [ -n "$DEPLOY_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Deploy skipped — no SSH target configured"
+              echo ""
+              echo 'This workflow deploys by SSH-ing into a host and running `docker compose`'
+              echo 'in `/app`. It needs the `DEPLOY_HOST`, `DEPLOY_USER` and `DEPLOY_KEY`'
+              echo 'repository secrets, none of which are set.'
+              echo ""
+              echo 'The images built fine and are published to'
+              echo "\`ghcr.io/${IMAGE_NAME}/{api,worker,frontends}:${{ steps.tag.outputs.tag }}\`."
+              echo ""
+              echo 'If the API is deployed by the Render blueprint in `render.yaml`, Render'
+              echo 'builds from the repository on push and this workflow is redundant —'
+              echo 'delete it rather than leaving it to skip forever.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Deploy to staging
+        if: steps.target.outputs.configured == 'true'
         env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           IMAGE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           mkdir -p ~/.ssh
@@ -64,8 +98,7 @@ jobs:
             "cd /app && IMAGE_TAG='$IMAGE_TAG' docker compose pull && IMAGE_TAG='$IMAGE_TAG' docker compose up -d"
 
       - name: Health check
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        if: steps.target.outputs.configured == 'true'
         run: |
           # API listens on 3000 with a global "api" prefix → /api/health
           for i in $(seq 1 30); do
@@ -78,24 +111,25 @@ jobs:
           echo "❌ Health check failed"
           exit 1
 
+      # Both notify steps also need the webhook to exist: the Slack action fails with
+      # "Need to provide at least one botToken or webhookUrl", which turned the failure
+      # notifier into a second, more confusing failure of its own.
       - name: Notify Slack on success
-        if: success()
+        if: success() && steps.target.outputs.configured == 'true' && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
             {
               "text": "✅ RouteSync deployment successful (tag ${{ steps.tag.outputs.tag }})"
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Notify Slack on failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
             {
               "text": "❌ RouteSync deployment failed (tag ${{ steps.tag.outputs.tag }})"
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        # No step-level env needed: SLACK_WEBHOOK_URL is set for the whole job above, which
+        # is also what lets the `if:` above test it.
