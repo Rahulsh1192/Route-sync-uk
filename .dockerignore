@@ -1,0 +1,16 @@
+# Build context exclusions. All three Dockerfiles build from the repo root and use
+# blanket `COPY <dir> ./`, so anything left here is baked into an image layer.
+#
+# The worker env files are the reason this file exists: .env.live holds live R2 and
+# database credentials, and `COPY services/worker ./` would otherwise bake them into
+# the image. The worker gets its config from the environment at run time
+# (docker-compose / Render), so it never needs these files inside the image.
+services/worker/.env
+services/worker/.env.live
+
+# Do NOT broaden this to a blanket `**/.env`: the web image runs `vite build` inside
+# Docker, and Vite reads apps/web/.env at build time for the VITE_* vars. Excluding
+# it would silently strip them from the built bundle.
+
+services/worker/__pycache__/
+**/*.pyc

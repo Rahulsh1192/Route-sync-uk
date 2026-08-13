@@ -160,9 +160,26 @@ export type AppConfig = z.infer<typeof schema>;
  * also what the Python worker does, so the two services can't end up disagreeing about
  * which bucket they're using.
  *
- * `R2_ACCOUNT_ID` is expanded into R2's standard endpoint, which is the one value that
- * genuinely can't be derived the other way round.
+ * `R2_ACCOUNT_ID` is expanded into R2's endpoint, which is the one value that genuinely
+ * can't be derived the other way round. `R2_JURISDICTION` selects the data-residency
+ * variant of that hostname — see R2_JURISDICTION_INFIX.
  */
+
+/**
+ * R2 buckets created under a data-residency jurisdiction are reachable only on their own
+ * hostname. From the standard one they are invisible rather than forbidden: ListBuckets
+ * returns empty and each bucket 404s, while the credentials are still accepted — so the
+ * symptom points at a wrong bucket name or the wrong account, not a wrong endpoint.
+ *
+ * Unset or `default` keeps the plain hostname, so existing deployments are untouched.
+ */
+const R2_JURISDICTION_INFIX: Record<string, string> = {
+  '': '',
+  default: '',
+  eu: '.eu',
+  fedramp: '.fedramp',
+};
+
 function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
   const out = { ...env };
   const take = (key: string) => {
@@ -181,7 +198,16 @@ function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
   alias('R2_BUCKET', 'S3_BUCKET');
 
   if (accountId) {
-    out.S3_ENDPOINT = `https://${accountId}.r2.cloudflarestorage.com`;
+    const jurisdiction = (take('R2_JURISDICTION') ?? '').toLowerCase();
+    const infix = R2_JURISDICTION_INFIX[jurisdiction];
+    if (infix === undefined) {
+      throw new Error(
+        `R2_JURISDICTION="${jurisdiction}" is not one of ${Object.keys(R2_JURISDICTION_INFIX)
+          .filter(Boolean)
+          .join(', ')}`,
+      );
+    }
+    out.S3_ENDPOINT = `https://${accountId}${infix}.r2.cloudflarestorage.com`;
   }
 
   // Addressing style is deliberately NOT inferred from the endpoint. R2 accepts both

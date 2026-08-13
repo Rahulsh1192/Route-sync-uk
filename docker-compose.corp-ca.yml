@@ -1,0 +1,35 @@
+# ── Extra overlay: networks that inspect HTTPS traffic ────────────────────────
+# Only needed if you are behind a corporate proxy that decrypts and re-signs HTTPS
+# (Cisco Secure Access / Umbrella, Zscaler, Netskope, some antivirus). On such a
+# network the certificate the worker receives for Render or Cloudflare R2 is signed
+# by the company's own root certificate, not the real one. Windows trusts that root
+# so browsers are fine; the container ships only the ~150 public roots, so every
+# HTTPS call fails with "unable to get local issuer certificate".
+#
+# The fix is to hand the container the same root your machine already trusts. This is
+# not a bypass — certificates are still fully verified, against a bundle that includes
+# the company root. Nothing here disables verification.
+#
+# Build the bundle first (public roots + your corporate root), then add this file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.live-worker.yml \
+#     -f docker-compose.corp-ca.yml \
+#     --env-file services/worker/.env.live up -d --no-deps worker
+#
+# infra/local-ca/ is git-ignored: the bundle is specific to one company's network and
+# has no meaning in anyone else's checkout. That is also why this is a separate file
+# rather than part of docker-compose.live-worker.yml — on a normal network the mount
+# would refer to a path that does not exist.
+services:
+  worker:
+    volumes:
+      - ./infra/local-ca/ca-bundle.pem:/certs/ca-bundle.pem:ro
+    environment:
+      # Three names for the same bundle because the libraries disagree on which to read:
+      # SSL_CERT_FILE covers Python's ssl module and httpx, AWS_CA_BUNDLE is what boto3
+      # (R2 uploads) looks for, REQUESTS_CA_BUNDLE is the older convention some
+      # dependencies still honour. Setting all three avoids one library quietly falling
+      # back to its own bundled roots and failing alone.
+      SSL_CERT_FILE: /certs/ca-bundle.pem
+      AWS_CA_BUNDLE: /certs/ca-bundle.pem
+      REQUESTS_CA_BUNDLE: /certs/ca-bundle.pem

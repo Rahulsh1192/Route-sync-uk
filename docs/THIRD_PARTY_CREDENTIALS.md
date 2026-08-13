@@ -26,12 +26,19 @@
 |---|---|---|---|---|:--:|
 | **Postgres + PostGIS** (Supabase) | supabase.com | connection string → `DATABASE_URL` | API, Worker | Free tier → paid | ☐ |
 | **Redis** (Render Redis / Upstash) | render.com / upstash.com | URL → `REDIS_URL` | API (queue), Worker | Free tier → paid | ☐ |
-| **Object storage** (Cloudflare R2 *recommended*, or AWS S3) | cloudflare.com R2 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_FORCE_PATH_STYLE` | API, Worker | R2 has no egress fee | ☐ |
+| **Object storage** (Cloudflare R2 *recommended*, or AWS S3) | cloudflare.com R2 | `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY`, `R2_SECRET_KEY` (+ `R2_JURISDICTION`) — or the `S3_*` equivalents | API, Worker | R2 has no egress fee | ☐ |
 | **API hosting** (Render) | render.com | account + service; set `API_BASE_URL` | — | Free tier → paid | ☐ |
 | **Web hosting** (Vercel) | vercel.com | account + project | — | Free tier | ☐ |
 | **JWT secrets** *(self-generated, not a vendor)* | `openssl rand -base64 48` | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | API | free | ☐ |
 
 > R2 is recommended over S3 for **cost** (zero egress — you stream a lot of video).
+>
+> **`R2_JURISDICTION`**: set to `eu` if the bucket was created with EU data residency
+> (Cloudflare shows this as the bucket's **Location**), otherwise leave it unset. A
+> jurisdiction bucket lives on its own hostname and is *invisible* from the default
+> one — credentials are accepted but every bucket 404s and listing returns nothing, so
+> it reads as a wrong bucket name or the wrong account. Set it on **both** the API and
+> the worker; they derive the endpoint independently.
 
 ---
 
