@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 export function LoginPage() {
@@ -128,6 +128,17 @@ export function LoginPage() {
               {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
             </button>
           </form>
+
+          {/* Only on the sign-in tab: offering a password reset to someone who is part-way
+              through creating an account is noise, and the address they've typed doesn't
+              have an account yet by definition. */}
+          {!isRegister && (
+            <p style={{ textAlign: 'center', marginTop: 8 }}>
+              <Link className="muted" style={{ fontSize: 13 }} to="/forgot-password">
+                Forgotten your password?
+              </Link>
+            </p>
+          )}
 
           <button
             className="btn secondary"

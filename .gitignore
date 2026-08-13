@@ -4,6 +4,14 @@ dist/
 *.log
 .env
 .env.local
+# Worker env pointed at live infrastructure (the .env.live.example next to it is
+# the committed, value-free template).
+.env.live
+
+# Root certificates for a corporate HTTPS-inspecting proxy, generated per machine by
+# whoever needs docker-compose.corp-ca.yml. Not secret, but specific to one company's
+# network and meaningless (and misleading) in anyone else's checkout.
+infra/local-ca/
 
 # Local credentials store — real secrets by role/service. NEVER commit.
 # (The committed, value-free tracker is docs/THIRD_PARTY_CREDENTIALS.md.)

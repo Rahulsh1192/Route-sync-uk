@@ -138,6 +138,36 @@ const schema = z.object({
 
   SENTRY_DSN: z.string().optional(),
 
+  /**
+   * Phase 28 — transactional email (Resend).
+   *
+   * Optional, like Stripe and Sentry above: an API that refuses to boot because nobody
+   * has set up email yet is a worse failure than one that cannot send it. When these are
+   * unset, verification and reset requests still succeed and are logged — they just do
+   * not produce an email, and `MailService.isConfigured()` reports false.
+   *
+   * `MAIL_FROM` must be on a domain verified with the provider, in the form
+   * `Test Routify <noreply@send.example.uk>`. Sending from an unverified domain fails
+   * SPF and trains spam filters against the domain, which is hard to undo.
+   */
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
+
+  /**
+   * Public origin of the *web app*, used to build the links inside emails.
+   *
+   * Distinct from `API_BASE_URL`: a verification link is opened by a person in a browser
+   * and must land on a page, not a JSON endpoint. Normalised the same way — a bare
+   * hostname would produce links no mail client can resolve.
+   */
+  APP_BASE_URL: z
+    .string()
+    .default('http://localhost:5174')
+    .transform((v) => {
+      const trimmed = v.trim().replace(/\/+$/, '');
+      return /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }),
+
   /** Phase 24 — shared secret the media worker uses for /internal/* endpoints. */
   WORKER_SHARED_SECRET: z.string().optional(),
 });
@@ -160,9 +190,26 @@ export type AppConfig = z.infer<typeof schema>;
  * also what the Python worker does, so the two services can't end up disagreeing about
  * which bucket they're using.
  *
- * `R2_ACCOUNT_ID` is expanded into R2's standard endpoint, which is the one value that
- * genuinely can't be derived the other way round.
+ * `R2_ACCOUNT_ID` is expanded into R2's endpoint, which is the one value that genuinely
+ * can't be derived the other way round. `R2_JURISDICTION` selects the data-residency
+ * variant of that hostname — see R2_JURISDICTION_INFIX.
  */
+
+/**
+ * R2 buckets created under a data-residency jurisdiction are reachable only on their own
+ * hostname. From the standard one they are invisible rather than forbidden: ListBuckets
+ * returns empty and each bucket 404s, while the credentials are still accepted — so the
+ * symptom points at a wrong bucket name or the wrong account, not a wrong endpoint.
+ *
+ * Unset or `default` keeps the plain hostname, so existing deployments are untouched.
+ */
+const R2_JURISDICTION_INFIX: Record<string, string> = {
+  '': '',
+  default: '',
+  eu: '.eu',
+  fedramp: '.fedramp',
+};
+
 function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
   const out = { ...env };
   const take = (key: string) => {
@@ -181,7 +228,16 @@ function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
   alias('R2_BUCKET', 'S3_BUCKET');
 
   if (accountId) {
-    out.S3_ENDPOINT = `https://${accountId}.r2.cloudflarestorage.com`;
+    const jurisdiction = (take('R2_JURISDICTION') ?? '').toLowerCase();
+    const infix = R2_JURISDICTION_INFIX[jurisdiction];
+    if (infix === undefined) {
+      throw new Error(
+        `R2_JURISDICTION="${jurisdiction}" is not one of ${Object.keys(R2_JURISDICTION_INFIX)
+          .filter(Boolean)
+          .join(', ')}`,
+      );
+    }
+    out.S3_ENDPOINT = `https://${accountId}${infix}.r2.cloudflarestorage.com`;
   }
 
   // Addressing style is deliberately NOT inferred from the endpoint. R2 accepts both

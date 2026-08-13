@@ -56,6 +56,12 @@ services:
       # placeholders below and derive the endpoint, so you don't edit this file:
       #   R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET
       # Set the same four on the worker so both services use the same bucket.
+      #
+      # Add R2_JURISDICTION=eu as a fifth if the bucket was created with EU data
+      # residency (Cloudflare shows this as the bucket's Location). Such a bucket is
+      # unreachable from the default endpoint, and it fails as "bucket does not exist"
+      # while the credentials are still accepted — so the error points at the bucket
+      # name or the account rather than at the endpoint. Leave unset otherwise.
       - key: S3_ENDPOINT
         value: https://placeholder.r2.cloudflarestorage.com
       - key: S3_REGION

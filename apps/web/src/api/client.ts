@@ -201,6 +201,37 @@ export const api = {
       body: JSON.stringify({ email, password, displayName, ...(contact ?? {}) }),
     }),
 
+  /**
+   * Ask for a password-reset link (Phase 28).
+   *
+   * Always resolves, whether or not the address is registered — the API deliberately
+   * gives the same answer either way so this endpoint can't be used to find out who has
+   * an account. The UI must therefore never phrase the result as "we found you".
+   */
+  forgotPassword: (email: string) =>
+    request<{ ok: true }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  /** Redeem a reset link and set a new password. */
+  resetPassword: (token: string, password: string) =>
+    request<{ reset: true }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+
+  /** Redeem an email-verification link. */
+  verifyEmail: (token: string) =>
+    request<{ verified: true }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
+  /** Resend the verification email to the signed-in user's own address. */
+  resendVerification: () =>
+    request<{ ok: true }>('/auth/verify-email/resend', { method: 'POST' }),
+
   /** Update the signed-in user's own profile / contact details. */
   updateMe: (patch: ContactDetailsInput & { displayName?: string; avatarUrl?: string }) =>
     request<Me>('/users/me', { method: 'PATCH', body: JSON.stringify(patch) }),
