@@ -3,6 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { RouteDetailPage } from './pages/RouteDetailPage';
 import { AccountPage } from './pages/AccountPage';
@@ -67,6 +70,17 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={authed ? <Navigate to="/" replace /> : <LoginPage />} />
+
+      {/*
+        Phase 28 — the pages the emails link to. Public, and deliberately NOT redirected
+        away when already signed in: these links are opened from an inbox, often on a
+        different device, and bouncing a signed-in user to the landing page would silently
+        discard the token they came here to spend. `/verify-email` in particular is
+        meaningful *because* you may already be logged in.
+      */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       {/* role-based landing */}
       <Route path="/" element={<RoleLanding />} />

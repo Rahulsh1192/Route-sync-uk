@@ -53,3 +53,27 @@ export class OAuthDto {
   @IsString()
   displayName?: string;
 }
+
+/** Phase 28 — the address to send a reset link to. */
+export class ForgotPasswordDto {
+  @IsEmail()
+  email!: string;
+}
+
+/** Phase 28 — redeem a link. The token comes from the email, not from a session. */
+export class EmailTokenDto {
+  @IsString()
+  @MinLength(43) // 32 random bytes, base64url
+  token!: string;
+}
+
+export class ResetPasswordDto extends EmailTokenDto {
+  /**
+   * Same minimum as registration. Deliberately identical: a reset that accepted a weaker
+   * password than signup would make "forgot password" the cheapest way to downgrade an
+   * account's security.
+   */
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}

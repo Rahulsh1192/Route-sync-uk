@@ -37,7 +37,12 @@ WITH expected(phase, migration, kind, obj, detail) AS (
     ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'base_location'),
     ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'base_postcode'),
     ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_profiles',      'travel_radius_km'),
-    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_verifications', 'evidence_key')
+    ('27', 'db/migrate_phase_27.sql', 'column', 'instructor_verifications', 'evidence_key'),
+    -- Phase 28 — email verification + password reset
+    ('28', 'db/migrate_phase_28.sql', 'table',  'email_tokens',             NULL),
+    ('28', 'db/migrate_phase_28.sql', 'column', 'email_tokens',             'purpose'),
+    ('28', 'db/migrate_phase_28.sql', 'column', 'email_tokens',             'used_at'),
+    ('28', 'db/migrate_phase_28.sql', 'index',  'idx_email_tokens_user_purpose_live', NULL)
 )
 SELECT
   e.phase,

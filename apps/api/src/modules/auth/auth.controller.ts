@@ -1,7 +1,16 @@
-import { Body, Controller, Post, UseGuards, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, HttpCode, Ip } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshDto, OAuthDto } from './dto/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  RefreshDto,
+  OAuthDto,
+  ForgotPasswordDto,
+  EmailTokenDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -49,5 +58,53 @@ export class AuthController {
   @ApiBearerAuth()
   async logout(@CurrentUser() user: AuthUser, @Body() dto: RefreshDto) {
     await this.auth.logout(user.id, dto.refreshToken);
+  }
+
+  // --- Phase 28: email verification & password reset -------------------------
+
+  /**
+   * Resend the verification email to the signed-in user's own address.
+   *
+   * Authenticated on purpose. An unauthenticated "send verification to this address"
+   * endpoint would let anyone send mail from our domain to any address they chose.
+   */
+  @Post('verify-email/resend')
+  @HttpCode(202)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  async resendVerification(@CurrentUser() user: AuthUser, @Ip() ip: string) {
+    await this.auth.sendVerificationEmail(user.id, ip);
+    return { ok: true };
+  }
+
+  /** Redeem a verification link. Unauthenticated: the token *is* the proof. */
+  @Post('verify-email')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  verifyEmail(@Body() dto: EmailTokenDto) {
+    return this.auth.verifyEmail(dto.token);
+  }
+
+  /**
+   * Request a reset link.
+   *
+   * Always 202 with the same body, whether or not the address is registered — see
+   * `AuthService.requestPasswordReset`. Throttled hard: this is the one unauthenticated
+   * endpoint that causes email to be sent.
+   */
+  @Post('forgot-password')
+  @HttpCode(202)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  forgotPassword(@Body() dto: ForgotPasswordDto, @Ip() ip: string) {
+    return this.auth.requestPasswordReset(dto.email, ip);
+  }
+
+  /** Redeem a reset link and set the new password. */
+  @Post('reset-password')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.password);
   }
 }

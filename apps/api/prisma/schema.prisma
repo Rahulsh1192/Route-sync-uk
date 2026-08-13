@@ -39,6 +39,14 @@ enum AuthProvider {
   @@map("auth_provider")
 }
 
+// Phase 28 (db/migrate_phase_28.sql): what an out-of-band email link is for.
+enum EmailTokenPurpose {
+  verify_email
+  password_reset
+
+  @@map("email_token_purpose")
+}
+
 enum SubscriptionPlan {
   free
   premium_monthly
@@ -122,6 +130,7 @@ model User {
 
   identities     AuthIdentity[]
   refreshTokens  RefreshToken[]
+  emailTokens    EmailToken[]
   subscriptions  Subscription[]
   routes         Route[]
   uploads        Upload[]
@@ -180,6 +189,27 @@ model RefreshToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+// Phase 28: single-use, expiring links for email verification and password reset.
+// Only the SHA-256 of the token is stored, as with RefreshToken.tokenHash.
+model EmailToken {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  purpose     EmailTokenPurpose
+  tokenHash   String            @unique @map("token_hash")
+  // The address the link was sent to, as it was at the time — a reset stays bound to the
+  // inbox that received it even if the account's email changes before the link is used.
+  sentTo      String            @map("sent_to")
+  expiresAt   DateTime          @map("expires_at") @db.Timestamptz
+  usedAt      DateTime?         @map("used_at") @db.Timestamptz
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  requestedIp String?           @map("requested_ip") @db.Inet
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([createdAt])
+  @@map("email_tokens")
 }
 
 model Subscription {

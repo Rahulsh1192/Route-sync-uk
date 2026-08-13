@@ -11,7 +11,25 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { normalisePhone } from '../../common/validation/phone';
-import { AuthProvider } from '@prisma/client';
+import { AuthProvider, EmailTokenPurpose } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
+import { verifyEmailTemplate, passwordResetTemplate } from '../mail/mail.templates';
+import {
+  createEmailToken,
+  hashEmailToken,
+  tokenState,
+  VERIFY_TOKEN_TTL_MS,
+  RESET_TOKEN_TTL_MS,
+} from './email-tokens';
+
+/**
+ * Per-account cap on verification / reset emails: 5 in a rolling hour.
+ *
+ * Generous enough that a user who mistypes an address, waits, and tries again is never
+ * blocked; tight enough that the endpoint is useless as an inbox flooder.
+ */
+const EMAIL_RATE_MAX = 5;
+const EMAIL_RATE_WINDOW_MS = 60 * 60 * 1000;
 
 export interface TokenPair {
   accessToken: string;
@@ -45,6 +63,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private mail: MailService,
   ) {
     const googleClientId = this.config.get<string>('GOOGLE_CLIENT_ID');
     if (googleClientId) this.google = new OAuth2Client(googleClientId);
@@ -74,6 +93,12 @@ export class AuthService {
     // generated Prisma client. Passing them to `user.create` would throw
     // "Unknown argument" — Prisma validates against its own schema, not the database.
     await this.writeContactDetails(user.id, contact);
+
+    // Awaited rather than left floating: `MailService.send` resolves on every failure
+    // path instead of throwing, so this can only add the provider's latency, never turn
+    // a successful signup into an error. In exchange, a delivery failure is logged
+    // against the request that caused it rather than surfacing detached from it.
+    await this.sendVerificationEmail(user.id);
 
     return this.issueTokens(user.id, user.role, user.email ?? undefined);
   }
@@ -330,6 +355,203 @@ export class AuthService {
       where: { userId, tokenHash: hash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 28 — email verification and password reset
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Issue a verification link and email it.
+   *
+   * Returns quietly when the account has no address or is already verified, so callers
+   * (registration, and the "resend" endpoint) don't need to special-case either.
+   */
+  async sendVerificationEmail(userId: string, ip?: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.email || user.emailVerified) return;
+    if (await this.tooManyRecentTokens(userId, EmailTokenPurpose.verify_email)) return;
+
+    const url = await this.issueEmailToken(
+      user.id,
+      user.email,
+      EmailTokenPurpose.verify_email,
+      VERIFY_TOKEN_TTL_MS,
+      'verify-email',
+      ip,
+    );
+    const body = verifyEmailTemplate({ displayName: user.displayName, url });
+    await this.mail.send({ to: user.email, ...body });
+  }
+
+  /**
+   * Redeem a verification link.
+   *
+   * Marks the address verified, which is what lets a later Google or Apple sign-in with
+   * the same address link to this account instead of silently creating a second one.
+   */
+  async verifyEmail(token: string): Promise<{ verified: true }> {
+    const record = await this.redeemEmailToken(token, EmailTokenPurpose.verify_email);
+    await this.prisma.user.update({
+      where: { id: record.userId },
+      data: { emailVerified: true },
+    });
+    this.logger.log(`Email verified for user ${record.userId}`);
+    return { verified: true };
+  }
+
+  /**
+   * Begin a password reset.
+   *
+   * **Always reports success**, whether or not the address belongs to an account. The
+   * response to an unknown address must be indistinguishable from the response to a known
+   * one, or this endpoint becomes a way to test whether somebody has an account here —
+   * which is worth money to a credential-stuffer and is a privacy leak in its own right
+   * (it discloses that a named person uses a driving-instruction service).
+   *
+   * For the same reason it is silent about a suspended account, an OAuth-only account
+   * with no password, and about rate limiting.
+   */
+  async requestPasswordReset(email: string, ip?: string): Promise<{ ok: true }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (user?.email && !user.isSuspended && !user.deletedAt) {
+      if (!(await this.tooManyRecentTokens(user.id, EmailTokenPurpose.password_reset))) {
+        const url = await this.issueEmailToken(
+          user.id,
+          user.email,
+          EmailTokenPurpose.password_reset,
+          RESET_TOKEN_TTL_MS,
+          'reset-password',
+          ip,
+        );
+        const body = passwordResetTemplate({ displayName: user.displayName, url });
+        await this.mail.send({ to: user.email, ...body });
+      }
+    } else {
+      // Logged, not returned. Someone has to be able to answer "why did no email arrive",
+      // and the log is the only place that can say so without telling the requester.
+      this.logger.log(`Password reset requested for unknown or ineligible address`);
+    }
+
+    return { ok: true };
+  }
+
+  /**
+   * Complete a password reset.
+   *
+   * Every other session is revoked as part of this. A reset is what someone does when
+   * they believe their account is compromised, so leaving an attacker's refresh token
+   * alive would defeat the entire exercise.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ reset: true }> {
+    const record = await this.redeemEmailToken(token, EmailTokenPurpose.password_reset);
+
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: record.userId } });
+    // The link is bound to the address it was sent to. If the account's email changed
+    // between request and click, the old inbox must not still be able to take the account.
+    if (user.email !== record.sentTo) {
+      throw new UnauthorizedException('This link is no longer valid for this account');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await bcrypt.hash(newPassword, 12),
+        // Completing a reset proves control of the inbox — the same thing verification
+        // proves — so an unverified account becomes verified here rather than needing a
+        // second round trip.
+        emailVerified: true,
+      },
+    });
+
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    this.logger.log(`Password reset completed for user ${user.id}; all sessions revoked`);
+    return { reset: true };
+  }
+
+  /** Create a token row and return the link to put in the email. */
+  private async issueEmailToken(
+    userId: string,
+    sentTo: string,
+    purpose: EmailTokenPurpose,
+    ttlMs: number,
+    path: string,
+    ip?: string,
+  ): Promise<string> {
+    const { token, tokenHash } = createEmailToken();
+    await this.prisma.emailToken.create({
+      data: {
+        userId,
+        purpose,
+        tokenHash,
+        sentTo,
+        expiresAt: new Date(Date.now() + ttlMs),
+        requestedIp: ip ?? null,
+      },
+    });
+
+    const base = this.config.get<string>('APP_BASE_URL');
+    return `${base}/${path}?token=${encodeURIComponent(token)}`;
+  }
+
+  /**
+   * Look a token up by hash, check it, and spend it.
+   *
+   * Redeeming also spends every other live token of the same purpose for that user, so an
+   * older link still sitting in the inbox stops working the moment a newer one is used.
+   */
+  private async redeemEmailToken(
+    token: string,
+    purpose: EmailTokenPurpose,
+  ): Promise<{ userId: string; sentTo: string }> {
+    const record = await this.prisma.emailToken.findUnique({
+      where: { tokenHash: hashEmailToken(token) },
+    });
+
+    // A token for the wrong purpose is treated as no token at all: a verification link
+    // must never be redeemable as a password reset.
+    if (!record || record.purpose !== purpose) {
+      throw new UnauthorizedException('This link is invalid or has expired');
+    }
+
+    const state = tokenState(record);
+    if (state !== 'valid') {
+      this.logger.warn(`Rejected ${purpose} token for user ${record.userId}: ${state}`);
+      throw new UnauthorizedException('This link is invalid or has expired');
+    }
+
+    const now = new Date();
+    await this.prisma.emailToken.updateMany({
+      where: { userId: record.userId, purpose, usedAt: null },
+      data: { usedAt: now },
+    });
+
+    return { userId: record.userId, sentTo: record.sentTo };
+  }
+
+  /**
+   * Cap how often one account can trigger an email.
+   *
+   * Without this, an endpoint that takes an address and sends mail is a free way to
+   * flood somebody's inbox from our domain — which costs us the sending reputation, not
+   * just the quota. The throttler guard limits per IP; this limits per account, which is
+   * the thing an attacker rotating IPs is actually targeting.
+   */
+  private async tooManyRecentTokens(userId: string, purpose: EmailTokenPurpose): Promise<boolean> {
+    const since = new Date(Date.now() - EMAIL_RATE_WINDOW_MS);
+    const recent = await this.prisma.emailToken.count({
+      where: { userId, purpose, createdAt: { gte: since } },
+    });
+    if (recent >= EMAIL_RATE_MAX) {
+      this.logger.warn(`Rate-limited ${purpose} for user ${userId}: ${recent} in the last hour`);
+      return true;
+    }
+    return false;
   }
 
   private async issueTokens(userId: string, role: string, email?: string): Promise<TokenPair> {

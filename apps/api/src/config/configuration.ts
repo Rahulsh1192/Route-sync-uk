@@ -138,6 +138,36 @@ const schema = z.object({
 
   SENTRY_DSN: z.string().optional(),
 
+  /**
+   * Phase 28 — transactional email (Resend).
+   *
+   * Optional, like Stripe and Sentry above: an API that refuses to boot because nobody
+   * has set up email yet is a worse failure than one that cannot send it. When these are
+   * unset, verification and reset requests still succeed and are logged — they just do
+   * not produce an email, and `MailService.isConfigured()` reports false.
+   *
+   * `MAIL_FROM` must be on a domain verified with the provider, in the form
+   * `Test Routify <noreply@send.example.uk>`. Sending from an unverified domain fails
+   * SPF and trains spam filters against the domain, which is hard to undo.
+   */
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
+
+  /**
+   * Public origin of the *web app*, used to build the links inside emails.
+   *
+   * Distinct from `API_BASE_URL`: a verification link is opened by a person in a browser
+   * and must land on a page, not a JSON endpoint. Normalised the same way — a bare
+   * hostname would produce links no mail client can resolve.
+   */
+  APP_BASE_URL: z
+    .string()
+    .default('http://localhost:5174')
+    .transform((v) => {
+      const trimmed = v.trim().replace(/\/+$/, '');
+      return /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }),
+
   /** Phase 24 — shared secret the media worker uses for /internal/* endpoints. */
   WORKER_SHARED_SECRET: z.string().optional(),
 });
