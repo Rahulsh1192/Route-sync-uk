@@ -1,0 +1,43 @@
+header
+
+Request URL
+https://3638b0f607a94b9b0e0a8e56e111fbcf.r2.cloudflarestorage.com/testroutify/instructor-evidence/36a96911-6d3a-4da8-94c8-e953f50863ca/f2fb98a2-620c-4975-af27-d3cef5425477.jpg?X-Amz-Algorithm=AWS4-[...]
+Referrer Policy
+strict-origin-when-cross-origin
+content-type
+image/jpeg
+referer
+https://www.testroutify.com/
+sec-ch-ua
+"Not=A?Brand";v="99", "Microsoft Edge";v="151", "Chromium";v="151"
+sec-ch-ua-mobile
+?1
+sec-ch-ua-platform
+"Android"
+user-agent
+Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Edg/151.0.0.0 Mobile Safari/537.36
+
+payload 
+
+
+X-Amz-Algorithm
+AWS4-HMAC-SHA256
+X-Amz-Content-Sha256
+UNSIGNED-PAYLOAD
+X-Amz-Credential
+a2eabbb5b2095aeb3719be48ed442028%2F20260812%2Fauto%2Fs3%2Faws4_request
+X-Amz-Date
+20260812T071202Z
+X-Amz-Expires
+900
+X-Amz-Signature
+894ab4e4c0592a11d5b7ae633d5e3fced0460f0cdd8e4530fc31fd1b600e247b
+X-Amz-SignedHeaders
+host
+x-amz-checksum-crc32
+AAAAAA%3D%3D
+x-amz-sdk-checksum-algorithm
+CRC32
+x-id
+PutObject
+
