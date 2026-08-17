@@ -92,6 +92,15 @@ export class StorageService {
         accessKeyId: this.config.get<string>('S3_ACCESS_KEY')!,
         secretAccessKey: this.config.get<string>('S3_SECRET_KEY')!,
       },
+      // From v3.729 the SDK checksums every request body by default. That is wrong for
+      // presigning: there is no body when the URL is signed, so what lands in the signed
+      // query is `x-amz-checksum-crc32=AAAAAA==` — the CRC32 of nothing. The browser then
+      // PUTs real bytes against a URL that promised an empty body and R2 rejects it, with
+      // no CORS headers on the rejection, so the page can only report a network error.
+      // `WHEN_REQUIRED` keeps checksums for the operations that genuinely need them
+      // (multipart completion) and leaves presigned URLs clean. See storage.presign.spec.ts.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
 
