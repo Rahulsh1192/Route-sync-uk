@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 
 /**
@@ -17,6 +17,7 @@ type State = 'working' | 'done' | 'failed';
 
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
+  const nav = useNavigate();
   const token = params.get('token');
   const [state, setState] = useState<State>('working');
   const [message, setMessage] = useState('');
@@ -45,6 +46,19 @@ export function VerifyEmailPage() {
       });
   }, [token]);
 
+  /**
+   * Send the user on to sign in once the address is confirmed.
+   *
+   * Delayed rather than immediate so the confirmation is actually readable, and `replace` so
+   * the Back button doesn't return to a page whose single-use token has already been spent.
+   * The button below does the same thing for anyone who would rather not wait.
+   */
+  useEffect(() => {
+    if (state !== 'done') return;
+    const timer = setTimeout(() => nav('/login?verified=1', { replace: true }), 3000);
+    return () => clearTimeout(timer);
+  }, [state, nav]);
+
   return (
     <main className="center">
       <div className="card" style={{ maxWidth: 420, width: '100%' }}>
@@ -59,9 +73,10 @@ export function VerifyEmailPage() {
           <>
             <h1>Email confirmed</h1>
             <p className="muted">
-              Thanks — your address is verified. You can sign in as normal.
+              Thanks — your address is verified. Sign in to continue; we&apos;ll take you there
+              in a moment.
             </p>
-            <Link className="btn" to="/login">
+            <Link className="btn" to="/login?verified=1">
               Continue to sign in
             </Link>
           </>
@@ -72,11 +87,12 @@ export function VerifyEmailPage() {
             <h1>That link didn’t work</h1>
             <p className="muted">{message}</p>
             {/* Verification links are single-use and expire after 24 hours, and a mail
-                scanner following the link first is a common cause. Signing in and asking
-                for a fresh one is the only route forward, so say so plainly. */}
+                scanner following the link first is a common cause. An unconfirmed account
+                cannot sign in, so the account page is out of reach: the way to a fresh link
+                is to start signing up again with the same details. */}
             <p className="muted">
-              Links expire after 24 hours and can only be used once. Sign in and request a
-              new one from your account page.
+              Links expire after 24 hours and can only be used once. Start creating your
+              account again with the same email and password to get a fresh one.
             </p>
             <Link className="btn" to="/login">
               Go to sign in
