@@ -12,10 +12,19 @@ class AuthRepository {
     await _tokens.save(res['accessToken'], res['refreshToken']);
   }
 
-  Future<void> register(String email, String password, String displayName) async {
-    final res = await _api.post('/auth/register',
-        body: {'email': email, 'password': password, 'displayName': displayName});
-    await _tokens.save(res['accessToken'], res['refreshToken']);
+  /// Create an account, or ask for another verification link for one that exists.
+  ///
+  /// Saves no tokens: the API issues none until the address is confirmed, and signing in is
+  /// gated on that. Returns the masked address the link was sent to, for display.
+  /// [displayName] is omitted when resending from the sign-in screen, which has no name field.
+  /// The API requires it only to create an account.
+  Future<String> register(String email, String password, String? displayName) async {
+    final res = await _api.post('/auth/register', body: {
+      'email': email,
+      'password': password,
+      if (displayName != null && displayName.isNotEmpty) 'displayName': displayName,
+    });
+    return (res['email'] as String?) ?? email;
   }
 
   Future<void> loginWithGoogle(String idToken, {String? displayName}) async {

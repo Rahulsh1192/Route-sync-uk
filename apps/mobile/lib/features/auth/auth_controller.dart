@@ -25,6 +25,14 @@ class AuthController extends ChangeNotifier {
   String? error;
   bool busy = false;
 
+  /// Masked address a verification link was just sent to. Non-null means the UI shows the
+  /// check-your-inbox panel: signing up no longer produces a session.
+  String? pendingVerificationEmail;
+
+  /// True when the last sign-in failed *only* because the address is unconfirmed, which needs
+  /// a resend affordance rather than the generic error treatment.
+  bool emailNotVerified = false;
+
   Future<void> _bootstrap() async {
     status = (await _tokens.hasSession)
         ? AuthStatus.authenticated
@@ -50,6 +58,8 @@ class AuthController extends ChangeNotifier {
       return true;
     } catch (e) {
       error = e.toString();
+      // Distinguished so the screen can offer another link instead of just showing the text.
+      if (e is ApiException && e.code == 'email_not_verified') emailNotVerified = true;
       return false;
     } finally {
       busy = false;
@@ -57,11 +67,35 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String email, String password) =>
-      _run(() => _auth.login(email, password));
+  Future<bool> login(String email, String password) {
+    emailNotVerified = false;
+    return _run(() => _auth.login(email, password));
+  }
 
-  Future<bool> register(String email, String password, String name) =>
-      _run(() => _auth.register(email, password, name));
+  /// Create an account, or resend its link. Does NOT sign in — the API withholds tokens until
+  /// the address is confirmed, so this ends on [pendingVerificationEmail] rather than
+  /// `AuthStatus.authenticated`, which is why it doesn't go through [_run].
+  Future<bool> register(String email, String password, String? name) async {
+    busy = true;
+    error = null;
+    emailNotVerified = false;
+    notifyListeners();
+    try {
+      pendingVerificationEmail = await _auth.register(email, password, name);
+      return true;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  void clearPendingVerification() {
+    pendingVerificationEmail = null;
+    notifyListeners();
+  }
 
   /// Native Google sign-in → exchange the Google ID token for our own JWTs.
   /// Returns false (silently) if the user cancels the Google chooser.
