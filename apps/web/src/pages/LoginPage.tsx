@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { PasswordField } from '../components/PasswordField';
 
 export function LoginPage() {
   const { login, register, sessionInvalidated } = useAuth();
@@ -87,11 +88,14 @@ export function LoginPage() {
             )}
             <label>Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <label>Password</label>
-            <input
-              type="password"
+            <label htmlFor="password">Password</label>
+            {/* `new-password` while registering so a password manager offers to generate
+                one; `current-password` on sign-in so it autofills the existing one. */}
+            <PasswordField
+              id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
               required
             />
             {isRegister && (

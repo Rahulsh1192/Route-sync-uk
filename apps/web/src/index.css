@@ -568,6 +568,25 @@ input, select {
 }
 label { font-size: 13px; color: var(--muted); }
 
+/* Password input with a show/hide toggle (components/PasswordField.tsx). */
+.password-field { position: relative; }
+/* Room for the button, so a long password never runs underneath it.
+   `display: block` removes the inline baseline gap an <input> otherwise leaves under
+   itself, which would push the wrapper a few pixels taller than the field and sit the
+   toggle slightly low. */
+.password-field input { padding-right: 46px; display: block; }
+.password-toggle {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0;
+  background: none; border: none; border-radius: 8px;
+  color: var(--muted); cursor: pointer;
+}
+.password-toggle:hover { color: var(--text); background: var(--surface-2); }
+/* focus-visible, not focus: a mouse click shouldn't leave a ring behind, but a keyboard
+   user must be able to see where they are. */
+.password-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .error { color: var(--red); font-size: 14px; margin: 8px 0; }
 .center { display: flex; align-items: center; justify-content: center; min-height: 50vh; }
 .empty { text-align: center; color: var(--muted); padding: 48px 16px; }
