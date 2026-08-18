@@ -35,6 +35,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status,
       title: typeof payload === 'string' ? payload : (payload as any).message ?? 'Error',
       detail: typeof payload === 'object' ? (payload as any).message : undefined,
+      // A stable identifier for the *reason*, for the cases where a client has to branch on
+      // it — an unverified email at sign-in needs a different screen from bad credentials,
+      // and matching on prose would break the first time the wording changed. Absent unless
+      // a thrower opts in, so no existing response changes shape.
+      code: typeof payload === 'object' ? (payload as any).code : undefined,
       instance: req.url,
       timestamp: new Date().toISOString(),
     });

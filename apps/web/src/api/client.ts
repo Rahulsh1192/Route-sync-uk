@@ -112,7 +112,15 @@ export const tokens = {
 };
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+    /**
+     * Stable reason identifier from the API, when it sends one (e.g. `email_not_verified`).
+     * Branch on this rather than on `message`, which is copy and will change.
+     */
+    public code?: string,
+  ) {
     super(message);
   }
 }
@@ -172,7 +180,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.title || body.detail || `HTTP ${res.status}`);
+    throw new ApiError(res.status, body.title || body.detail || `HTTP ${res.status}`, body.code);
   }
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }

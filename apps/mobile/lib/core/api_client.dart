@@ -3,11 +3,14 @@ import 'package:dio/dio.dart';
 import 'env.dart';
 import 'token_store.dart';
 
-/// Thrown for non-2xx API responses, carrying the server's problem+json title.
+/// Thrown for non-2xx API responses, carrying the server's problem+json title and, when the
+/// server sends one, its stable `code` (e.g. `email_not_verified`). Branch on [code] rather
+/// than on [message], which is copy and will change.
 class ApiException implements Exception {
-  ApiException(this.statusCode, this.message);
+  ApiException(this.statusCode, this.message, {this.code});
   final int? statusCode;
   final String message;
+  final String? code;
   @override
   String toString() => message;
 }
@@ -108,7 +111,11 @@ class ApiClient {
       final msg = (data is Map && data['title'] != null)
           ? data['title'] as String
           : e.message ?? 'Network error';
-      throw ApiException(e.response?.statusCode, msg);
+      throw ApiException(
+        e.response?.statusCode,
+        msg,
+        code: data is Map ? data['code'] as String? : null,
+      );
     }
   }
 }
