@@ -2,6 +2,10 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +25,7 @@ import {
   VERIFY_TOKEN_TTL_MS,
   RESET_TOKEN_TTL_MS,
 } from './email-tokens';
+import { maskEmail } from './mask-email';
 
 /**
  * Per-account cap on verification / reset emails: 5 in a rolling hour.
@@ -35,6 +40,26 @@ export interface TokenPair {
   accessToken: string;
   refreshToken: string;
 }
+
+/**
+ * Phase 29 — what a signup returns now: proof that we sent something, not a session.
+ *
+ * No tokens, by design. An account that has not confirmed its address must not hold one, or
+ * the gate in `login` would be bypassed simply by registering.
+ */
+export interface RegistrationResult {
+  status: 'verification_sent';
+  /** Masked, for showing back to the user: `l•••••r@gmail.com`. */
+  email: string;
+}
+
+/**
+ * Phase 29 — reason code on the 403 from `login` for an unconfirmed address.
+ *
+ * Exported so the value is written once on this side of the wire. The clients repeat the
+ * literal because they cannot import from here.
+ */
+export const EMAIL_NOT_VERIFIED = 'email_not_verified';
 
 /** Phase 26 — optional contact details collected at sign-up. */
 export interface ContactDetails {
@@ -69,21 +94,36 @@ export class AuthService {
     if (googleClientId) this.google = new OAuth2Client(googleClientId);
   }
 
+  /**
+   * Create an account and email a verification link — or, for an address that already has an
+   * unverified account and whose password matches, send another link.
+   *
+   * Returns no tokens. Confirming the address is a precondition of signing in (see `login`),
+   * and handing out a session here would be a way around that.
+   */
   async register(
     email: string,
     password: string,
-    displayName: string,
+    displayName?: string,
     contact?: ContactDetails,
-  ): Promise<TokenPair> {
+  ): Promise<RegistrationResult> {
     const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing) throw new ConflictException('Email already registered');
+    if (existing) return this.resendVerificationForSignup(existing, password);
+
+    // Required to create an account, but not to ask for another link: the resend path is
+    // reached by re-posting this form, and the sign-in screen has no display-name field to
+    // fill it from. Enforced here rather than in the DTO because only this layer knows which
+    // of the two cases it is in.
+    if (!displayName || displayName.trim().length < 2) {
+      throw new BadRequestException('A display name of at least 2 characters is required');
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await this.prisma.user.create({
       data: {
         email,
         passwordHash,
-        displayName,
+        displayName: displayName.trim(),
         identities: { create: { provider: AuthProvider.email, providerUid: email } },
         subscriptions: { create: {} }, // free plan by default
       },
@@ -100,7 +140,52 @@ export class AuthService {
     // against the request that caused it rather than surfacing detached from it.
     await this.sendVerificationEmail(user.id);
 
-    return this.issueTokens(user.id, user.role, user.email ?? undefined);
+    return { status: 'verification_sent', email: maskEmail(email) };
+  }
+
+  /**
+   * A signup attempt for an address that already has an account.
+   *
+   * Re-submitting the form is how a user asks for another link: at this point in the flow
+   * there is no session to authorise a "resend" endpoint with. Sending only when the password
+   * is correct is what stops that from becoming a way to make us mail an arbitrary address —
+   * whoever supplies the right password could sign in anyway, once verified.
+   *
+   * Every refusal is the same `409`, deliberately. A distinct answer for "already verified",
+   * "suspended" or "wrong password" would let someone probe the state of an account they do
+   * not control.
+   */
+  private async resendVerificationForSignup(
+    existing: {
+      id: string;
+      email: string | null;
+      passwordHash: string | null;
+      emailVerified: boolean;
+      isSuspended: boolean;
+      deletedAt: Date | null;
+    },
+    password: string,
+  ): Promise<RegistrationResult> {
+    const conflict = () => new ConflictException('Email already registered');
+
+    if (!existing.email || existing.emailVerified) throw conflict();
+    // OAuth-only account: there is no password to compare against, so this path cannot open.
+    if (!existing.passwordHash) throw conflict();
+    if (existing.isSuspended || existing.deletedAt) throw conflict();
+    if (!(await bcrypt.compare(password, existing.passwordHash))) throw conflict();
+
+    // Checked here rather than letting `sendVerificationEmail` swallow it: the caller has
+    // proved they hold the password, so "wait an hour" is honest and actionable, whereas a
+    // silent success reads as "sent" and turns into a support request.
+    if (await this.tooManyRecentTokens(existing.id, EmailTokenPurpose.verify_email)) {
+      throw new HttpException(
+        'Too many verification emails requested. Try again in an hour.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    await this.sendVerificationEmail(existing.id);
+    return { status: 'verification_sent', email: maskEmail(existing.email) };
   }
 
   /**
@@ -132,6 +217,16 @@ export class AuthService {
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
+
+    // Phase 29. Checked after the password, never before: a 403 here is an admission that the
+    // address is registered, so it must only be reachable by someone who has already proved
+    // they hold the credentials. Otherwise this endpoint becomes an account-enumeration oracle.
+    if (!user.emailVerified) {
+      throw new ForbiddenException({
+        message: 'Confirm your email address to sign in. Check your inbox for the link.',
+        code: EMAIL_NOT_VERIFIED,
+      });
+    }
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     await this.enforceSingleSessionIfInstructor(user.id, user.role);

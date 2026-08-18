@@ -256,7 +256,17 @@ describeDb('email verification & password reset', () => {
     it('revokes every existing session', async () => {
       // The reason someone resets a password is that they think somebody else has it.
       // Leaving that person's refresh token alive would defeat the whole exercise.
-      const token = await requestReset();
+      //
+      // The session is established explicitly: since Phase 29 signing up issues no tokens,
+      // and signing in requires a confirmed address — which is also the only state a real
+      // account with a live session can be in.
+      await register();
+      await auth.verifyEmail(mail.lastToken());
+      await auth.login('learner@phase28.test', 'Password123!');
+      mail.reset();
+      await auth.requestPasswordReset('learner@phase28.test');
+      const token = mail.lastToken();
+
       const user = await prisma.user.findUniqueOrThrow({ where: { email: 'learner@phase28.test' } });
       const liveBefore = await prisma.refreshToken.count({
         where: { userId: user.id, revokedAt: null },
@@ -316,6 +326,122 @@ describeDb('email verification & password reset', () => {
       const resetToken = mail.lastToken();
 
       await expect(auth.verifyEmail(resetToken)).rejects.toThrow(/invalid or has expired/i);
+    });
+  });
+
+  // Phase 29 — signing up sends a link instead of a session, and re-submitting the form is
+  // how a user with no session asks for another one.
+  describe('registering', () => {
+    it('returns the masked address and no tokens', async () => {
+      const result = await auth.register('learner@phase28.test', 'Password123!', 'Sam Learner');
+
+      // "learner" is 7 characters: first + 5 bullets + last.
+      expect(result).toEqual({ status: 'verification_sent', email: 'l•••••r@phase28.test' });
+      expect((result as unknown as { accessToken?: string }).accessToken).toBeUndefined();
+    });
+
+    it('requires a display name to create a new account', async () => {
+      await expect(
+        auth.register('nameless@phase28.test', 'Password123!', undefined),
+      ).rejects.toThrow(/display name/i);
+    });
+  });
+
+  describe('registering when the address is already taken', () => {
+    const conflict = 'Email already registered';
+
+    it('resends the link when the password is correct and the account is unverified', async () => {
+      const user = await register();
+      mail.reset();
+
+      const result = await auth.register('learner@phase28.test', 'Password123!', 'Sam Learner');
+
+      expect(result.status).toBe('verification_sent');
+      expect(mail.sent).toHaveLength(1);
+      // The original plus the resent one.
+      expect(await prisma.emailToken.count({ where: { userId: user.id } })).toBe(2);
+    });
+
+    it('ignores profile fields on the resend path', async () => {
+      const user = await register();
+      await auth.register('learner@phase28.test', 'Password123!', 'Someone Else');
+
+      const after = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+      expect(after.displayName).toBe('Sam Learner');
+    });
+
+    it('refuses, and sends nothing, when the password is wrong', async () => {
+      await register();
+      mail.reset();
+
+      await expect(
+        auth.register('learner@phase28.test', 'WrongPassword1!', 'Sam Learner'),
+      ).rejects.toThrow(conflict);
+      expect(mail.sent).toHaveLength(0);
+    });
+
+    it('refuses once the account is already verified', async () => {
+      const user = await register();
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+
+      await expect(
+        auth.register('learner@phase28.test', 'Password123!', 'Sam Learner'),
+      ).rejects.toThrow(conflict);
+    });
+
+    it('refuses a suspended account without disclosing that it is suspended', async () => {
+      const user = await register();
+      await prisma.user.update({ where: { id: user.id }, data: { isSuspended: true } });
+      mail.reset();
+
+      await expect(
+        auth.register('learner@phase28.test', 'Password123!', 'Sam Learner'),
+      ).rejects.toThrow(conflict);
+      expect(mail.sent).toHaveLength(0);
+    });
+
+    it('rejects a resend past the hourly cap with a 429 rather than a silent success', async () => {
+      const user = await register();
+      // Four more, taking the hour's total to the cap of five.
+      for (let i = 0; i < 4; i += 1) {
+        await auth.register('learner@phase28.test', 'Password123!', 'Sam Learner');
+      }
+      expect(await prisma.emailToken.count({ where: { userId: user.id } })).toBe(5);
+
+      await expect(
+        auth.register('learner@phase28.test', 'Password123!', 'Sam Learner'),
+      ).rejects.toThrow(/too many/i);
+    });
+  });
+
+  describe('signing in before the address is confirmed', () => {
+    it('refuses with a 403 and a machine-readable code', async () => {
+      await register();
+
+      await expect(auth.login('learner@phase28.test', 'Password123!')).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'email_not_verified' },
+      });
+    });
+
+    it('answers a wrong password with 401, not 403', async () => {
+      // Ordering matters: reporting "not verified" before checking the password would let
+      // anyone discover which addresses are registered but unconfirmed.
+      await register();
+
+      await expect(auth.login('learner@phase28.test', 'WrongPassword1!')).rejects.toMatchObject({
+        status: 401,
+      });
+    });
+
+    it('lets the user in once the link has been followed', async () => {
+      await register();
+      await auth.verifyEmail(mail.lastToken());
+
+      const issued = await auth.login('learner@phase28.test', 'Password123!');
+
+      expect(issued.accessToken).toBeTruthy();
+      expect(issued.refreshToken).toBeTruthy();
     });
   });
 });

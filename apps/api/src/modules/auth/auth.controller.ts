@@ -19,7 +19,18 @@ import { CurrentUser, AuthUser } from '../../common/decorators/current-user.deco
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  /**
+   * Create an account and email a verification link — or, for an existing unverified account
+   * whose password matches, send another link. No tokens either way: signing in is gated on
+   * confirming the address.
+   *
+   * 202 rather than 201 because the outcome that matters to the caller is "we have sent you
+   * something", and on the resend path nothing is created. Throttled because it now sends
+   * mail on a path that can be repeated with the same input.
+   */
   @Post('register')
+  @HttpCode(202)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto.email, dto.password, dto.displayName, {
       phone: dto.phone,

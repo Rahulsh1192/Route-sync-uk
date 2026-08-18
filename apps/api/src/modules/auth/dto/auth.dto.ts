@@ -9,9 +9,16 @@ export class RegisterDto {
   @MinLength(8)
   password!: string;
 
+  /**
+   * Required to create an account; absent when this form is re-posted to ask for another
+   * verification link, which the sign-in screen does and which has no name field to fill.
+   * The length rule for the create case lives in `AuthService.register`, where the two cases
+   * are distinguishable.
+   */
+  @IsOptional()
   @IsString()
   @MinLength(2)
-  displayName!: string;
+  displayName?: string;
 
   /**
    * Contact number. Optional, so an account can still be created without one and so
