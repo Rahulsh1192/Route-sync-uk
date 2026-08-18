@@ -167,7 +167,8 @@ export class AdminService {
     const digits = term ? term.replace(/\D/g, '') : '';
     return this.prisma.$queryRaw`
       SELECT id, email, display_name AS "displayName", role,
-             is_suspended AS "isSuspended", created_at AS "createdAt",
+             is_suspended AS "isSuspended", email_verified AS "emailVerified",
+             created_at AS "createdAt",
              phone, emergency_contact_name AS "emergencyContactName",
              emergency_contact_phone AS "emergencyContactPhone"
       FROM users

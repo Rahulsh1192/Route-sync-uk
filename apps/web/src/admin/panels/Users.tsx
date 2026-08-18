@@ -83,7 +83,20 @@ export function Users() {
             {users.map((u) => (
               <tr key={u.id}>
                 <td style={{ fontWeight: 'var(--weight-medium)' }}>{u.displayName}</td>
-                <td className="meta">{u.email ?? '—'}</td>
+                <td className="meta">
+                  {u.email ?? '—'}
+                  {u.email && (
+                    <div style={{ marginTop: 2 }}>
+                      {u.emailVerified ? (
+                        <span className="pill good">Verified</span>
+                      ) : (
+                        // Not a fault to fix from here: the account simply has not opened its
+                        // link yet, and it cannot sign in until it does.
+                        <span className="pill warn">Unverified</span>
+                      )}
+                    </div>
+                  )}
+                </td>
                 <td className="meta">
                   {u.phone ? (
                     // tel: link so a staff member on a laptop with a softphone, or on a

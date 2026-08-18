@@ -47,6 +47,8 @@ export interface AdminUser {
   displayName: string;
   role: string;
   isSuspended: boolean;
+  /** Phase 29. Whether the account has confirmed its address — signing in requires it. */
+  emailVerified: boolean;
   createdAt: string;
   // Phase 26 contact details. Nullable: existing accounts and OAuth sign-ins predate them.
   phone: string | null;
