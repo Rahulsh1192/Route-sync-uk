@@ -195,18 +195,32 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  /**
+   * Create an account, or ask for another verification link for one that already exists.
+   *
+   * Returns no tokens: the API will not sign in an account that has not confirmed its
+   * address. Re-posting this with the same email and the correct password is how the UI
+   * resends the link — before verification there is no session to authorise anything else.
+   *
+   * `displayName` is omitted when resending from the sign-in screen, which has no name field.
+   */
   register: (
     email: string,
     password: string,
-    displayName: string,
+    displayName: string | undefined,
     contact?: ContactDetailsInput,
   ) =>
-    request<{ accessToken: string; refreshToken: string }>('/auth/register', {
+    request<{ status: string; email: string }>('/auth/register', {
       method: 'POST',
       // Spread rather than always sending the keys: the API treats an absent field as
       // "leave alone" and an empty string as "clear", so sending '' at signup would be a
       // pointless instruction to clear something that was never set.
-      body: JSON.stringify({ email, password, displayName, ...(contact ?? {}) }),
+      body: JSON.stringify({
+        email,
+        password,
+        ...(displayName ? { displayName } : {}),
+        ...(contact ?? {}),
+      }),
     }),
 
   /**

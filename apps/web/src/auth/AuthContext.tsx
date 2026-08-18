@@ -11,12 +11,20 @@ interface AuthState {
   user: Me | null;
   isStaff: boolean;
   login: (email: string, password: string) => Promise<void>;
+  /**
+   * Create an account, or resend its verification link. Resolves to the masked address the
+   * link was sent to.
+   *
+   * Deliberately does NOT authenticate: the API issues no tokens until the address is
+   * confirmed, so there is nothing to store and the caller must show a "check your inbox"
+   * state rather than navigating into the app.
+   */
   register: (
     email: string,
     password: string,
-    name: string,
+    name: string | undefined,
     contact?: ContactDetailsInput,
-  ) => Promise<void>;
+  ) => Promise<string>;
   logout: () => void;
 }
 
@@ -64,12 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (
     email: string,
     password: string,
-    name: string,
+    name: string | undefined,
     contact?: ContactDetailsInput,
   ) => {
     const r = await api.register(email, password, name, contact);
-    tokens.save(r.accessToken, r.refreshToken);
-    setAuthed(true);
+    return r.email;
   }, []);
 
   const logout = useCallback(() => {
