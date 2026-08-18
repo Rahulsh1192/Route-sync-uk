@@ -69,6 +69,12 @@ The 409 for a wrong password matters: an attacker must not be able to tell an un
 account from a verified one, and `409` for a known address is already today's behaviour, so
 this leaks nothing new.
 
+`displayName` becomes optional on the DTO and required in the service for the create case
+only. The resend path is reached by re-posting this form, and the sign-in screen's resend
+action has an email and a password but no display name; sending a fabricated one to satisfy
+validation would put junk on the wire and into the database if the assumption were ever
+wrong.
+
 Rate limiting:
 
 - `@Throttle({ default: { limit: 5, ttl: 60_000 } })` on the route — it now sends mail on a
