@@ -82,6 +82,20 @@ services:
       # playback URLs (15 minutes vs 1 hour).
       - key: UPLOAD_SIGNED_URL_TTL
         value: "900"
+      # Transactional email (Phase 28). Without these the API still boots and registration
+      # still succeeds — MailService returns failures as values — so the only symptom is
+      # that no verification or reset email is ever sent, and one line appears in the log:
+      # "Email not configured (RESEND_API_KEY / MAIL_FROM)".
+      - key: RESEND_API_KEY        # Resend > API Keys ("Sending access")
+        sync: false
+      # Must be on the domain verified in Resend, or every message is rejected with a 403.
+      - key: MAIL_FROM
+        value: Test Routify <noreply@support.testroutify.com>
+      # Public origin of the WEB app — the links inside emails are built from this, and a
+      # person opens them in a browser. Distinct from API_BASE_URL above, which points at
+      # this service. Unset, links render as "undefined/verify-email?token=…".
+      - key: APP_BASE_URL
+        value: https://www.testroutify.com
       # Thumbnails are the only asset class that may be served from a public CDN origin;
       # 'hls'/'master' are rejected at startup. Route video is paid content behind the
       # per-test-centre paywall and always goes through the signed HLS gateway, which
