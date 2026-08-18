@@ -32,6 +32,21 @@ corporate TLS proxy here.
   engine-download preflight ([`scripts/prisma-generate.mjs`](scripts/prisma-generate.mjs)).
   Plain `npx prisma generate` will fail behind the proxy — use the npm script.
 
+### Outbound HTTPS behind the same proxy (email, R2)
+
+The proxy re-signs HTTPS with the company's own root. Windows trusts it; Node reads its
+own bundled roots instead, so calls to Resend or R2 fail with
+`UNABLE_TO_GET_ISSUER_CERT_LOCALLY` — which in the API looks like signup working while no
+verification email ever arrives, because [`MailService`](src/modules/mail/mail.service.ts)
+returns transport failures as values rather than throwing.
+
+`start:dev` and `start:prod` therefore go through
+[`scripts/with-corp-ca.mjs`](scripts/with-corp-ca.mjs), which sets `NODE_EXTRA_CA_CERTS`
+when `infra/local-ca/ca-bundle.pem` exists (the same git-ignored bundle
+[`docker-compose.corp-ca.yml`](../../docker-compose.corp-ca.yml) mounts into the worker).
+On a normal network there is no bundle and the command runs unchanged. **Starting the API
+with a bare `node dist/main` skips this** and email will silently fail again.
+
 ## Modules (`src/modules/*`)
 
 `auth` (JWT + Google/Apple OAuth, rotating refresh tokens) · `users` (profile +

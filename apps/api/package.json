@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:prod": "node dist/main.js",
+    "start": "node scripts/with-corp-ca.mjs nest start",
+    "start:dev": "node scripts/with-corp-ca.mjs nest start --watch",
+    "start:prod": "node scripts/with-corp-ca.mjs node dist/main.js",
     "prisma:generate": "node scripts/prisma-generate.mjs",
     "prisma:migrate": "prisma migrate dev",
     "lint": "eslint \"src/**/*.ts\" --fix",
