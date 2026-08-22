@@ -51,8 +51,13 @@
      belong to the caller, must not already have video attached, and must have a usable
      GPS track.
 5. **`cameraClockOffsetMs` is limited to ±24 hours.**
-6. **Per-file limits:** max **5 GB** per clip; video content type must be one of
-   `video/mp4`, `video/quicktime`, `video/x-matroska`.
+6. **Per-file limits:** max **5 GB** per clip. The video format is decided from the
+   **filename extension first**, and only from the declared `contentType` when the name has
+   no usable extension — `File.type` comes from an OS table keyed on that extension and is
+   frequently wrong, so a valid `.mp4` could arrive declared as something else and be
+   refused. Accepted: `.mp4 .m4v .mov .qt .mkv .webm .avi .mpg .mpeg .ts .m2ts .mts .3gp`
+   (see [video-types.ts](../../apps/api/src/modules/uploads/video-types.ts)). The file
+   picker advertises exactly this list, so an unsupported file cannot be selected at all.
 7. **No front video → a `map_only` route** (`has_video = false`).
 8. **The route is created in `draft`** at init and moves to `processing` on complete.
    The upload moves `created` → `queued` on complete.
@@ -131,7 +136,11 @@
 |---|---|---|---|---|---|
 | UPL-027 | **Free monthly cap** | instructor | An instructor on the **free** plan who has already completed 3 uploads this month | Start a 4th | **403 Free upload limit reached (3/month). Upgrade to Premium for unlimited uploads.** |
 | UPL-028 | Premium has no cap | instructor | Grant that instructor premium | Start a 4th upload | Allowed |
-| UPL-029 | Unsupported video type | instructor | — | `POST /api/uploads` declaring `contentType: "video/avi"` | **400 Unsupported video type: video/avi** |
+| UPL-029 | Unsupported video type | instructor | — | `POST /api/uploads` declaring `originalName: "notes.txt", contentType: "text/plain"` | **400** `"notes.txt" is not a video format we can process (the browser reported it as text/plain). Supported: .mp4, .m4v, …` |
+| UPL-029a | A mislabelled `.mp4` is accepted | instructor | — | Declare `originalName: "clip.mp4", contentType: "video/webm"` | **Accepted.** The extension decides. This is the real-world case: a Windows registry entry for `.mp4` overwritten by another application makes the browser report the wrong type, and this used to refuse a valid file |
+| UPL-029b | WebM and AVI are accepted | instructor | — | Declare `clip.webm` and `clip.avi` | **Accepted.** The worker transcodes everything to H.264 HLS, so these were never a technical limitation |
+| UPL-029c | Name with no extension falls back to the declared type | instructor | — | Declare `originalName: "clip", contentType: "video/mp4"` | **Accepted** — covers Android share sheets, which hand over a name with no extension |
+| UPL-029d | Declared type matches the PUT header | instructor | Pick any video in the web UI | Watch the network tab: compare `contentType` in `POST /api/uploads` with the `Content-Type` on the presigned PUT | **Identical.** The presigned URL is signed over this value, so any difference fails the PUT with a signature error rather than a readable message |
 | UPL-030 | Oversized file | instructor | — | Declare `bytes: 6000000000` (6 GB) | **400 … too large** |
 | UPL-031 | No files declared | instructor | — | `POST /api/uploads` with `files: []` | **400 No files declared** |
 | UPL-032 | Missing test centre | instructor | — | `POST` with no `testCentreId` | **400** |

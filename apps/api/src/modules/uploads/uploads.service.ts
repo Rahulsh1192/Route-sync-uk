@@ -12,9 +12,9 @@ import { MediaQueueService } from '../queue/media-queue.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { CommunityService } from '../community/community.service';
 import { GpsSource, GPS_FILE_KINDS, InitUploadDto, UploadFileKind } from './dto/uploads.dto';
+import { SUPPORTED_VIDEO_EXTENSIONS, resolveVideoType } from './video-types';
 import { UploadStatus, RouteStatus } from '@prisma/client';
 
-const ALLOWED_VIDEO = ['video/mp4', 'video/quicktime', 'video/x-matroska'];
 const MAX_FILE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB per clip
 const FREE_MONTHLY_UPLOAD_CAP = 3; // non-premium contributors; premium = unlimited
 
@@ -118,8 +118,16 @@ export class UploadsService {
 
     for (const f of dto.files) {
       if (f.bytes > MAX_FILE_BYTES) throw new BadRequestException(`${f.originalName} too large`);
-      if (!GPS_FILE_KINDS.includes(f.kind) && !ALLOWED_VIDEO.includes(f.contentType)) {
-        throw new BadRequestException(`Unsupported video type: ${f.contentType}`);
+      if (!GPS_FILE_KINDS.includes(f.kind) && !resolveVideoType(f.originalName, f.contentType)) {
+        // Named rather than just typed: the browser's declared type is frequently wrong
+        // (it comes from an OS table keyed on the extension, not from the bytes), so
+        // repeating it alone produced messages that made no sense against the file the
+        // contributor had actually chosen. See video-types.ts.
+        throw new BadRequestException(
+          `"${f.originalName}" is not a video format we can process` +
+            `${f.contentType ? ` (the browser reported it as ${f.contentType})` : ''}. ` +
+            `Supported: ${SUPPORTED_VIDEO_EXTENSIONS.join(', ')}.`,
+        );
       }
     }
 

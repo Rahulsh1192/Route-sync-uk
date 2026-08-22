@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, DeclaredFile, GpsSource } from '../../api/client';
 import { sha256File, uploadFileForTarget } from '../../upload/directUpload';
+import { VIDEO_ACCEPT, VIDEO_FORMATS_LABEL, uploadContentType } from '../../upload/videoTypes';
 import { RecordedJourney, ReferenceRoute, TestCentre } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import {
@@ -166,8 +167,10 @@ export function UploadPage() {
     const declared: DeclaredFile[] = ordered.map(({ kind, file, ordinal, clip }) => ({
       kind,
       originalName: file.name,
-      contentType:
-        file.type || (kind === 'gps' ? 'application/octet-stream' : 'video/mp4'),
+      // Decided from the extension first, because `file.type` is looked up from an OS
+      // table keyed on that extension and is routinely wrong. The PUT sends this same
+      // value — the presigned URL is signed over it.
+      contentType: uploadContentType(file),
       bytes: file.size,
       declaredOrdinal: ordinal,
       ...(clip
@@ -413,8 +416,10 @@ export function UploadPage() {
         <>
           <FilePicker
             label="Front camera clips *"
-            hint="All the clips from this drive. Order doesn't matter — we read the time from each file."
-            accept="video/*"
+            hint={`All the clips from this drive. Order doesn't matter — we read the time from each file. ${VIDEO_FORMATS_LABEL}.`}
+            // Extensions, not `video/*`: that wildcard matches on the same unreliable
+            // `File.type`, so it both hid files we accept and offered files we reject.
+            accept={VIDEO_ACCEPT}
             multiple
             files={frontFiles}
             onChange={setFrontFiles}
@@ -422,7 +427,7 @@ export function UploadPage() {
           <FilePicker
             label="Rear camera clips (optional)"
             hint="If your camera records both views. We align the rear to the front by its audio."
-            accept="video/*"
+            accept={VIDEO_ACCEPT}
             multiple
             files={rearFiles}
             onChange={setRearFiles}

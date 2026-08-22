@@ -288,8 +288,9 @@ These are the rules a tester must know; each is traced to its source.
 6. **Instructors are limited to one active session.**
 7. **Free contributors may upload 3 routes per month**; premium is unlimited
    (`FREE_MONTHLY_UPLOAD_CAP` in [uploads.service.ts](../apps/api/src/modules/uploads/uploads.service.ts)).
-8. **Max upload file size 5 GB per clip**; allowed video types `video/mp4`,
-   `video/quicktime`, `video/x-matroska`.
+8. **Max upload file size 5 GB per clip**; video format is decided from the filename
+   extension — `.mp4 .m4v .mov .qt .mkv .webm .avi .mpg .mpeg .ts .m2ts .mts .3gp`
+   ([video-types.ts](../apps/api/src/modules/uploads/video-types.ts)).
 9. **ADI badge evidence** must be JPEG/PNG/WebP/HEIC/PDF, max **15 MB**.
    An **expired** ADI expiry date is rejected at submission.
    An ADI number already registered to another account is rejected as a conflict.

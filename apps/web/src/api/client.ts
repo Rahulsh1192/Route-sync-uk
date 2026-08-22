@@ -1,3 +1,4 @@
+import { uploadContentType } from '../upload/videoTypes';
 import type {
   RouteSummary,
   RouteDetail,
@@ -66,7 +67,10 @@ export function putToPresigned(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', url);
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    // Must match the type declared at init, because that is what the presigned URL was
+    // signed over — storage rejects a PUT whose Content-Type differs. `uploadContentType`
+    // is the single rule both sides use; reading `file.type` here instead was the bug.
+    xhr.setRequestHeader('Content-Type', uploadContentType(file));
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
     };
