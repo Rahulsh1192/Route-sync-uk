@@ -222,7 +222,7 @@ Read from [apps/api/src/config/configuration.ts](../apps/api/src/config/configur
 | `JWT_REFRESH_TTL` (default 30 days) | No | — |
 | `REDIS_URL` | No (defaults to localhost) | Queueing / worker handoff |
 | `API_BASE_URL` | Needed for HLS | Signed HLS gateway URLs are malformed |
-| `APP_BASE_URL` | **Needed for email links** | Verification/reset links point at the wrong host |
+| `APP_BASE_URL` | **Needed for email links** | Locally, verification/reset links point at `localhost:5174` — fine on the same machine, dead on a phone. In production (`NODE_ENV=production`) the API **will not start** unless this is a non-localhost origin |
 | **`RESEND_API_KEY` + `MAIL_FROM`** | **Needed for `AUTH-029`…`AUTH-048`** | **No email is ever sent.** The API logs `Email not configured … dropped`. Because only the SHA-256 of the token is stored, the link is unrecoverable — these flows become **untestable** |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` | Needed for checkout | `POST /api/subscriptions/checkout` fails; the paywall cannot complete |
 | `STRIPE_WEBHOOK_SECRET` | Needed for entitlement | A completed checkout never grants Premium, because the webhook is what writes the subscription |

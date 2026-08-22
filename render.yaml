@@ -93,7 +93,13 @@ services:
         value: Test Routify <noreply@support.testroutify.com>
       # Public origin of the WEB app — the links inside emails are built from this, and a
       # person opens them in a browser. Distinct from API_BASE_URL above, which points at
-      # this service. Unset, links render as "undefined/verify-email?token=…".
+      # this service.
+      #
+      # THIS VALUE ONLY REACHES A SERVICE RENDER CREATED FROM THIS BLUEPRINT, OR ONE WHOSE
+      # BLUEPRINT HAS BEEN RE-SYNCED SINCE IT WAS ADDED. A service that predates it keeps
+      # whatever its dashboard holds — which is why this has to be checked there too.
+      # Since Phase 29 the API refuses to boot in production if this is unset or points at
+      # localhost, because the previous behaviour was to mail links to localhost silently.
       - key: APP_BASE_URL
         value: https://www.testroutify.com
       # Thumbnails are the only asset class that may be served from a public CDN origin;

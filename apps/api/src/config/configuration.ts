@@ -172,6 +172,58 @@ const schema = z.object({
   WORKER_SHARED_SECRET: z.string().optional(),
 });
 
+/**
+ * Is this origin only meaningful on the machine that serves it?
+ *
+ * Used to keep a development default from reaching production, where such a URL is not
+ * merely wrong but undetectably wrong: it is embedded in an email, so the failure surfaces
+ * on someone else's device, hours later, with nothing in our logs.
+ */
+function isLoopbackOrigin(url: string): boolean {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false; // Not parseable: a different complaint, not this one.
+  }
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname === '::1' ||
+    hostname === '[::1]'
+  );
+}
+
+/**
+ * Cross-field rules that cannot be expressed on a single key.
+ *
+ * Runs after the field transforms, so it sees `APP_BASE_URL` already normalised.
+ */
+const validated = schema.superRefine((config, ctx) => {
+  // A production deployment that never sets APP_BASE_URL inherits the localhost default and
+  // then mails links to it — dead on arrival in every recipient's inbox. Nothing errors, so
+  // the only signal is a user reporting that the link does not work. Since Phase 29 gates
+  // sign-in on following that link, it silently breaks every new signup as well.
+  //
+  // Refusing to boot is deliberate and proportionate: the deploy fails its health check and
+  // stays on the previous release, instead of going live and quietly issuing dead links.
+  // Set the value — `render.yaml` carries it for blueprint-managed services, and it must be
+  // set in the dashboard for a service created before that entry existed.
+  if (config.NODE_ENV === 'production' && isLoopbackOrigin(config.APP_BASE_URL)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['APP_BASE_URL'],
+      message:
+        `APP_BASE_URL is "${config.APP_BASE_URL}", which is only reachable on the server ` +
+        'itself. It is the public origin of the WEB app and is used to build the links ' +
+        'inside verification and password-reset emails, so in production it must be set to ' +
+        'a real origin (e.g. https://www.testroutify.com).',
+    });
+  }
+});
+
 export type AppConfig = z.infer<typeof schema>;
 
 /**
@@ -254,7 +306,7 @@ function applyR2Aliases(env: Record<string, unknown>): Record<string, unknown> {
  */
 export function loadConfig(raw: Record<string, unknown> = {}): AppConfig {
   const merged = applyR2Aliases({ ...process.env, ...raw });
-  const parsed = schema.safeParse(merged);
+  const parsed = validated.safeParse(merged);
   if (!parsed.success) {
     // Fail fast & loud on misconfiguration.
     throw new Error(
