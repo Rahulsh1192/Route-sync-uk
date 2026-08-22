@@ -231,8 +231,12 @@ it's the difference between a viable and an unviable business model.
 **6 GB per route** (ladder + master + raw clips) ≈ **$0.09/route/month** ≈ $9/mo for 100
 routes, with unlimited viewing included.
 
-**Already done.** Remaining setup is in the earlier chat: API token, CORS policy, env vars
-on both API *and* worker.
+**Already done.** Remaining setup: API token, env vars on both API *and* worker, and the
+bucket **CORS policy** — which is not optional and is not something the API can supply.
+Uploads go browser → R2 directly, so without it every upload fails its preflight with
+`403 CORS not configured for this bucket` while `curl` against the same presigned URL
+returns 200. The policy and the click path are in
+[`infra/README-r2-cors.md`](../infra/README-r2-cors.md).
 
 ---
 
