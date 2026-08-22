@@ -15,7 +15,7 @@ implemented* so nobody wastes time testing for them.
 | **Purpose** | Establish who the user is, and keep that session alive |
 | **Web paths** | `/login`, `/forgot-password`, `/reset-password?token=`, `/verify-email?token=` |
 | **API** | `/api/auth/*`, plus `GET /api/users/me` for the role used by the UI |
-| **Key source** | [auth.controller.ts](../apps/api/src/modules/auth/auth.controller.ts) · [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) · [email-tokens.ts](../apps/api/src/modules/auth/email-tokens.ts) · [LoginPage.tsx](../apps/web/src/pages/LoginPage.tsx) · [AuthContext.tsx](../apps/web/src/auth/AuthContext.tsx) |
+| **Key source** | [auth.controller.ts](../apps/api/src/modules/auth/auth.controller.ts) · [auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) · [email-tokens.ts](../apps/api/src/modules/auth/email-tokens.ts) · [mask-email.ts](../apps/api/src/modules/auth/mask-email.ts) · [LoginPage.tsx](../apps/web/src/pages/LoginPage.tsx) · [VerifyEmailPage.tsx](../apps/web/src/pages/VerifyEmailPage.tsx) · [AuthContext.tsx](../apps/web/src/auth/AuthContext.tsx) |
 | **Roles** | All — and *no* role is required to reach the login page |
 
 ---
@@ -24,6 +24,12 @@ implemented* so nobody wastes time testing for them.
 
 - API and web app running; database seeded (see [12-TEST-ENVIRONMENT-AND-DATA.md](12-TEST-ENVIRONMENT-AND-DATA.md)).
 - Seeded accounts available.
+- **`db/migrate_phase_29.sql` must have been applied to the database under test.** Without it
+  every pre-existing account, including the seeded logins, is unverified and the Phase 29 gate
+  refuses every sign-in (see `AUTH-059`).
+- **Since Phase 29, working outbound email is required for *every* registration test, not just
+  §6.** A new account cannot sign in until it opens its link, and the link exists only in the
+  email.
 - **For `AUTH-020` … `AUTH-032` (email verification and password reset) you need working
   outbound email.** The token is only ever delivered in the email — its SHA-256 is what
   is stored in the database, so there is **no way to recover the link from the database
@@ -49,22 +55,47 @@ implemented* so nobody wastes time testing for them.
 
 | Test ID | Scenario | Role | Preconditions | Steps | Expected Result |
 |---|---|---|---|---|---|
-| AUTH-001 | Register with the minimum required fields | anon | Email not already registered | 1. Open `/login` 2. Click **New here? Create an account** 3. Enter display name, a new email, a password of ≥ 8 characters 4. Submit | Account created; tokens saved to `localStorage` (`rs_access`, `rs_refresh`); redirected via `/` to `/test-centres`; new user's role is `user` |
+| AUTH-001 | Register with the minimum required fields | anon | Email not already registered | 1. Open `/login` 2. Click **New here? Create an account** 3. Enter display name, a new email, a password of ≥ 8 characters 4. Submit (**Send verification link**) | **202.** The form is replaced by **"Check your inbox"** naming the masked address (e.g. `l•••••r@gmail.com`); **no** `rs_access` / `rs_refresh` in `localStorage`; **not** redirected into the app; a verification email arrives; new user's role is `user` |
 | AUTH-002 | Register with all optional contact fields | anon | — | As AUTH-001 plus mobile `07700 900123`, emergency name, emergency number | Account created; the values appear on `/account` after sign-in |
-| AUTH-003 | Register with an already-registered email | anon | Use `learner@routesync.uk` | Submit the register form | **409** — `Email already registered`; shown in the inline error banner; no account created |
+| AUTH-003 | Register with an email that is already registered **and verified** | anon | Use `learner@routesync.uk` | Submit the register form | **409** — `Email already registered`; shown in the inline error banner; no account created |
+| AUTH-003a | Re-register an **unverified** address with the **correct** password | anon | Register a fresh address first; do not open the link | Submit the same email and password again | **202**; "Check your inbox" again; a **second** email arrives; still no session. This is the resend path — the only way to get another link before you can sign in |
+| AUTH-003b | Re-register an unverified address with the **wrong** password | anon | As AUTH-003a | Submit the same email with a different password | **409** `Email already registered` — **identical** to AUTH-003, and **no email sent**. Any difference from AUTH-003 is a defect: it would disclose whether the account is confirmed |
 | AUTH-004 | Register with a password shorter than 8 characters | anon | — | Enter `Pass1` and submit | **400** validation error naming the password; account not created |
 | AUTH-005 | Register with a malformed email | anon | — | Enter `not-an-email` | Blocked by the browser (`type=email` + `required`). Bypass the client by calling `POST /api/auth/register` directly → **400** |
 | AUTH-006 | Register with a display name shorter than 2 characters | anon | — | Enter `A` as the display name | **400** validation error |
 | AUTH-007 | Register with an invalid phone format | anon | — | Enter `abc` as the mobile number | **400** with the phone-format message from [phone.ts](../apps/api/src/common/validation/phone.ts) |
-| AUTH-008 | Register sends a verification email | anon | Email configured | Complete AUTH-001 and check the inbox | A verification email arrives. **If email is not configured the signup still succeeds** — that is deliberate; check the API log for `Email not configured` |
+| AUTH-008 | Register sends a verification email | anon | Email configured | Complete AUTH-001 and check the inbox | A verification email arrives. **If email is not configured the signup still returns 202 but the account can never sign in** — check the API log for `Email not configured`. Working outbound email is therefore a hard requirement for every registration test here, not only for §6 |
 | AUTH-009 | Login with valid learner credentials | user | Seeded | Sign in as `learner@routesync.uk` | Redirected to `/test-centres`; learner navigation shown |
 | AUTH-010 | Login with valid admin credentials | admin | Seeded | Sign in as `admin@routesync.uk` | Redirected **straight to `/admin`**; admin console renders with sidebar |
 | AUTH-011 | Login with valid instructor credentials | instructor | Seeded | Sign in as `instructor@routesync.uk` | Redirected to `/test-centres`; **staff** navigation (Contribute, My Lessons) shown |
-| AUTH-012 | Login with a wrong password | anon | — | Correct email, wrong password | **401** `Invalid credentials`; error banner; still on `/login`; no tokens stored |
+| AUTH-012 | Login with a wrong password | anon | — | Correct email, wrong password | **401** `Invalid credentials`; error banner; still on `/login`; no tokens stored. **Never** the "confirm your email" message, even when that account is unverified (see AUTH-051) |
 | AUTH-013 | Login with an unknown email | anon | — | `nobody@example.com` + any password | **401** `Invalid credentials` — the message must be **identical** to AUTH-012 (no account enumeration) |
 | AUTH-014 | Login with missing credentials | anon | — | Submit with blank fields | Blocked by the browser `required` attributes. Bypassing the client → **400** |
 | AUTH-015 | Login to a suspended account | any | Admin has suspended the account first (`ADM-USR-004`) | Try to sign in | **401** `Account suspended` |
 | AUTH-016 | Already signed in, visit `/login` | any | Have a session | Navigate to `/login` | Redirected to `/`, then to the role landing |
+
+### 4a. The verification gate (Phase 29)
+
+Signing up no longer signs you in. Confirming the address is a precondition of password
+sign-in; Google and Apple are unaffected, because the provider has already asserted the
+address.
+
+| Test ID | Scenario | Role | Preconditions | Steps | Expected Result |
+|---|---|---|---|---|---|
+| AUTH-049 | Signing up creates no session | anon | — | Complete AUTH-001, then open `/` in the same tab | Redirected to `/login`. `localStorage` holds no `rs_access` |
+| AUTH-050 | Sign in before confirming | anon | Registered; link not opened | Enter the correct email and password on the sign-in tab | **403** `Confirm your email address to sign in. Check your inbox for the link.` with a **Send the link again** button; no tokens stored |
+| AUTH-051 | Wrong password before confirming | anon | As AUTH-050 | Correct email, **wrong** password | **401** `Invalid credentials` — *not* the 403. The password is checked first, so this endpoint cannot be used to find addresses that are registered but unconfirmed. A 403 here is a **security defect** |
+| AUTH-052 | Resend from the confirmation panel | anon | On "Check your inbox" | Press **Send it again** | **202**; a second email arrives; panel still shown; still no session |
+| AUTH-053 | Resend from the sign-in refusal | anon | On the AUTH-050 message | Press **Send the link again** | **202**; the confirmation panel replaces the form; a fresh email arrives |
+| AUTH-054 | Per-account cap on the signup resend | anon | Unverified account | Submit the signup form 6 times in an hour with the correct password (spread out to avoid the per-minute throttle) | The 6th returns **429** `Too many verification emails requested. Try again in an hour.` — a silent success here is a defect |
+| AUTH-055 | Per-minute throttle on register | anon | — | Submit the register form 6 times inside a minute | The 6th returns **429** (route throttle, 5/minute) |
+| AUTH-056 | Confirming redirects to sign-in | anon | Have a valid link | Open the link and wait | **"Email confirmed"**, then after ~3 s the browser lands on `/login` showing **"Email confirmed — sign in to continue."** Pressing **Continue to sign in** does the same immediately. Browser **Back** must not return to the spent link |
+| AUTH-057 | Sign in after confirming | user | Just confirmed | Enter the same email and password | Signed in; redirected to `/test-centres`; tokens present in `localStorage` |
+| AUTH-058 | The banner does not persist | anon | Just landed on `/login?verified=1` | Reload the page | The `?verified=1` is stripped from the URL and the green banner is gone — it must not reappear on refresh or for anyone the URL is shared with |
+| AUTH-059 | Existing accounts were grandfathered | any | `db/migrate_phase_29.sql` applied | Sign in as each seeded account (`learner@`, `instructor@`, `admin@routesync.uk`) | All sign in normally — the backfill marked pre-existing accounts verified. A 403 here means **the migration has not been run on that database** |
+| AUTH-060 | Admin sees verification state | admin | An unverified account exists | `/admin` → **Users** | Each row shows **Verified** or **Unverified** beneath the email; the unverified account's pill flips to Verified once it opens its link |
+| AUTH-061 | OAuth sign-in bypasses the gate | anon | Google configured | Sign in with a Google account whose address is new | Signed in immediately — no verification step. The provider has already verified the address, and `email_verified` is set from its claim |
+| AUTH-062 | Mobile signup and gate | anon | Flutter build on a device | Register in the app, then try to sign in before confirming | Same as AUTH-001 / AUTH-050: a check-your-inbox panel naming the masked address, no session, and the refusal with a resend button on sign-in |
 
 ---
 
@@ -93,13 +124,13 @@ implemented* so nobody wastes time testing for them.
 
 | Test ID | Scenario | Role | Preconditions | Steps | Expected Result |
 |---|---|---|---|---|---|
-| AUTH-029 | Verify a new email address | user | Registered; verification email received | Click the link in the email → opens `/verify-email?token=…` | "Confirming your email…" then **"Email confirmed"**; `users.email_verified` becomes `true` |
+| AUTH-029 | Verify a new email address | user | Registered; verification email received | Click the link in the email → opens `/verify-email?token=…` | "Confirming your email…" then **"Email confirmed"**; `users.email_verified` becomes `true`; the page then moves on to `/login?verified=1` (see `AUTH-056`) |
 | AUTH-030 | Verification link opened while already signed in | user | Signed in | Open the verification link in the same browser | The page still processes the token — it is **not** redirected away. This is deliberate |
 | AUTH-031 | Reuse a verification link | user | Link already redeemed | Click the same link a second time | **"That link didn't work"** — `401 This link is invalid or has expired` |
 | AUTH-032 | Expired verification link | user | Link older than **24 hours** | Click the link | "That link didn't work" |
 | AUTH-033 | Verify with a missing or malformed token | anon | — | Open `/verify-email` with no `?token=`, and with `?token=abc` | Error state. At API level a token shorter than 43 characters is a **400** validation failure, not a 401 |
-| AUTH-034 | Resend verification (throttle) | user | Signed in, unverified | Call `POST /api/auth/verify-email/resend` **4 times within a minute** | The first 3 return **202**; the 4th returns **429 Too Many Requests** |
-| AUTH-035 | Per-account email cap | user | Signed in, unverified | Request 6 verification emails within one hour (spread out to avoid the per-minute throttle) | The endpoint still returns 202, but no 6th email is sent; the API log shows `Rate-limited verify_email` |
+| AUTH-034 | Resend verification (throttle) | user | **API-only since Phase 29:** signed in *and* unverified is no longer reachable through the UI, because an unverified account cannot sign in. Use an access token for an account whose `email_verified` you have set back to `false` in the database | Call `POST /api/auth/verify-email/resend` **4 times within a minute** | The first 3 return **202**; the 4th returns **429 Too Many Requests** |
+| AUTH-035 | Per-account email cap | user | As AUTH-034 | Request 6 verification emails within one hour (spread out to avoid the per-minute throttle) | The endpoint still returns 202, but no 6th email is sent; the API log shows `Rate-limited verify_email`. The same cap through the signup path is `AUTH-054`, where it surfaces as a **429** instead |
 | AUTH-036 | Request a password reset for a **known** address | anon | — | `/forgot-password` → `learner@routesync.uk` → submit | **202**; "Check your inbox" confirmation; reset email arrives |
 | AUTH-037 | Request a password reset for an **unknown** address | anon | — | `/forgot-password` → `nobody@example.com` | **Identical** 202 and identical confirmation screen. No email. **Any difference in response, wording or timing is a defect** (account enumeration) |
 | AUTH-038 | Request a reset for a **suspended** account | anon | Account suspended | Submit that address | Same 202 and same screen; no email sent |

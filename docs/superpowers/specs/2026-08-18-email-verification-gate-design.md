@@ -1,7 +1,10 @@
 # Email verification gate — design
 
 **Date:** 2026-08-18
-**Status:** approved, ready for an implementation plan
+**Status:** implemented 2026-08-18 — see
+[the plan](../plans/2026-08-18-email-verification-gate.md). One deviation: Flutter *is*
+installed on the development machine, so the mobile change was verified with
+`flutter analyze` rather than by review alone. It remains unrun on a device.
 
 ## Problem
 
